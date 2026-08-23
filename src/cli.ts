@@ -989,7 +989,11 @@ function commandSummaries(): CommandSummary[] {
   }));
 }
 
-/** help --json: the whole command surface as data. */
+/**
+ * help --json: a compact command index. Full schemas live behind the
+ * per-operation docs command so discovery does not spend an agent's context
+ * window on every response shape before it has chosen an operation.
+ */
 function helpJson(): Record<string, unknown> {
   const byResource = new Map<string, CommandSummary[]>();
   for (const c of commandSummaries()) {
@@ -998,7 +1002,7 @@ function helpJson(): Record<string, unknown> {
     byResource.set(c.resource, list);
   }
   return {
-    schema_version: "1",
+    schema_version: "2",
     name: BIN,
     version: VERSION,
     api: API_TITLE,
@@ -1020,12 +1024,15 @@ function helpJson(): Record<string, unknown> {
           auth: c.auth,
           positional: op.params.filter((p) => p.kind === "path").map((p) => p.name),
           flags: c.flags,
-          input_schema: op.inputSchema,
-          ...(op.outputSchema ? { output_schema: op.outputSchema } : {}),
-          example_arguments: op.exampleArguments,
+          details_command: BIN + " docs " + resource + " " + c.command + " --json",
         };
       }),
     })),
+    discovery: {
+      search: BIN + " docs search <term> --json",
+      operation: BIN + " docs <resource> <command> --json",
+      note: "Choose an operation from this index, then read only that operation's complete schemas and example arguments.",
+    },
     builtins: BUILTIN_COMMANDS,
     global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--base-url <url>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
     auth_env_vars: agentContext().authEnvVars,
@@ -1467,11 +1474,15 @@ async function fetchDocs(pathOrFile: string): Promise<string | null> {
   }
 }
 
+function searchTerms(query: string): string[] {
+  return [...new Set(query.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length >= 2))];
+}
+
 /** Token search across names, prose, paths, and arguments. A phrase such as
  * "create project" should find the projects create command, even though that exact
  * substring never occurs in the generated command. */
 function referenceSearchScore(op: OpSpec, query: string): number {
-  const terms = [...new Set(query.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length >= 2))];
+  const terms = searchTerms(query);
   if (terms.length === 0) return 0;
   const names = [...op.command, op.tool].join("_").toLowerCase().split(/[^a-z0-9]+/);
   const summary = (op.summary ?? "").toLowerCase();
@@ -1555,6 +1566,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
       "      --schema                              include input/output JSON Schema",
       "      --json                                print the machine contract as JSON",
       "  " + BIN + " docs search <term>            search reference and guides",
+      "      --json / --format json                 print structured matches and availability",
       "  " + BIN + " docs read <page>              print a docs-site page in the terminal",
       "  " + BIN + " docs --web                    open the docs site in a browser",
       "",
@@ -1577,33 +1589,66 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
   if (sub === "search") {
     const term = parsed.positionals.slice(2).join(" ");
     if (!term) fail(2, "docs search expects a term");
-    const lines: string[] = [];
+    const jsonOutput = parsed.flags.get("json") === true || parsed.flags.get("format") === "json";
     const refMatches = OPS.map((op) => ({ op, score: referenceSearchScore(op, term) }))
       .filter((match) => match.score > 0)
       .sort((a, b) => b.score - a.score || a.op.command.join(" ").localeCompare(b.op.command.join(" ")))
       .map((match) => match.op);
-    if (refMatches.length > 0) {
-      lines.push(paintOut("bold", "Reference:"));
-      for (const op of refMatches.slice(0, 15)) {
-        lines.push("  " + padPaint("cyan", op.command.join(" "), 34) + (op.summary ?? wireOf(op)));
-      }
-    }
     const prose = await fetchDocs("llms-full.txt");
+    const proseMatches: { heading: string; excerpt: string; score: number }[] = [];
     if (prose !== null) {
       let heading = "";
-      const proseMatches: string[] = [];
+      const terms = searchTerms(term);
       for (const line of prose.split("\n")) {
         if (/^#{1,3} /.test(line)) heading = line.replace(/^#+ /, "").trim();
-        else if (line.toLowerCase().includes(term.toLowerCase()) && proseMatches.length < 15) {
-          proseMatches.push("  " + padPaint("cyan", heading.slice(0, 32), 34) + line.trim().slice(0, 100));
+        else {
+          const lowerHeading = heading.toLowerCase();
+          const lowerLine = line.toLowerCase();
+          const matched = terms.filter((word) => lowerHeading.includes(word) || lowerLine.includes(word));
+          if (matched.length > 0) {
+            const allTerms = matched.length === terms.length;
+            proseMatches.push({
+              heading,
+              excerpt: line.trim().slice(0, 160),
+              score: matched.length * 10 + (allTerms ? 50 : 0) + (lowerHeading.includes(term.toLowerCase()) || lowerLine.includes(term.toLowerCase()) ? 25 : 0),
+            });
+          }
         }
       }
-      if (proseMatches.length > 0) {
-        lines.push(...(lines.length > 0 ? [""] : []), paintOut("bold", "Guides:"));
-        lines.push(...proseMatches);
-      }
-    } else if (docsSiteUrl() === null) {
+      proseMatches.sort((a, b) => b.score - a.score || a.heading.localeCompare(b.heading) || a.excerpt.localeCompare(b.excerpt));
+    }
+    const docsStatus = docsSiteUrl() === null ? "not_configured" : prose === null ? "unavailable" : "ok";
+    if (jsonOutput) {
+      out({
+        schema_version: "1",
+        query: term,
+        reference: refMatches.slice(0, 15).map((op) => ({
+          command: op.command.join(" "),
+          method: op.httpMethod,
+          path: op.path,
+          ...(op.summary ? { summary: op.summary } : {}),
+          details_command: BIN + " docs " + op.command.join(" ") + " --json",
+        })),
+        guides: proseMatches.slice(0, 15).map(({ heading, excerpt }) => ({ heading, excerpt })),
+        totals: { reference: refMatches.length, guides: proseMatches.length },
+        guides_status: docsStatus,
+        ...(docsStatus === "not_configured" ? { next_steps: ["Run '" + BIN + " config set docs-url <url>' to add guide search; the API reference was still searched."] } : {}),
+        ...(docsStatus === "unavailable" ? { next_steps: ["The docs site could not be reached; cached guide content was unavailable. The API reference was still searched."] } : {}),
+      });
+      await flushExit(0);
+    }
+    const lines: string[] = [];
+    if (refMatches.length > 0) {
+      lines.push(paintOut("bold", "Reference:"));
+      for (const op of refMatches.slice(0, 15)) lines.push("  " + padPaint("cyan", op.command.join(" "), 34) + (op.summary ?? wireOf(op)));
+    }
+    if (proseMatches.length > 0) {
+      lines.push(...(lines.length > 0 ? [""] : []), paintOut("bold", "Guides:"));
+      for (const match of proseMatches.slice(0, 15)) lines.push("  " + padPaint("cyan", match.heading.slice(0, 32), 34) + match.excerpt.slice(0, 100));
+    } else if (docsStatus === "not_configured") {
       lines.push(...(lines.length > 0 ? [""] : []), "(no docs site configured for guide search: '" + BIN + " config set docs-url <url>')");
+    } else if (docsStatus === "unavailable") {
+      lines.push(...(lines.length > 0 ? [""] : []), "(docs site unavailable; the API reference was still searched)");
     }
     if (lines.length === 0) lines.push("No matches for: " + term);
     process.stdout.write(lines.join("\n") + "\n");

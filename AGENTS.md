@@ -19,7 +19,7 @@ anonymously with the free plan's limits.
 - Bearer token: set the `TYPESHIP_TOKEN` environment variable.
 
 ## Using the CLI
-- `typeship <resource> <command>` exposes the same API operations as the SDK; `typeship docs search <term>` finds operations and guides; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).
+- `typeship <resource> <command>` exposes the same API operations as the SDK; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).
 - Path parameters are positional; other inputs are flags. JSON goes to stdout and exit codes are 0/1/2. Errors are one JSON envelope on stderr: `{status, issues: [{code, message}], next_steps, detail}`; branch on `issues[].code`. Every operation classified as destructive requires `--force` (or `--yes`).
 - `typeship agent-guide --format json` explains the conventions; `typeship help --json` is the command surface as data; `typeship init --all` connects this machine (credential, MCP clients, an AGENTS.md block); `typeship doctor` checks it.
 

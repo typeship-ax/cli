@@ -15,7 +15,7 @@ npm install @typeship-ax/cli
 
 ## CLI
 
-The package ships `typeship`, a command for every API operation. It writes JSON to stdout and uses exit codes 0/1/2 for success, request failure, and invalid usage.
+The package ships `typeship`, a command for every API operation. API commands write JSON to stdout; discovery commands offer `--json`. Exit codes 0/1/2 mean success, request failure, and invalid usage.
 
 ```sh
 npm install -g @typeship-ax/cli
@@ -37,4 +37,4 @@ Auth: `typeship login` stores a credential under `~/.config/typeship/`; the envi
 Useful commands:
 
 - `typeship init` configures credentials and repository agent instructions.
-- `typeship docs search <term>`, `typeship doctor`, and `typeship help --json` cover discovery and diagnostics.
+- `typeship docs search <term> --json`, `typeship doctor`, and `typeship help --json` cover discovery and diagnostics.

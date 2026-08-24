@@ -601,8 +601,16 @@
                 "description": "How many operations this generation was allowed to include.",
                 "type": "integer"
               },
+              "generated_operations": {
+                "description": "How many operations are present in the generated package.",
+                "type": "integer"
+              },
               "omitted_operations": {
                 "description": "How many operations in the spec were left out.",
+                "type": "integer"
+              },
+              "total_operations": {
+                "description": "How many operations Typeship found in the complete specification.",
                 "type": "integer"
               },
               "reason": {
@@ -4189,7 +4197,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/generations",
       "summary": "Generate outputs and open pull requests",
-      "description": "Resolves the project's URL or repository source, generates every\nconfigured delivery package, stores each result in the project's history,\nand attempts to open a pull request in every configured destination.\nWhen the complete generated tree already matches a destination, no\ncommit, branch, or pull request is created and that generation reports\n`pr_status: no_changes`. This is the same pipeline automatic\nregeneration runs after a source change.",
+      "description": "Resolves the project's URL or GitHub source, generates every\nconfigured delivery package, stores each result in the project's history,\nand attempts to open a pull request in every configured destination.\nWhen the complete generated tree already matches a destination, no\ncommit, branch, or pull request is created and that generation reports\n`pr_status: no_changes`. This is the same pipeline automatic\nregeneration runs after a source change.",
       "safety": "write",
       "auth": "required",
       "paginated": false,

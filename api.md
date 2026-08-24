@@ -253,7 +253,7 @@ Generate outputs and open pull requests
 
 `POST /projects/{project_id}/generations`
 
-Resolves the project's URL or repository source, generates every
+Resolves the project's URL or GitHub source, generates every
 configured delivery package, stores each result in the project's history,
 and attempts to open a pull request in every configured destination.
 When the complete generated tree already matches a destination, no

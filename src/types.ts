@@ -156,8 +156,12 @@ export interface GenerationResult {
 export interface GenerationLimits {
   /** How many operations this generation was allowed to include. */
   max_operations: number;
+  /** How many operations are present in the generated package. */
+  generated_operations: number;
   /** How many operations in the spec were left out. */
   omitted_operations: number;
+  /** How many operations Typeship found in the complete specification. */
+  total_operations: number;
   reason: "anonymous" | "free_plan";
   /** Anonymous calls only. Where to create an account. */
   signup_url?: string;

@@ -13,14 +13,14 @@ import { DEFS, SCHEMAS } from "./schemas.js";
 
 import { GenerateResource } from "./resources/generate.js";
 import { ProjectsResource } from "./resources/projects.js";
+import { DefinitionsResource } from "./resources/definitions.js";
+import { TargetsResource } from "./resources/targets.js";
 import { GenerationsResource } from "./resources/generations.js";
-import { SpecRevisionsResource } from "./resources/spec-revisions.js";
-import { AccountResource } from "./resources/account.js";
-import { ApiKeysResource } from "./resources/api-keys.js";
+import { DefinitionRevisionsResource } from "./resources/definition-revisions.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.6.0";
-const USER_AGENT = "@typeship-ax/cli/0.6.0 (typeship)";
+export const VERSION = "1.0.0";
+const USER_AGENT = "typeship-cli/1.0.0 (typeship)";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -69,23 +69,25 @@ export interface ClientOptions {
 }
 
 /**
- * typeship — v0.6.0
+ * typeship — v1.0.0
  *
- * Generate production SDKs, CLIs, and MCP servers from an OpenAPI or
- * GraphQL spec, and keep every selected output current.
+ * Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
+ * selected SDK, CLI, and MCP Target current.
  *
- * Every operation but one requires an API key, created in the console and
- * sent as `Authorization: Bearer ak_...`. A browser session is not a
- * credential for this API. The exception is POST /generate, which works
- * anonymously with the free plan's limits.
+ * Every operation but one requires a bearer credential: an organization
+ * API key from the console, or an OAuth access token carrying the operation's
+ * read, generate, or write capability and the organization selected during
+ * consent. OAuth grants cannot switch organizations after consent. A browser
+ * session is not a credential for this API. The exception is POST /generate,
+ * which works anonymously with the free plan's limits.
  */
 export class TypeshipClient {
   readonly generate: GenerateResource;
   readonly projects: ProjectsResource;
+  readonly definitions: DefinitionsResource;
+  readonly targets: TargetsResource;
   readonly generations: GenerationsResource;
-  readonly specRevisions: SpecRevisionsResource;
-  readonly account: AccountResource;
-  readonly apiKeys: ApiKeysResource;
+  readonly definitionRevisions: DefinitionRevisionsResource;
 
   constructor(options: ClientOptions = {}) {
     // Identifies this package to the API (ignored by browsers, which
@@ -125,10 +127,10 @@ export class TypeshipClient {
     });
     this.generate = new GenerateResource(core);
     this.projects = new ProjectsResource(core);
+    this.definitions = new DefinitionsResource(core);
+    this.targets = new TargetsResource(core);
     this.generations = new GenerationsResource(core);
-    this.specRevisions = new SpecRevisionsResource(core);
-    this.account = new AccountResource(core);
-    this.apiKeys = new ApiKeysResource(core);
+    this.definitionRevisions = new DefinitionRevisionsResource(core);
   }
 }
 
@@ -147,7 +149,7 @@ export { Page, PagePromise } from "./core/pagination.js";
 
 export * from "./resources/generate.js";
 export * from "./resources/projects.js";
+export * from "./resources/definitions.js";
+export * from "./resources/targets.js";
 export * from "./resources/generations.js";
-export * from "./resources/spec-revisions.js";
-export * from "./resources/account.js";
-export * from "./resources/api-keys.js";
+export * from "./resources/definition-revisions.js";

@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, wr
 import { homedir, hostname } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { TypeshipClient, formatDebugEvent, type DebugEvent } from "./index.js";
+import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
 import { GLOBALS, OPS, buildArgs, findOp, missingRequired, type OpSpec, type ParamSpec } from "./ops.js";
 import {
   MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, collectionProperty, detectHarness, envelope,
@@ -19,6 +19,7 @@ import {
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
+import { fetchDocsText, resolveDocsPageUrl } from "./docs.js";
 
 
 const BIN = "typeship";
@@ -26,15 +27,15 @@ const DEFAULT_BASE_URL = "https://typeship.dev/api/v1";
 const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_TOKEN"}];
 const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
-const VERSION = "0.6.0";
-const API_VERSION = "0.6.0";
+const VERSION = "1.0.0";
+const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
-const WHOAMI: { resource: string; method: string } | null = {"resource":"account","method":"retrieve"};
+const WHOAMI: { resource: string; method: string } | null = null;
 const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
-const PKG_NAME = "@typeship-ax/cli";
+const PKG_NAME = "typeship-cli";
 const UPDATE_NOTICE = false;
-const API_DESCRIPTION: string | null = "Generate production SDKs, CLIs, and MCP servers from an OpenAPI or\nGraphQL spec, and keep every selected output current.\n\nEvery operation but one requires an API key, created in the console and\nsent as `Authorization: Bearer ak_...`. A browser session is not a\ncredential for this API. The exception is POST /generate, which works\nanonymously with the free plan's limits.\n";
+const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected SDK, CLI, and MCP Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
 const RELAY: { mintUrl: string; project: string } | null = null;
 const SUPPORT_URL: string | null = null;
@@ -287,7 +288,7 @@ function fail(code: number, message: string, extra?: unknown, nextSteps?: string
     : /^(Missing required|Expected \d+ argument)/.test(message) ? "MISSING_ARGUMENT"
     : "INVALID_USAGE";
   return failWith({
-    code: code === 2 ? usageCode : "COMMAND_FAILED",
+    code: code === 2 ? usageCode : "CALL_FAILED",
     message,
     ...(extra !== undefined ? { detail: extra } : {}),
     nextSteps: nextSteps ?? (code === 2 ? ["Run '" + USAGE_HINT + "' for the flags this command takes."] : []),
@@ -547,7 +548,7 @@ async function browserApprove(headless: boolean, flags: Map<string, string | boo
     });
     start = await response.json() as typeof start;
     if (!response.ok || !start.session || !start.verification_url) {
-      failWith({ code: "COMMAND_FAILED", message: "Could not start the browser login: " + (start.error ?? "HTTP " + response.status), nextSteps: ["Pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
+      failWith({ code: "CALL_FAILED", message: "Could not start the browser login: " + (start.error ?? "HTTP " + response.status), nextSteps: ["Pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
     }
   } catch (e) {
     failWith({ code: "NETWORK_ERROR", message: "Could not reach " + authUrl + "/start: " + (e as Error).message, nextSteps: ["Check the network, or pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
@@ -582,7 +583,7 @@ async function browserApprove(headless: boolean, flags: Map<string, string | boo
     }
     if (poll.status === "denied") failWith({ status: "action_required", code: "AUTH_INVALID", message: "The request was denied in the browser.", nextSteps: ["Run '" + BIN + " login' again if that was a mistake, or pass a credential directly with --" + first.flag + "."] });
     if (poll.status === "expired") break;
-    failWith({ code: "COMMAND_FAILED", message: "Browser login stopped: " + (poll.status ?? "unknown status"), nextSteps: ["Run '" + BIN + " login' again."] });
+    failWith({ code: "CALL_FAILED", message: "Browser login stopped: " + (poll.status ?? "unknown status"), nextSteps: ["Run '" + BIN + " login' again."] });
   }
   failWith({ status: "action_required", code: "TTY_REQUIRED", message: "The browser approval expired after " + expiresIn + "s without a decision.", nextSteps: ["Run '" + BIN + " login' again and approve the link within ten minutes.", "Or pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
 }
@@ -849,16 +850,6 @@ function mcpServerPath(): { path: string; warning: string | null } {
   return { path, warning };
 }
 
-function claudeDesktopConfigPath(): string {
-  if (process.platform === "darwin") {
-    return join(homedir(), "Library", "Application Support", "Claude", "claude_desktop_config.json");
-  }
-  if (process.platform === "win32") {
-    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "Claude", "claude_desktop_config.json");
-  }
-  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "Claude", "claude_desktop_config.json");
-}
-
 /** The mcp entry for a client: the hosted endpoint when the API has one
  * (auth env var as a reference, never a literal), else the local stdio
  * server. --url overrides. */
@@ -902,10 +893,19 @@ async function cmdMcp(parsed: Parsed): Promise<void> {
       "  " + BIN + " mcp install --claude --read-only   register a read-only server (writes are not callable)",
       "",
       (MCP_URL ? "Default entry: the hosted endpoint " + MCP_URL + " with the auth env var as a reference (never a literal key)." : "Default entry: this package's local stdio server, which reads credentials saved by '" + BIN + " login' or the CLI's auth env vars."),
-      "The old spelling '" + BIN + " mcp --claude' still works. --all skips Cursor until it speaks MCP 2026-07-28.",
+      "--all skips Cursor until it speaks MCP 2026-07-28.",
     ];
     process.stdout.write(lines.join("\n") + "\n");
     await flushExit(0);
+  }
+  const sub = parsed.positionals[1];
+  if (sub !== undefined && sub !== "install") {
+    fail(2, "Unknown mcp command: " + sub + ". Try '" + BIN + " mcp install --all'.");
+  }
+  const requestedInstall = parsed.flags.get("all") === true
+    || Object.keys(MCP_CLIENT_FLAGS).some((flag) => parsed.flags.get(flag) === true);
+  if (requestedInstall && sub !== "install") {
+    fail(2, "Installing an MCP entry requires '" + BIN + " mcp install'.");
   }
   const url = typeof parsed.flags.get("url") === "string" ? parsed.flags.get("url") as string : undefined;
   if (url) {
@@ -1303,7 +1303,7 @@ async function cmdUpgrade(parsed: Parsed): Promise<void> {
   if (manager === "npx") fail(1, "This run came through npx, which fetches the latest version each time; there is nothing to upgrade in place.");
   if (manager !== "npm") {
     const command = manager === "pnpm" ? "pnpm add -g " + PKG_NAME + "@" + latest : manager === "bun" ? "bun add -g " + PKG_NAME + "@" + latest : "yarn global add " + PKG_NAME + "@" + latest;
-    failWith({ status: "action_required", code: "COMMAND_FAILED", message: PKG_NAME + " was installed with " + manager + ", so npm can't upgrade it in place.", nextSteps: ["Run: " + command] });
+    failWith({ status: "action_required", code: "CALL_FAILED", message: PKG_NAME + " was installed with " + manager + ", so npm can't upgrade it in place.", nextSteps: ["Run: " + command] });
   }
   process.stderr.write("Upgrading " + PKG_NAME + " " + VERSION + " -> " + latest + "\n");
   // Windows resolves npm to npm.cmd, which only a shell can start.
@@ -1319,7 +1319,7 @@ async function cmdUpgrade(parsed: Parsed): Promise<void> {
 // completion — shell completion scripts built from the op table
 // ---------------------------------------------------------------------------
 
-const TOP_WORDS = ["login", "logout", "whoami", "config", "mcp", "upgrade", "docs", "webhooks", "feedback", "completion", "help", "version", "init", "agent-guide", "auth", "doctor"];
+const TOP_WORDS = ["login","logout","whoami","config","mcp","docs","upgrade","completion","help","version","init","agent-guide","auth","doctor"];
 
 /** Every flag an API command accepts, with the values a flag completes to (enums, on|off|auto, agent|human). */
 function completionFlagsFor(op: OpSpec): { flags: string[]; values: Record<string, string[]> } {
@@ -1339,7 +1339,7 @@ const BUILTIN_WORDS: Record<string, string[]> = {
   completion: ["bash", "zsh", "fish"],
   auth: ["check"],
   mcp: ["install"],
-  webhooks: ["listen", "fake"],
+
 };
 
 /** bash (and zsh via bashcompinit): resources, commands, flags, and the values a flag takes. */
@@ -1444,11 +1444,7 @@ function docsSiteUrl(): string | null {
  * nothing here runs unless the user asked for docs. */
 async function fetchDocs(pathOrFile: string): Promise<string | null> {
   const base = docsSiteUrl();
-  const url = /^https?:\/\//.test(pathOrFile)
-    ? pathOrFile
-    : base === null
-      ? null
-      : base.replace(/\/+$/, "") + "/" + pathOrFile.replace(/^\/+/, "");
+  const url = resolveDocsPageUrl(base, pathOrFile);
   if (url === null) return null;
   const cacheFile = join(configDir(), "docs-cache", url.replace(/[^a-zA-Z0-9.]+/g, "_").slice(-120));
   try {
@@ -1456,12 +1452,8 @@ async function fetchDocs(pathOrFile: string): Promise<string | null> {
     if (Date.now() - stat.mtimeMs < 60 * 60 * 1000) return readFileSync(cacheFile, "utf8");
   } catch { /* not cached */ }
   try {
-    const response = await fetch(url, {
-      headers: { Accept: "text/markdown, text/plain, */*" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return null;
-    const text = await response.text();
+    const text = await fetchDocsText(url);
+    if (text === null) return null;
     mkdirSync(join(configDir(), "docs-cache"), { recursive: true, mode: 0o700 });
     writeFileSync(cacheFile, text);
     return text;
@@ -1730,185 +1722,11 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
 // webhooks listen — forward relayed events to a local handler
 // ---------------------------------------------------------------------------
 
-interface RelayedEvent {
-  seq: number;
-  method: string;
-  headers: Record<string, string>;
-  content_type: string | null;
-  body: string;
-}
 
-function eventTypeOf(body: string): string | null {
-  try {
-    const parsed = JSON.parse(body) as Record<string, unknown>;
-    for (const key of ["type", "event", "event_type", "eventType", "name"]) {
-      if (typeof parsed[key] === "string") return parsed[key] as string;
-    }
-  } catch { /* not JSON */ }
-  return null;
-}
 
-async function cmdWebhooksFake(parsed: Parsed): Promise<void> {
-  void parsed;
-  fail(2, "This API's spec declares no webhooks, so there is nothing to fake.");
-}
 
-async function cmdWebhooks(parsed: Parsed): Promise<void> {
-  const sub = parsed.positionals[1];
-  if (parsed.help || sub === undefined) {
-    const lines = [
-      BIN + " webhooks — work with this API's webhook events",
-      "",
-      "  " + BIN + " webhooks listen --forward-to localhost:3000/webhooks",
-      "  " + BIN + " webhooks listen --forward-to localhost:3000/hooks --events account.created,account.updated",
-      "  " + BIN + " webhooks fake [<event>] [--key whsec_...] [--forward-to <url>]",
-      "",
-      "listen mints a private relay URL to point the API's webhook settings",
-      "at; events replay locally with their original headers, so signature",
-      "verification keeps working. No tunnels, no exposed ports.",
-      "fake sends (or prints) a signed sample event for local handler testing.",
-    ];
-    process.stdout.write(lines.join("\n") + "\n");
-    await flushExit(parsed.help ? 0 : 2);
-  }
-  if (sub === "fake") { await cmdWebhooksFake(parsed); }
-  if (sub !== "listen") fail(2, "Unknown webhooks command: " + String(sub) + ". Try '" + BIN + " webhooks listen' or '" + BIN + " webhooks fake'.");
-  if (!RELAY) {
-    fail(2, "The webhook relay isn't enabled for this package. The API provider can enable it in their typeship console; the next regeneration bakes it in.");
-  }
-  const forwardRaw = parsed.flags.get("forward-to");
-  if (typeof forwardRaw !== "string") {
-    fail(2, "webhooks listen requires --forward-to <url>, e.g. --forward-to localhost:3000/webhooks");
-  }
-  const forwardTo = /^https?:\/\//.test(forwardRaw as string) ? forwardRaw as string : "http://" + (forwardRaw as string);
-  const eventsRaw = parsed.flags.get("events");
-  const eventsFilter = typeof eventsRaw === "string"
-    ? eventsRaw.split(",").map((s) => s.trim()).filter(Boolean)
-    : null;
 
-  interface MintedSession {
-    session_id?: string;
-    ingest_url?: string;
-    poll_url?: string;
-    errors?: { message?: string }[];
-  }
-  let minted: MintedSession | null = null;
-  try {
-    const response = await fetch(RELAY!.mintUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ project: RELAY!.project }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    minted = await response.json().catch(() => null) as MintedSession | null;
-    if (!response.ok || typeof minted?.ingest_url !== "string" || typeof minted.poll_url !== "string") {
-      const detail = minted?.errors?.[0]?.message ?? "HTTP " + response.status;
-      fail(1, "Couldn't start a relay session: " + detail);
-    }
-  } catch (e) {
-    if (e instanceof ExitPending) throw e;
-    fail(1, "Couldn't reach the relay: " + (e as Error).message);
-  }
 
-  process.stderr.write(paintErr("green", "Ready!") + " Forwarding relayed events to " + forwardTo + "\n");
-  process.stderr.write("Point this API's webhook endpoint at: " + paintErr("cyan", minted!.ingest_url!) + " (^C to quit)\n");
-
-  let cursor = 0;
-  let pollFailures = 0;
-  for (;;) {
-    let payload: { events: RelayedEvent[]; next: number };
-    try {
-      const response = await fetch(minted!.poll_url! + "?after=" + cursor + "&wait=1", {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (response.status === 404) fail(1, "The relay session expired. Run '" + BIN + " webhooks listen' again.");
-      if (!response.ok) throw new Error("HTTP " + response.status);
-      payload = await response.json() as typeof payload;
-      pollFailures = 0;
-    } catch (e) {
-      if (e instanceof ExitPending) throw e;
-      pollFailures++;
-      if (pollFailures > 5) fail(1, "Lost the relay: " + (e as Error).message);
-      await new Promise((resolve) => setTimeout(resolve, 2000 * pollFailures));
-      continue;
-    }
-    for (const event of payload.events) {
-      cursor = event.seq;
-      const type = eventTypeOf(event.body);
-      if (eventsFilter !== null && (type === null || !eventsFilter.includes(type))) continue;
-      const started = Date.now();
-      try {
-        const forwarded = await fetch(forwardTo, {
-          method: event.method,
-          headers: event.headers,
-          body: event.method === "GET" ? undefined : event.body,
-          signal: AbortSignal.timeout(30_000),
-        });
-        process.stderr.write(
-          (forwarded.ok ? paintErr("green", String(forwarded.status)) : paintErr("yellow", String(forwarded.status))) +
-          "  " + (type ?? event.method) + " [" + event.seq + "] (" + (Date.now() - started) + "ms)\n",
-        );
-      } catch (e) {
-        process.stderr.write(paintErr("yellow", "unreachable") + "  " + (type ?? event.method) + " [" + event.seq + "]: " + (e as Error).message + "\n");
-      }
-    }
-    if (payload.next > cursor) cursor = payload.next;
-  }
-}
-
-async function cmdFeedback(parsed: Parsed): Promise<void> {
-  if (parsed.help) {
-    process.stdout.write(BIN + " feedback — open the API provider's issue tracker with environment details prefilled\n");
-    await flushExit(0);
-  }
-  if (!SUPPORT_URL) {
-    fail(2, "No support URL is configured for this CLI. The API provider can set one in their typeship console.");
-  }
-  let target = SUPPORT_URL!;
-  if (/github\.com\/[^/]+\/[^/]+\/issues\/new/.test(target)) {
-    const bodyLines = [
-      "<!-- describe the problem or request above the line -->",
-      "",
-      "---",
-      "- cli: " + BIN + " " + VERSION + " (api " + API_VERSION + ")",
-      "- node: " + process.version,
-      "- platform: " + process.platform + "/" + process.arch,
-    ];
-    const sep = target.includes("?") ? "&" : "?";
-    target += sep + "title=" + encodeURIComponent("[" + BIN + "] ") + "&body=" + encodeURIComponent(bodyLines.join("\n"));
-  }
-  if (!nonInteractive(parsed)) process.stderr.write("Opening " + paintErr("cyan", SUPPORT_URL!) + "\n");
-  const opened = openInBrowser(target, parsed);
-  if (opened.opened) out({ ok: true, opened: SUPPORT_URL });
-  await flushExit(0);
-}
-
-/** Opt-in (console setting) once-a-day upgrade hint. Off by default:
- * generated code phones nobody unless the project owner chose this. The
- * notice prints the previous run's cached answer; at most once a day it
- * refreshes the cache first, with a 1.5s cap so a slow registry can't
- * hold a command hostage. */
-async function maybeUpdateNotice(commandWord: string | undefined, quiet: boolean): Promise<void> {
-  if (!UPDATE_NOTICE || quiet) return;
-  if (commandWord === undefined || ["upgrade", "version", "help", "login", "logout"].includes(commandWord)) return;
-  const cacheFile = join(configDir(), "update-check.json");
-  let cache: { checkedAt?: number; latest?: string } = {};
-  try {
-    cache = JSON.parse(readFileSync(cacheFile, "utf8")) as typeof cache;
-  } catch { /* no cache yet */ }
-  if ((cache.checkedAt ?? 0) < Date.now() - 24 * 60 * 60 * 1000) {
-    const latest = await latestVersion(1500);
-    if (latest !== null) {
-      cache = { checkedAt: Date.now(), latest };
-      mkdirSync(configDir(), { recursive: true, mode: 0o700 });
-      writeFileSync(cacheFile, JSON.stringify(cache) + "\n");
-    }
-  }
-  if (cache.latest !== undefined && semverLess(VERSION, cache.latest)) {
-    process.stderr.write(paintErr("yellow", "A newer " + BIN + " is available: " + VERSION + " -> " + cache.latest + ". Run '" + BIN + " upgrade'.") + "\n");
-  }
-}
 
 /** The command that fetches the next page: same positionals, the next page's query flags. */
 function nextCommandFor(op: OpSpec, pathValues: string[], next: Record<string, unknown>): string {
@@ -2051,7 +1869,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship" + " (v" + "0.6.0" + ")");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship" + " API (v" + "1.0.0" + "), package " + "1.0.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -2334,10 +2152,9 @@ function resolveBaseUrl(flags: Map<string, string | boolean>): string | undefine
 
 async function makeClient(flags: Map<string, string | boolean>): Promise<TypeshipClient> {
   const stored = readCreds();
-  const options: Record<string, unknown> = {};
   const baseUrl = resolveBaseUrl(flags);
   if (baseUrl === undefined) fail(2, "No base URL. Pass --base-url, set TYPESHIP_BASE_URL, or run '" + BIN + " config set base-url <url>'.");
-  options.baseUrl = baseUrl;
+  const options: ClientOptions & Record<string, unknown> = { baseUrl };
   for (const a of AUTH_SCALARS) {
     const v = (typeof flags.get(a.flag) === "string" ? flags.get(a.flag) as string : undefined)
       ?? process.env[a.env] ?? stored?.scalars?.[a.option];
@@ -2377,7 +2194,7 @@ async function makeClient(flags: Map<string, string | boolean>): Promise<Typeshi
     ...(options.defaultHeaders as Record<string, string> | undefined),
     "User-Agent": PKG_NAME + "-cli/" + VERSION + " (typeship" + (harness ? "; harness=" + harness : "") + caller + ")",
   };
-  return new TypeshipClient(options as never);
+  return new TypeshipClient(options);
 }
 
 function editDistance(a: string, b: string): number {
@@ -2405,7 +2222,7 @@ function didYouMean(input: string, candidates: Iterable<string>): string | undef
   return best;
 }
 
-const BUILTIN_COMMANDS = ["login", "logout", "whoami", "config", "mcp", "docs", "upgrade", "feedback", "completion", "webhooks", "help", "version", "init", "agent-guide", "auth", "doctor"];
+const BUILTIN_COMMANDS = ["login","logout","whoami","config","mcp","docs","upgrade","completion","help","version","init","agent-guide","auth","doctor"];
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -2430,17 +2247,17 @@ async function main(): Promise<void> {
   COLOR_ERR = colorEnabled(process.stderr, parsed);
   // Prose errors for a person: stderr is a terminal (or --mode human says
   // to behave as if), and nothing asked for JSON.
-  const forcedHuman = parsed.flags.get("mode") === "human" || parsed.flags.get("mode") === "interactive" || process.env["TYPESHIP_MODE"] === "human";
+  const forcedHuman = parsed.flags.get("mode") === "human" || process.env["TYPESHIP_MODE"] === "human";
   HUMAN_ERRORS = (process.stderr.isTTY === true || forcedHuman) && !isAgentMode(parsed) && parsed.flags.get("format") !== "json" && parsed.flags.get("json") !== true;
-  await maybeUpdateNotice(resourceCmd, explicitNonInteractive(parsed));
+
 
   if (resourceCmd === "init") { await cmdInit(parsed); }
   if (resourceCmd === "agent-guide") { await cmdAgentGuide(parsed); }
   if (resourceCmd === "auth") { await cmdAuth(parsed); }
   if (resourceCmd === "doctor") { await cmdDoctor(parsed); }
   if (resourceCmd === "upgrade") { await cmdUpgrade(parsed); }
-  if (resourceCmd === "webhooks") { await cmdWebhooks(parsed); }
-  if (resourceCmd === "feedback") { await cmdFeedback(parsed); }
+
+
   if (resourceCmd === "docs") { await cmdDocs(parsed); }
   if (resourceCmd === "completion") { await cmdCompletion(parsed); }
   if (resourceCmd === "config") { await cmdConfig(parsed); }
@@ -2672,17 +2489,6 @@ function errorMessage(error: unknown): string {
     return base + " — check the base URL (--base-url, TYPESHIP_BASE_URL, or '" + BIN + " config base-url') and your network";
   }
   return base;
-}
-
-function serializeError(error: unknown): unknown {
-  if (error && typeof error === "object" && "violations" in error) {
-    return { violations: (error as { violations: unknown }).violations };
-  }
-  if (error && typeof error === "object" && "status" in error) {
-    const e = error as { status: number; body?: unknown };
-    return { status: e.status, body: e.body };
-  }
-  return undefined;
 }
 
 main().catch((e) => {

@@ -4,15 +4,15 @@
 import { ApiError, type ResponseMeta } from "./core/http.js";
 import type { ErrorModel } from "./types.js";
 
-export { ApiError, GraphQLRequestError, TransportError, UnexpectedApiError, ValidationError, type Violation, unwrap } from "./core/http.js";
+export { ApiError, TransportError, UnexpectedApiError, ValidationError, type Violation, unwrap } from "./core/http.js";
 
 /**
- * The request body, specification source, output selection, or package name is invalid.
+ * The request body, Definition source, target selection, or package name is invalid.
  * Raised for HTTP 400 responses.
  */
 export class BadRequestError extends ApiError<400, ErrorModel> {
   constructor(body: ErrorModel, response: ResponseMeta) {
-    super("The request body, specification source, output selection, or package name is invalid.", 400, body, response);
+    super("The request body, Definition source, target selection, or package name is invalid.", 400, body, response);
   }
 }
 
@@ -47,12 +47,12 @@ export class PayloadTooLargeError extends ApiError<413, ErrorModel> {
 }
 
 /**
- * The spec could not be understood.
+ * The Definition could not be resolved or understood.
  * Raised for HTTP 422 responses.
  */
 export class UnprocessableEntityError extends ApiError<422, ErrorModel> {
   constructor(body: ErrorModel, response: ResponseMeta) {
-    super("The spec could not be understood.", 422, body, response);
+    super("The Definition could not be resolved or understood.", 422, body, response);
   }
 }
 
@@ -77,12 +77,12 @@ export class ApiResponseError extends ApiError<number, ErrorModel> {
 }
 
 /**
- * The plan does not include another project or the requested output configuration.
+ * The plan does not include another project or the requested target configuration.
  * Raised for HTTP 402 responses.
  */
 export class PaymentRequiredError extends ApiError<402, ErrorModel> {
   constructor(body: ErrorModel, response: ResponseMeta) {
-    super("The plan does not include another project or the requested output configuration.", 402, body, response);
+    super("The plan does not include another project or the requested target configuration.", 402, body, response);
   }
 }
 

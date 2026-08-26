@@ -9,9 +9,13 @@ export function startMock(response) {
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
       requests.push({ method: req.method, path: req.url, headers: req.headers, body });
-      res.statusCode = response.status;
-      res.setHeader("content-type", response.contentType);
-      res.end(response.body);
+      const reply = Array.isArray(response)
+        ? response[Math.min(requests.length - 1, response.length - 1)]
+        : response;
+      res.statusCode = reply.status;
+      res.setHeader("content-type", reply.contentType);
+      if (reply.headers) for (const [name, value] of Object.entries(reply.headers)) res.setHeader(name, value);
+      res.end(reply.body);
     });
   });
   return new Promise((resolve) => {

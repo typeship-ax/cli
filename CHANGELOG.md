@@ -1,5 +1,156 @@
 # Changelog
 
+## 1.0.0 (2026-08-26) (17 breaking)
+
+### Added
+- `projects.retrieveDiagnostics()`: GET `/projects/{project_id}/diagnostics`
+- `projects.refreshDiagnostics()`: POST `/projects/{project_id}/diagnostics`
+- `projects.remediateDiagnostics()`: POST `/projects/{project_id}/diagnostics/remediations`
+- `projects.retrieveIntegrationHealth()`: GET `/projects/{project_id}/integration-health`
+- `definitions.retrieve()`: GET `/definitions/{definition_id}`
+- `definitions.update()`: PATCH `/definitions/{definition_id}`
+- `targets.list()`: GET `/projects/{project_id}/targets`
+- `targets.create()`: POST `/projects/{project_id}/targets`
+- `targets.retrieve()`: GET `/targets/{target_id}`
+- `targets.delete()`: DELETE `/targets/{target_id}`
+- `targets.update()`: PATCH `/targets/{target_id}`
+- `targets.listReleases()`: GET `/targets/{target_id}/releases`
+- `targets.retrieveRelease()`: GET `/target_releases/{target_release_id}`
+- `definitionRevisions.list()`: GET `/definitions/{definition_id}/revisions`
+- `definitionRevisions.retrieve()`: GET `/definition_revisions/{definition_revision_id}`
+- `definitionRevisions.retrieveContent()`: GET `/definition_revisions/{definition_revision_id}/content`
+- `definitionRevisions.retrieveDocumentContent()`: GET `/definition_revisions/{definition_revision_id}/documents/{document_id}/content`
+
+### Removed (breaking)
+- `projects.retrieveGithubHealth()`: GET `/projects/{project_id}/github`
+- `specRevisions.list()`: GET `/projects/{project_id}/spec_revisions`
+- `specRevisions.retrieve()`: GET `/spec_revisions/{spec_revision_id}`
+- `specRevisions.retrieveContent()`: GET `/spec_revisions/{spec_revision_id}/content`
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-added`: definition: DefinitionInput \(required\)
+  - **breaking** `body-field-added`: target: \{   generator: GeneratorKind; \} \(required\)
+  - `body-field-added`: module\_path: string
+  - **breaking** `body-field-type-changed`: config: nested schema changed
+  - **breaking** `body-field-removed`: spec
+  - **breaking** `body-field-removed`: outputs
+  - **breaking** `return-type-changed`: nested response schema changed
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 413: PayloadTooLargeError response schema changed
+  - **breaking** `error-schema-changed`: 422: UnprocessableEntityError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+  - **breaking** `error-schema-changed`: default: ApiResponseError response schema changed
+- `projects.list()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `projects.create()`
+  - **breaking** `body-field-added`: definition: DefinitionFields \(required\)
+  - **breaking** `body-field-added`: targets: InitialTargetFields\[\] \(required\)
+  - `body-field-added`: auto\_generate: boolean
+  - **breaking** `body-field-type-changed`: config: Config \| null -&gt; ProjectConfig \| null
+  - **breaking** `body-field-removed`: source
+  - **breaking** `body-field-removed`: outputs
+  - **breaking** `body-field-removed`: packages
+  - **breaking** `body-field-removed`: auto\_regen
+  - **breaking** `body-field-removed`: spec\_patches
+  - **breaking** `body-field-removed`: mcp\_enabled
+  - **breaking** `return-type-changed`: nested response schema changed
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 402: PaymentRequiredError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 409: ConflictError response schema changed
+  - **breaking** `error-added`: 422: UnprocessableEntityError
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+  - **breaking** `error-schema-changed`: 500: InternalServerError response schema changed
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `projects.delete()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `projects.update()`
+  - `body-field-added`: auto\_generate: boolean
+  - **breaking** `body-field-type-changed`: config: Config \| null -&gt; ProjectConfig \| null
+  - **breaking** `body-field-removed`: source
+  - **breaking** `body-field-removed`: outputs
+  - **breaking** `body-field-removed`: packages
+  - **breaking** `body-field-removed`: auto\_regen
+  - **breaking** `body-field-removed`: spec\_patches
+  - **breaking** `body-field-removed`: mcp\_enabled
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 402: PaymentRequiredError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-added`: 422: UnprocessableEntityError
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `projects.listGenerations()`
+  - `param-added`: target\_id: TargetId
+  - **breaking** `param-removed`: output
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `projects.generate()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 402: PaymentRequiredError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 422: UnprocessableEntityError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+  - **breaking** `error-schema-changed`: 500: InternalServerError response schema changed
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `generations.retrieveFile()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `account.retrieve()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `apiKeys.list()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - **breaking** `error-schema-changed`: 400: BadRequestError response schema changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+- `apiKeys.revoke()`
+  - **breaking** `return-type-changed`: nested response schema changed
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: 401: UnauthorizedError response schema changed
+  - **breaking** `error-schema-changed`: 403: ForbiddenError response schema changed
+  - **breaking** `error-schema-changed`: 404: NotFoundError response schema changed
+  - **breaking** `error-schema-changed`: 429: RateLimitedError response schema changed
+
 ## 0.6.0 (2026-08-24)
 
 ### Changed

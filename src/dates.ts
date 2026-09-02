@@ -29,6 +29,7 @@ const CALENDAR_UNITS = new Set(["mo", "month", "y", "yr", "year"]);
 const HINT = "Use a signed form: -7d or -P7D for seven days ago, +7d or +P7D for seven days ahead; or an absolute ISO 8601 value.";
 
 /** The forms a date-shaped argument accepts, for descriptions and help. */
+export const RELATIVE_DATE_HINT = "Accepts ISO 8601 or a relative form: -P7D, -7d, 7 days ago, today, now.";
 
 function shift(base: Date, amount: number, unit: string): Date {
   const d = new Date(base.getTime());

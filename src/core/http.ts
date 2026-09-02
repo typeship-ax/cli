@@ -17,11 +17,7 @@ export interface RequestOptions {
 export interface ResponseMeta {
   status: number;
   headers: Headers;
-  /** Parsed wire body before it is narrowed to the generated response type.
-   * Use this escape hatch for additive fields or variants introduced after
-   * this generator edition. */
-  rawBody?: unknown;
-  /** Request identifier from the response headers or error body. */
+  /** x-request-id / request-id header when the server sends one. */
   requestId?: string;
 }
 
@@ -41,6 +37,15 @@ export interface RequestContext {
   attempt: number;
 }
 
+/** One server-sent event from a text/event-stream response. */
+export interface SseEvent {
+  /** The `event:` field; undefined for unnamed events. */
+  event?: string;
+  /** The `id:` field, when the server sends one. */
+  id?: string;
+  /** Concatenated `data:` lines. Parse as JSON if your API sends JSON. */
+  data: string;
+}
 
 /**
  * Every SDK call returns a discriminated result instead of throwing.
@@ -80,6 +85,97 @@ export class UnexpectedApiError extends ApiError<number, unknown> {
   }
 }
 
+/** A 200 response whose GraphQL payload carried errors. */
+export class GraphQLRequestError extends Error {
+  /** The raw errors array from the GraphQL response. */
+  readonly errors: { message?: string; path?: unknown[]; extensions?: unknown }[];
+  readonly response: ResponseMeta;
+
+  constructor(errors: unknown[], response: ResponseMeta) {
+    const first = (errors[0] as { message?: string } | undefined)?.message;
+    super(first ?? "GraphQL request returned errors");
+    this.name = "GraphQLRequestError";
+    this.errors = errors as GraphQLRequestError["errors"];
+    this.response = response;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GraphQL selections — typed field picking over the schema's result types
+// ---------------------------------------------------------------------------
+
+type Primitive = string | number | boolean | bigint | symbol | null | undefined;
+type Unwrap<T> = NonNullable<T> extends readonly (infer U)[] ? Unwrap<U> : NonNullable<T>;
+type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never;
+type TypeNameOf<T> = T extends { __typename?: infer N } ? Extract<N, string> : never;
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+/**
+ * A selection over a GraphQL result type `T`: `true` picks a leaf field, a
+ * nested object picks inside an object field, and `on` picks per concrete
+ * type when `T` is a union or interface (`{ on: { Transaction: { amount: true } } }`).
+ * Keys are checked against the schema, so a typo is a compile error.
+ */
+export type Selection<T> = Unwrap<T> extends Primitive ? never : SelectionObject<Unwrap<T>>;
+
+type FieldSelection<V> = Unwrap<V> extends Primitive ? true : SelectionObject<Unwrap<V>>;
+
+type SelectionObject<T> = {
+  [K in Extract<keyof T, string> as K extends "__typename" ? never : K]?: FieldSelection<T[K]>;
+} & { __typename?: true } & (IsUnion<T> extends true
+  ? { on?: { [N in TypeNameOf<T>]?: SelectionObject<Extract<T, { __typename?: N }>> } }
+  : { on?: never });
+
+/** The result type a {@link Selection} `S` produces from result type `T`:
+ * exactly the fields picked, nullability and lists preserved, union members
+ * narrowed by `__typename`. */
+export type Selected<T, S> = T extends readonly (infer U)[]
+  ? Selected<U, S>[]
+  : T extends Primitive
+    ? T
+    : S extends object
+      ? Prettify<SelectedMember<T, S>>
+      : never;
+
+type SelectedMember<T, S> = (S extends { on?: infer O }
+  ? O extends object
+    ? TypeNameOf<T> extends keyof O
+      ? PickSelected<T, NonNullable<O[TypeNameOf<T>]>>
+      : {}
+    : {}
+  : {}) &
+  PickSelected<T, S>;
+
+type PickSelected<T, S> = {
+  -readonly [K in keyof S as K extends "on" ? never : K extends keyof T ? (S[K] extends true | object ? K : never) : never]-?: K extends "__typename"
+    ? NonNullable<T[K & keyof T]>
+    : S[K] extends true
+      ? Exclude<T[K & keyof T], undefined>
+      : Selected<Exclude<T[K & keyof T], undefined>, S[K]>;
+};
+
+/** A selection object or a raw selection set (`"{ id name }"`). */
+export type SelectionInput = string | Record<string, unknown>;
+
+/** Serialize a selection object to a GraphQL selection set. Strings pass
+ * through untouched. */
+export function selectionToString(selection: SelectionInput): string {
+  if (typeof selection === "string") return selection;
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(selection)) {
+    if (!value) continue;
+    if (key === "on" && typeof value === "object") {
+      for (const [typeName, sub] of Object.entries(value as Record<string, unknown>)) {
+        if (sub && typeof sub === "object") parts.push("... on " + typeName + " " + selectionToString(sub as Record<string, unknown>));
+      }
+    } else if (value === true) {
+      parts.push(key);
+    } else if (typeof value === "object") {
+      parts.push(key + " " + selectionToString(value as Record<string, unknown>));
+    }
+  }
+  return "{ " + (parts.length > 0 ? parts.join(" ") : "__typename") + " }";
+}
 
 // ---------------------------------------------------------------------------
 // Optional runtime validation — zero-dependency, schema table in schemas.ts
@@ -245,9 +341,14 @@ export interface CoreRequest {
   errors?: Record<string, ErrorCtor>;
   /** Idempotent requests are retried automatically. */
   idempotent?: boolean;
+  /** Success body is text/event-stream: yield SseEvents instead of parsing. */
+  stream?: boolean;
   /** Header name auto-filled with one UUID per call (stable across retries)
    * when the caller doesn't supply a value. */
   idempotencyKey?: string;
+  /** GraphQL: unwrap body.data[field] and turn body.errors into a
+   * GraphQLRequestError. */
+  graphqlField?: string;
   /** Key into the schemas table for optional runtime validation. */
   schemaKey?: string;
   /** Operation-level retry policy (x-typeship-retries), merged over the
@@ -416,7 +517,7 @@ export class HttpCore {
           status: response.status,
           durationMs: Date.now() - attemptStarted,
           attempt: attempt + 1,
-          requestId: response.headers.get("request-id") ?? response.headers.get("x-request-id") ?? undefined,
+          requestId: response.headers.get("x-request-id") ?? response.headers.get("request-id") ?? undefined,
         });
       } catch (cause) {
         lastError = cause;
@@ -440,6 +541,9 @@ export class HttpCore {
       }
 
       if (response.ok) {
+        if (req.stream) {
+          return { ok: true, data: sseEvents(response) as T, response: meta(response) };
+        }
         let data: T;
         try {
           data = (await parseBody(response, req.method)) as T;
@@ -451,12 +555,9 @@ export class HttpCore {
           await this.config.onError?.(error, { method: req.method, path: req.path });
           return { ok: false, error, response: meta(response) };
         }
-        const responseMeta = meta(response, data);
-        let responseData: unknown = data;
-        let shouldValidateResponse = responseData !== undefined;
-        if (opSchemas?.res && this.config.validate!.responses && shouldValidateResponse) {
+        if (opSchemas?.res && this.config.validate!.responses && data !== undefined) {
           const violations: Violation[] = [];
-          validateAgainstSchema(responseData, opSchemas.res, "response", violations, this.config.schemaDefs);
+          validateAgainstSchema(data, opSchemas.res, "response", violations, this.config.schemaDefs);
           if (violations.length > 0) {
             const validationError = new ValidationError("response", violations);
             if (this.config.validate!.mode === "warn") {
@@ -464,11 +565,21 @@ export class HttpCore {
             } else {
               const error = validationError as unknown as E;
               await this.config.onError?.(error, { method: req.method, path: req.path });
-              return { ok: false, error, response: responseMeta };
+              return { ok: false, error, response: meta(response) };
             }
           }
         }
-        return { ok: true, data, response: responseMeta };
+        if (req.graphqlField) {
+          const payload = data as { data?: Record<string, unknown>; errors?: unknown[] } | undefined;
+          const responseMeta = meta(response);
+          if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+            const gqlError = new GraphQLRequestError(payload.errors, responseMeta) as unknown as E;
+            await this.config.onError?.(gqlError, { method: req.method, path: req.path });
+            return { ok: false, error: gqlError, response: responseMeta };
+          }
+          return { ok: true, data: payload?.data?.[req.graphqlField] as T, response: responseMeta };
+        }
+        return { ok: true, data, response: meta(response) };
       }
 
       // 429 is safe to retry regardless of idempotency; other retryable
@@ -487,7 +598,7 @@ export class HttpCore {
       } catch {
         body = undefined; // error responses keep their status even if the body read aborts
       }
-      const responseMeta = meta(response, body);
+      const responseMeta = meta(response);
       const Ctor =
         req.errors?.[String(response.status)] ??
         req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
@@ -534,14 +645,28 @@ export class HttpCore {
     };
     await this.config.onRequest?.(context);
 
+    // Streaming responses are exempt from the attempt timeout once headers
+    // arrive (an event stream may stay open far longer than timeoutMs);
+    // everything else keeps the timeout armed through the body read, so a
+    // stalled body aborts instead of hanging.
     const signals: AbortSignal[] = [];
-    {
+    let clearStreamTimeout: (() => void) | undefined;
+    if (req.stream) {
+      const headersTimeout = new AbortController();
+      const timer = setTimeout(
+        () => headersTimeout.abort(new DOMException("Timed out waiting for response headers", "TimeoutError")),
+        timeoutMs,
+      );
+      (timer as { unref?: () => void }).unref?.();
+      clearStreamTimeout = () => clearTimeout(timer);
+      signals.push(headersTimeout.signal);
+    } else {
       signals.push(AbortSignal.timeout(timeoutMs));
     }
     if (req.options?.signal) signals.push(req.options.signal);
 
     try {
-      const signal = composeSignals(signals);
+      const signal = AbortSignal.any(signals);
       const response = this.manualRedirects
         ? await this.followRedirects(context, body, signal)
         : await this.config.fetch(context.url, {
@@ -553,6 +678,7 @@ export class HttpCore {
       await this.config.onResponse?.(response, context);
       return response;
     } finally {
+      clearStreamTimeout?.();
     }
   }
 
@@ -639,6 +765,55 @@ async function resolveAuthValue(value: AuthValue): Promise<string> {
   return typeof value === "function" ? await value() : value;
 }
 
+/** Parse a text/event-stream body into SseEvents, lazily. */
+async function* sseEvents(response: Response): AsyncGenerator<SseEvent, void, undefined> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let dataLines: string[] = [];
+  let eventName: string | undefined;
+  let eventId: string | undefined;
+
+  const flush = (): SseEvent | undefined => {
+    if (dataLines.length === 0) return undefined;
+    const event: SseEvent = { data: dataLines.join("\n") };
+    if (eventName !== undefined) event.event = eventName;
+    if (eventId !== undefined) event.id = eventId;
+    dataLines = [];
+    eventName = undefined;
+    return event;
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newline: number;
+      while ((newline = buffer.indexOf("\n")) !== -1) {
+        const hasCr = newline > 0 && buffer[newline - 1] === "\r";
+        const line = buffer.slice(0, hasCr ? newline - 1 : newline);
+        buffer = buffer.slice(newline + 1);
+        if (line === "") {
+          const event = flush();
+          if (event) yield event;
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice(5).replace(/^ /, ""));
+        } else if (line.startsWith("event:")) {
+          eventName = line.slice(6).replace(/^ /, "");
+        } else if (line.startsWith("id:")) {
+          eventId = line.slice(3).replace(/^ /, "");
+        }
+        // comments (":") and "retry:" are intentionally ignored
+      }
+    }
+    const last = flush();
+    if (last) yield last;
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 /** Default rendering for debug events (the boolean debug:true sink). */
 export function formatDebugEvent(name: string, event: DebugEvent): string {
@@ -658,6 +833,74 @@ export function bearerAuth(token: AuthValue): AuthValue {
   return "Bearer " + token;
 }
 
+export interface ClientCredentialsConfig {
+  clientId: string;
+  clientSecret: string;
+  tokenUrl: string;
+  scopes?: string[];
+  /** Extra token-request parameters, e.g. the "audience" some
+   * authorization servers require for API-valid access tokens. */
+  tokenParams?: Record<string, string>;
+  /** How credentials reach the token endpoint. Default "post"
+   * (client_secret_post, form fields); "basic" sends an Authorization
+   * header (client_secret_basic). */
+  authMethod?: "post" | "basic";
+  fetchImpl?: typeof fetch;
+}
+
+/**
+ * OAuth2 client-credentials token source: fetches from the token URL,
+ * caches until expiry (60s early refresh), and shares one in-flight
+ * request across concurrent callers. Returned function plugs in as an
+ * Authorization AuthValue, resolved before every attempt.
+ */
+export function oauthClientCredentials(config: ClientCredentialsConfig): () => Promise<string> {
+  let token: string | undefined;
+  let expiresAt = 0;
+  let inflight: Promise<string> | undefined;
+  const fetchImpl = config.fetchImpl ?? fetch;
+
+  async function fetchToken(): Promise<string> {
+    const params = new URLSearchParams({ grant_type: "client_credentials" });
+    if (config.scopes !== undefined && config.scopes.length > 0) {
+      params.set("scope", config.scopes.join(" "));
+    }
+    for (const [key, value] of Object.entries(config.tokenParams ?? {})) {
+      params.set(key, value);
+    }
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    };
+    if (config.authMethod === "basic") {
+      headers["Authorization"] = "Basic " + toBase64(config.clientId + ":" + config.clientSecret);
+    } else {
+      params.set("client_id", config.clientId);
+      params.set("client_secret", config.clientSecret);
+    }
+    const response = await fetchImpl(config.tokenUrl, { method: "POST", headers, body: params.toString() });
+    const body = (await response.json().catch(() => null)) as
+      | { access_token?: string; expires_in?: number; error?: string }
+      | null;
+    if (!response.ok || typeof body?.access_token !== "string") {
+      throw new TransportError(
+        "OAuth token request failed (HTTP " + response.status + (body?.error ? ": " + body.error : "") + ")",
+        body,
+      );
+    }
+    token = body.access_token;
+    expiresAt = body.expires_in !== undefined
+      ? Date.now() + body.expires_in * 1000 - 60_000
+      : Number.MAX_SAFE_INTEGER;
+    return token;
+  }
+
+  return async () => {
+    if (token !== undefined && Date.now() < expiresAt) return "Bearer " + token;
+    inflight ??= fetchToken().finally(() => { inflight = undefined; });
+    return "Bearer " + (await inflight);
+  };
+}
 
 /**
  * Bracket-style deep encoding shared by query strings and form bodies:
@@ -682,8 +925,31 @@ function serializeBody(req: CoreRequest): { body: NonNullable<RequestInit["body"
   switch (req.bodyKind ?? "json") {
     case "json":
       return { body: JSON.stringify(req.body), contentType: "application/json" };
+    case "form": {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(req.body as Record<string, unknown>)) {
+        appendDeep(params, k, v);
+      }
+      // URLSearchParams sets its own content type with the charset suffix.
+      return { body: params };
+    }
+    case "multipart": {
+      const form = new FormData();
+      for (const [k, v] of Object.entries(req.body as Record<string, unknown>)) {
+        if (v === undefined || v === null) continue;
+        form.append(
+          k,
+          v instanceof Blob ? v : typeof v === "object" ? JSON.stringify(v) : String(v),
+        );
+      }
+      // Let fetch set the boundary header.
+      return { body: form };
+    }
+    case "text":
+      return { body: String(req.body), contentType: "text/plain" };
+    case "binary":
+      return { body: req.body as NonNullable<RequestInit["body"]> };
   }
-  throw new Error("Unsupported request body kind: " + String(req.bodyKind));
 }
 
 async function parseBody(response: Response, method: string): Promise<unknown> {
@@ -702,47 +968,15 @@ async function parseBody(response: Response, method: string): Promise<unknown> {
   }
 }
 
-function requestIdFromBody(body: unknown): string | undefined {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return undefined;
-  const value = (body as Record<string, unknown>).request_id ?? (body as Record<string, unknown>).requestId;
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function meta(response: Response, body?: unknown): ResponseMeta {
+function meta(response: Response): ResponseMeta {
   return {
     status: response.status,
     headers: response.headers,
-    ...(body !== undefined ? { rawBody: body } : {}),
     requestId:
-      response.headers.get("request-id") ??
       response.headers.get("x-request-id") ??
-      requestIdFromBody(body) ??
+      response.headers.get("request-id") ??
       undefined,
   };
-}
-
-/** AbortSignal.any reached Node in 18.17. Keep the package's Node 18 floor
- * honest for earlier 18.x releases and for web runtimes without it. */
-function composeSignals(signals: AbortSignal[]): AbortSignal {
-  const nativeAny = (AbortSignal as typeof AbortSignal & { any?: (items: AbortSignal[]) => AbortSignal }).any;
-  if (nativeAny) return nativeAny.call(AbortSignal, signals);
-  const controller = new AbortController();
-  const listeners = new Map<AbortSignal, () => void>();
-  const abortFrom = (signal: AbortSignal) => {
-    for (const [item, listener] of listeners) item.removeEventListener("abort", listener);
-    listeners.clear();
-    controller.abort(signal.reason);
-  };
-  for (const signal of signals) {
-    if (signal.aborted) {
-      abortFrom(signal);
-      break;
-    }
-    const listener = () => abortFrom(signal);
-    listeners.set(signal, listener);
-    signal.addEventListener("abort", listener, { once: true });
-  }
-  return controller.signal;
 }
 
 function retryAfterMs(response: Response): number | undefined {

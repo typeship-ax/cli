@@ -13,7 +13,7 @@ import {
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
-import type { ApiKey, ApiKeyList, ApiKeyListRead, ApiKeyRead } from "../types.js";
+import type { ApiKey, ApiKeyList } from "../types.js";
 
 export class ApiKeysResource {
   constructor(private readonly _core: HttpCore) {}
@@ -26,8 +26,8 @@ export class ApiKeysResource {
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /api_keys`
    */
-  list(params?: ApiKeysListParams, options?: RequestOptions): PagePromise<ApiKeyRead, ApiKeysListError> {
-    return paginate<ApiKeyRead, ApiKeysListError>(this._core, {
+  list(params?: ApiKeysListParams, options?: RequestOptions): PagePromise<ApiKey, ApiKeysListError> {
+    return paginate<ApiKey, ApiKeysListError>(this._core, {
       method: "GET",
       path: "/api_keys",
       query: {
@@ -57,16 +57,11 @@ export class ApiKeysResource {
    * Revoke an API key
    *
    * Idempotent: revoking an already-revoked key returns the same body, so a rotation script that
-   * re-runs does not have to special-case having already succeeded. An OAuth member may revoke a
-   * key they created; an organization admin may revoke any key. Organization API keys retain
-   * account-wide authority.
+   * re-runs does not have to special-case having already succeeded.
    * `DELETE /api_keys/{api_key_id}`
    */
-  async revoke(
-    apiKeyId: string,
-    options?: RequestOptions,
-  ): Promise<ApiResult<ApiKeyRead, ApiKeysRevokeError>> {
-    return this._core.request<ApiKeyRead, ApiKeysRevokeError>({
+  async revoke(apiKeyId: string, options?: RequestOptions): Promise<ApiResult<ApiKey, ApiKeysRevokeError>> {
+    return this._core.request<ApiKey, ApiKeysRevokeError>({
       method: "DELETE",
       path: `/api_keys/${encodeURIComponent(String(apiKeyId))}`,
       errors: {

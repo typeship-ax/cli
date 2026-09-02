@@ -1,16 +1,14 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v1.0.0).
+This package contains the generated CLI for **typeship** (v0.6.0).
 
-Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
-selected SDK, CLI, and MCP Target current.
+Generate production SDKs, CLIs, and MCP servers from an OpenAPI or
+GraphQL spec, and keep every selected output current.
 
-Every operation but one requires a bearer credential: an organization
-API key from the console, or an OAuth access token carrying the operation's
-read, generate, or write capability and the organization selected during
-consent. OAuth grants cannot switch organizations after consent. A browser
-session is not a credential for this API. The exception is POST /generate,
-which works anonymously with the free plan's limits.
+Every operation but one requires an API key, created in the console and
+sent as `Authorization: Bearer ak_...`. A browser session is not a
+credential for this API. The exception is POST /generate, which works
+anonymously with the free plan's limits.
 
 ## Ground rules
 - Generated code: never edit files in this package by hand — changes are lost on regeneration. Wrap the client in your own code instead.

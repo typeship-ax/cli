@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.8.0 (2026-09-02) (4 breaking)
+
+### Changed
+- `generate.run()`
+  - `body-field-type-changed`: config: nested schema changed
+  - `return-type-changed`: nested response schema changed
+- `projects.create()`
+  - `body-field-type-changed`: targets: nested schema changed
+  - `body-field-type-changed`: config: nested schema changed
+  - `return-type-changed`: nested response schema changed
+- `projects.retrieve()`
+  - `return-type-changed`: nested response schema changed
+- `projects.update()`
+  - `body-field-type-changed`: config: nested schema changed
+  - `return-type-changed`: nested response schema changed
+- `projects.listGenerations()`
+  - `return-type-changed`: nested response schema changed
+- `projects.generate()`
+  - `return-type-changed`: nested response schema changed
+- `targets.list()`
+  - `return-type-changed`: nested response schema changed
+- `targets.create()`
+  - `body-field-type-changed`: config: nested schema changed
+  - **breaking** `return-type-changed`: nested response schema changed
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: nested response schema changed
+- `targets.update()`
+  - `body-field-type-changed`: config: nested schema changed
+  - **breaking** `return-type-changed`: nested response schema changed
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: nested response schema changed
+
 ## 0.7.0 (2026-09-02) (17 breaking)
 
 ### Added

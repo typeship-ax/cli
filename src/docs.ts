@@ -16,6 +16,45 @@ export function resolveDocsPageUrl(base: string | null, pathOrFile: string): str
   }
 }
 
+/** Resolve conventional docs files while honoring an explicitly configured
+ * llms.txt location. Guide links may live on either the docs-site origin or
+ * the index origin; no other origin is accepted. */
+export function resolveDocsContentUrl(
+  base: string | null,
+  indexUrl: string | null,
+  pathOrFile: string,
+): string | null {
+  const exactIndex = safeHttpUrl(indexUrl);
+  if (pathOrFile === "llms.txt" && exactIndex) return exactIndex;
+  if (pathOrFile === "llms-full.txt" && exactIndex) {
+    try { return new URL("llms-full.txt", exactIndex).toString(); } catch { return null; }
+  }
+  const primary = resolveDocsPageUrl(base, pathOrFile);
+  if (primary) return primary;
+  if (!exactIndex) return null;
+  try {
+    const target = /^https?:\/\//.test(pathOrFile)
+      ? new URL(pathOrFile)
+      : new URL(pathOrFile.replace(/^\/+/, ""), exactIndex);
+    const allowed = new URL(exactIndex);
+    return target.origin === allowed.origin && !target.username && !target.password ? target.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeHttpUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === "https:" || parsed.protocol === "http:") && !parsed.username && !parsed.password
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Markdown-preferred fetch with same-origin redirects, one deadline, and a
  * streaming byte cap. Returns null for every invalid or failed read. */
 export async function fetchDocsText(url: string): Promise<string | null> {

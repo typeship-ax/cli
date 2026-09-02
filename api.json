@@ -729,6 +729,14 @@
                 "type": "object"
               }
             ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -763,7 +771,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           }
         }
       },
@@ -1622,6 +1630,14 @@
                 "updated_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -1703,6 +1719,14 @@
           "updated_at": {
             "format": "date-time",
             "description": "When the project configuration last changed.",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -1872,6 +1896,14 @@
                 "updated_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -1954,6 +1986,14 @@
             "format": "date-time",
             "description": "When the project configuration last changed.",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -2004,6 +2044,14 @@
           "deleted": {
             "const": true,
             "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -2418,6 +2466,14 @@
                 "updated_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -2499,6 +2555,14 @@
           "updated_at": {
             "format": "date-time",
             "description": "When the project configuration last changed.",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -2770,6 +2834,14 @@
               }
             },
             "type": "object"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -3040,6 +3112,14 @@
               }
             },
             "type": "object"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -3109,6 +3189,14 @@
               "string",
               "null"
             ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -3299,6 +3387,14 @@
                 "type": "null"
               }
             ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -3336,7 +3432,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           },
           "target_id": {
             "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
@@ -3569,6 +3665,14 @@
                 "created_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -3778,6 +3882,14 @@
                     "created_at": {
                       "format": "date-time",
                       "type": "string"
+                    },
+                    "request_id": {
+                      "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                      "examples": [
+                        "req_3k8m1v6q9p2d7h4c"
+                      ],
+                      "pattern": "^req_[a-z0-9]{16}$",
+                      "type": "string"
                     }
                   },
                   "type": "object"
@@ -3817,6 +3929,14 @@
               ]
             },
             "type": "array"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -4115,6 +4235,14 @@
           },
           "updated_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -4685,6 +4813,14 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -4695,13 +4831,13 @@
     },
     {
       "operation": "targets.list",
-      "signature": "client.targets.list(projectId)",
+      "signature": "client.targets.list(projectId, params)",
       "method": "GET",
       "path": "/projects/{project_id}/targets",
       "summary": "List a project's Targets",
       "safety": "read",
       "auth": "required",
-      "paginated": false,
+      "paginated": true,
       "input_schema": {
         "type": "object",
         "properties": {
@@ -4712,6 +4848,17 @@
             ],
             "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "type": "integer",
+            "description": "Maximum number of resources to return. Default: 20."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           }
         },
         "required": [
@@ -4719,13 +4866,10 @@
         ]
       },
       "output_schema": {
+        "type": "object",
         "properties": {
-          "object": {
-            "const": "list",
-            "description": "Identifies a cursor-paginated collection.",
-            "type": "string"
-          },
-          "data": {
+          "items": {
+            "type": "array",
             "items": {
               "properties": {
                 "id": {
@@ -4814,6 +4958,40 @@
                   "anyOf": [
                     {
                       "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                      "properties": {
+                        "globals": {
+                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
+                          "maxItems": 20,
+                          "type": "array"
+                        },
+                        "retries": {
+                          "description": "Retry behavior. Top-level fields adjust every operation; operations maps operationId or \"METHOD /path\" keys to per-operation overrides.",
+                          "type": "object"
+                        },
+                        "pagination": {
+                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
+                          "type": "object"
+                        },
+                        "cli": {
+                          "description": "How the generated CLI behaves. Part of Config.",
+                          "type": "object"
+                        },
+                        "mcp": {
+                          "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                          "type": "object"
+                        },
+                        "package": {
+                          "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
+                          "type": "object"
+                        },
+                        "docs_url": {
+                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's externalDocs URL.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
                       "type": "object"
                     },
                     {
@@ -4841,23 +5019,34 @@
                 "updated_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
-            },
-            "type": "array"
+            }
           },
-          "has_more": {
-            "type": "boolean"
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether another page exists"
           },
-          "next_cursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "nextPage": {
+            "type": "object",
+            "description": "Arguments that fetch the next page; pass them to this tool",
+            "additionalProperties": true
+          },
+          "truncated": {
+            "type": "object",
+            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
+            "additionalProperties": true
           }
-        },
-        "type": "object"
+        }
       },
       "example_arguments": {
         "project_id": "prj_4f8k2m7x9q1v6b3n"
@@ -5420,6 +5609,14 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -5605,6 +5802,14 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -5638,6 +5843,35 @@
         "required": [
           "target_id"
         ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "target",
+            "type": "string"
+          },
+          "deleted": {
+            "const": true,
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "example_arguments": {
         "target_id": "tgt_5m8q2v7k1p9d4h6c"
@@ -6170,6 +6404,14 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -6180,13 +6422,13 @@
     },
     {
       "operation": "targets.listReleases",
-      "signature": "client.targets.listReleases(targetId)",
+      "signature": "client.targets.listReleases(targetId, params)",
       "method": "GET",
       "path": "/targets/{target_id}/releases",
       "summary": "List immutable releases for a Target",
       "safety": "read",
       "auth": "required",
-      "paginated": false,
+      "paginated": true,
       "input_schema": {
         "type": "object",
         "properties": {
@@ -6197,6 +6439,17 @@
             ],
             "pattern": "^tgt_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "type": "integer",
+            "description": "Maximum number of resources to return. Default: 20."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           }
         },
         "required": [
@@ -6204,13 +6457,10 @@
         ]
       },
       "output_schema": {
+        "type": "object",
         "properties": {
-          "object": {
-            "const": "list",
-            "description": "Identifies a cursor-paginated collection.",
-            "type": "string"
-          },
-          "data": {
+          "items": {
+            "type": "array",
             "items": {
               "properties": {
                 "id": {
@@ -6258,6 +6508,23 @@
                 "repository": {
                   "anyOf": [
                     {
+                      "properties": {
+                        "provider": {
+                          "enum": [
+                            "github"
+                          ],
+                          "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                          "type": "string"
+                        },
+                        "identifier": {
+                          "description": "Provider-native repository identity, opaque outside its adapter.",
+                          "examples": [
+                            "acme/payments-api"
+                          ],
+                          "maxLength": 512,
+                          "type": "string"
+                        }
+                      },
                       "type": "object"
                     },
                     {
@@ -6287,23 +6554,34 @@
                 "created_at": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
                 }
               },
               "type": "object"
-            },
-            "type": "array"
+            }
           },
-          "has_more": {
-            "type": "boolean"
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether another page exists"
           },
-          "next_cursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "nextPage": {
+            "type": "object",
+            "description": "Arguments that fetch the next page; pass them to this tool",
+            "additionalProperties": true
+          },
+          "truncated": {
+            "type": "object",
+            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
+            "additionalProperties": true
           }
-        },
-        "type": "object"
+        }
       },
       "example_arguments": {
         "target_id": "tgt_5m8q2v7k1p9d4h6c"
@@ -6426,6 +6704,14 @@
           "created_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -6461,42 +6747,6 @@
         ]
       },
       "output_schema": {
-        "examples": [
-          {
-            "id": "gen_7h2p5d9c3m8w1k6q",
-            "object": "generation",
-            "project_id": "prj_4f8k2m7x9q1v6b3n",
-            "definition_revision_id": "drev_6m1q8v4k2p9d7h3c",
-            "status": "succeeded",
-            "trigger": "manual",
-            "target_id": "tgt_5m8q2v7k1p9d4h6c",
-            "generator": "typescript-sdk",
-            "provenance": {
-              "generator_edition": "2026-08-24",
-              "engine_build": "abc123",
-              "resolved_config": null,
-              "config_hash": null,
-              "surface_plan": null,
-              "surface_plan_hash": null,
-              "entitlement_cap": null,
-              "package_version": "1.0.0"
-            },
-            "meta": {
-              "title": "Acme Payments API",
-              "api_version": "1.0.0",
-              "version": "1.0.0",
-              "oas_version": "3.1",
-              "artifact_name": "@acme/payments",
-              "client_name": "AcmeClient",
-              "generators": [
-                "typescript-sdk"
-              ]
-            },
-            "warnings": [],
-            "error": null,
-            "created_at": "2026-01-01T00:00:00Z"
-          }
-        ],
         "properties": {
           "id": {
             "description": "Unique identifier for a generation.",
@@ -6673,6 +6923,14 @@
           "created_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -6747,7 +7005,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           }
         },
         "required": [
@@ -6869,6 +7127,14 @@
                 },
                 "created_at": {
                   "format": "date-time",
+                  "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
                   "type": "string"
                 }
               },
@@ -7069,6 +7335,14 @@
           "created_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -7189,6 +7463,14 @@
           "created_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
           }
         },
         "type": "object"
@@ -7217,7 +7499,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           }
         }
       },
@@ -7254,6 +7536,14 @@
                 },
                 "created_at": {
                   "format": "date-time",
+                  "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
                   "type": "string"
                 }
               },
@@ -7328,6 +7618,14 @@
           },
           "created_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
             "type": "string"
           }
         },

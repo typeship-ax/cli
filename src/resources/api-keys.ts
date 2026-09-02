@@ -13,7 +13,14 @@ import {
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
-import type { ApiKey, ApiKeyList, ApiKeyListRead, ApiKeyRead } from "../types.js";
+import type {
+  ApiKey,
+  ApiKeyList,
+  ApiKeyListRead,
+  ApiKeyRead,
+  ApiKeyResponse,
+  ApiKeyResponseRead,
+} from "../types.js";
 
 export class ApiKeysResource {
   constructor(private readonly _core: HttpCore) {}
@@ -65,8 +72,8 @@ export class ApiKeysResource {
   async revoke(
     apiKeyId: string,
     options?: RequestOptions,
-  ): Promise<ApiResult<ApiKeyRead, ApiKeysRevokeError>> {
-    return this._core.request<ApiKeyRead, ApiKeysRevokeError>({
+  ): Promise<ApiResult<ApiKeyResponseRead, ApiKeysRevokeError>> {
+    return this._core.request<ApiKeyResponseRead, ApiKeysRevokeError>({
       method: "DELETE",
       path: `/api_keys/${encodeURIComponent(String(apiKeyId))}`,
       errors: {
@@ -85,7 +92,10 @@ export class ApiKeysResource {
 export interface ApiKeysListParams {
   /** Maximum number of resources to return. */
   limit?: number;
-  /** Opaque cursor from the preceding page's next_cursor. */
+  /**
+   * Opaque cursor from the preceding page's next_cursor. Valid only for the same account,
+   * operation, filters, and ordering that issued it.
+   */
   cursor?: string;
 }
 

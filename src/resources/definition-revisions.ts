@@ -21,6 +21,8 @@ import type {
   DefinitionRevisionList,
   DefinitionRevisionListRead,
   DefinitionRevisionRead,
+  DefinitionRevisionResponse,
+  DefinitionRevisionResponseRead,
 } from "../types.js";
 
 export class DefinitionRevisionsResource {
@@ -77,8 +79,8 @@ export class DefinitionRevisionsResource {
   async retrieve(
     definitionRevisionId: DefinitionRevisionId,
     options?: RequestOptions,
-  ): Promise<ApiResult<DefinitionRevisionRead, DefinitionRevisionsRetrieveError>> {
-    return this._core.request<DefinitionRevisionRead, DefinitionRevisionsRetrieveError>({
+  ): Promise<ApiResult<DefinitionRevisionResponseRead, DefinitionRevisionsRetrieveError>> {
+    return this._core.request<DefinitionRevisionResponseRead, DefinitionRevisionsRetrieveError>({
       method: "GET",
       path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}`,
       errors: {
@@ -147,7 +149,10 @@ export class DefinitionRevisionsResource {
 export interface DefinitionRevisionsListParams {
   /** Maximum number of resources to return. */
   limit?: number;
-  /** Opaque cursor from the preceding page's next_cursor. */
+  /**
+   * Opaque cursor from the preceding page's next_cursor. Valid only for the same account,
+   * operation, filters, and ordering that issued it.
+   */
   cursor?: string;
 }
 

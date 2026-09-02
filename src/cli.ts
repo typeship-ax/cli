@@ -259,7 +259,7 @@ function humanError(body: ReturnType<typeof envelope>, code: number): string {
   lines.push(paintErr("red", BIN + ":") + " " + (issue?.message ?? "failed"));
   for (const extra of body.issues.slice(1)) lines.push("  " + extra.message);
   for (const step of body.next_steps ?? []) lines.push("  " + step);
-  const detail = body.detail as { status?: number; body?: unknown; violations?: unknown } | undefined;
+  const detail = body.detail as { status?: number; body?: unknown; violations?: unknown; request_id?: string } | undefined;
   if (detail?.violations !== undefined) {
     for (const v of (detail.violations as { path?: string; message?: string }[]).slice(0, 8)) lines.push("  " + paintErr("dim", (v.path ? v.path + ": " : "") + (v.message ?? "")));
   } else if (detail?.body !== undefined) {
@@ -268,7 +268,7 @@ function humanError(body: ReturnType<typeof envelope>, code: number): string {
     const compact = typeof detail.body === "string" ? detail.body : JSON.stringify(detail.body);
     const firstWords = (issue?.message ?? "").slice(0, 40);
     if (compact && compact !== "{}" && !(firstWords && compact.includes(firstWords))) lines.push("  " + paintErr("dim", "API said: " + (compact.length > 300 ? compact.slice(0, 297) + "…" : compact)));
-    const requestId = (detail.body as { request_id?: unknown; requestId?: unknown } | null)?.request_id ?? (detail.body as { requestId?: unknown } | null)?.requestId;
+    const requestId = detail.request_id ?? (detail.body as { request_id?: unknown; requestId?: unknown } | null)?.request_id ?? (detail.body as { requestId?: unknown } | null)?.requestId;
     if (typeof requestId === "string") lines.push("  " + paintErr("dim", "request id: " + requestId));
   }
   const tags = [issue?.code ?? "ERROR", ...(typeof detail?.status === "number" && detail.status > 0 ? ["HTTP " + detail.status] : []), "exit " + code, "pipe stderr or --mode agent for JSON"];
@@ -2429,7 +2429,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown }>);
+  const result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
   if (result.ok) {
     if (op.sse) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.
@@ -2455,12 +2455,13 @@ async function main(): Promise<void> {
       // One page, plus what fetches the next: the raw arguments (the MCP
       // tool's nextPage shape) and the exact command, so a script or an
       // agent never has to reconstruct the cursor flag.
-      const page = result.data as { items: unknown[]; hasNextPage(): boolean; nextPageParams(): Record<string, unknown> | null };
+      const page = result.data as { items: unknown[]; hasNextPage(): boolean; nextPageParams(): Record<string, unknown> | null; response: { requestId?: string } };
       const next = page.nextPageParams();
       out({
         items: project(page.items),
         hasMore: next !== null,
         ...(next !== null ? { nextPage: next, nextCommand: nextCommandFor(op, pathValues, next) } : {}),
+        ...(page.response.requestId ? { request_id: page.response.requestId } : {}),
       });
     } else if (FIELDS !== null && collectionField !== null && result.data !== null && typeof result.data === "object" && !Array.isArray(result.data) && Array.isArray((result.data as Record<string, unknown>)[collectionField])) {
       // Batch-style collection envelopes ({data: [...]}) use item-relative

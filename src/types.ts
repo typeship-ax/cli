@@ -16,8 +16,13 @@ export type DefinitionDocumentId = string;
 /** Unique identifier for an immutable resolved Definition Revision. */
 export type DefinitionRevisionId = string;
 
-/** Identifier used to correlate an API error with Typeship logs. */
+/** Server-generated identifier used to correlate this response with Typeship logs. */
 export type RequestId = string;
+
+/** Request-level metadata present at the top level of every JSON response. */
+export interface ResponseMetadata {
+  request_id: RequestId;
+}
 
 /** Identifies a cursor-paginated collection. */
 export type ListObject = "list";
@@ -305,6 +310,7 @@ export interface GenerationResult {
         /** Format: date-time */
         expires_at: string;
       };
+  request_id: RequestId;
 }
 
 /** Response shape for GenerationResult. */
@@ -324,6 +330,7 @@ export interface GenerationResultRead {
         /** Format: date-time */
         expires_at: string;
       };
+  request_id: RequestId;
 }
 
 /**
@@ -742,6 +749,7 @@ export interface DiagnosticReport {
   policy: DiagnosticPolicy;
   evaluation: DiagnosticEvaluation;
   delta: DiagnosticDelta;
+  request_id: RequestId;
 }
 
 /** Response shape for DiagnosticReport. */
@@ -763,6 +771,7 @@ export interface DiagnosticReportRead {
   policy: DiagnosticPolicyRead;
   evaluation: DiagnosticEvaluationRead;
   delta: DiagnosticDeltaRead;
+  request_id: RequestId;
 }
 
 export interface DiagnosticRemediationRequest {
@@ -779,6 +788,7 @@ export interface DiagnosticRemediation {
    * Format: uri
    */
   review_url?: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for DiagnosticRemediation. */
@@ -791,6 +801,7 @@ export interface DiagnosticRemediationRead {
    * Format: uri
    */
   review_url?: string | null;
+  request_id: RequestId;
 }
 
 export interface RepositoryDeliveryInput {
@@ -1032,6 +1043,7 @@ export interface Target {
   created_at: string;
   /** Format: date-time */
   updated_at: string;
+  request_id?: RequestId;
 }
 
 /** Response shape for Target. */
@@ -1061,13 +1073,20 @@ export interface TargetRead {
   created_at: string;
   /** Format: date-time */
   updated_at: string;
+  request_id?: RequestId;
 }
+
+export type TargetResponse = Target & ResponseMetadata;
+
+/** Response shape for TargetResponse. */
+export type TargetResponseRead = TargetRead & ResponseMetadata;
 
 export interface TargetList {
   object: ListObject;
   data: Target[];
   has_more: boolean;
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for TargetList. */
@@ -1076,6 +1095,7 @@ export interface TargetListRead {
   data: TargetRead[];
   has_more: boolean;
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface TargetRelease {
@@ -1094,6 +1114,7 @@ export interface TargetRelease {
   delivery_revision: string;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
 
 /** Response shape for TargetRelease. */
@@ -1113,13 +1134,20 @@ export interface TargetReleaseRead {
   delivery_revision: string;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
+
+export type TargetReleaseResponse = TargetRelease & ResponseMetadata;
+
+/** Response shape for TargetReleaseResponse. */
+export type TargetReleaseResponseRead = TargetReleaseRead & ResponseMetadata;
 
 export interface TargetReleaseList {
   object: ListObject;
   data: TargetRelease[];
   has_more: boolean;
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for TargetReleaseList. */
@@ -1128,6 +1156,7 @@ export interface TargetReleaseListRead {
   data: TargetReleaseRead[];
   has_more: boolean;
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface RepositoryHealthIssue {
@@ -1213,6 +1242,7 @@ export interface RepositoryIntegrationHealth {
     destination: string[];
   };
   last_event: RepositoryEventHealth | null;
+  request_id: RequestId;
 }
 
 /** Response shape for RepositoryIntegrationHealth. */
@@ -1226,6 +1256,7 @@ export interface RepositoryIntegrationHealthRead {
     destination: string[];
   };
   last_event: RepositoryEventHealthRead | null;
+  request_id: RequestId;
 }
 
 export interface DefinitionFields {
@@ -1261,6 +1292,7 @@ export interface Definition {
   created_at: string;
   /** Format: date-time */
   updated_at: string;
+  request_id: RequestId;
 }
 
 /** Request shape for Definition. */
@@ -1278,6 +1310,7 @@ export interface DefinitionWrite {
   created_at: string;
   /** Format: date-time */
   updated_at: string;
+  request_id: RequestId;
 }
 
 /** Response shape for Definition. */
@@ -1295,6 +1328,7 @@ export interface DefinitionRead {
   created_at: string;
   /** Format: date-time */
   updated_at: string;
+  request_id: RequestId;
 }
 
 export interface DefinitionUpdateRequest {
@@ -1348,6 +1382,7 @@ export interface Project {
    * Format: date-time
    */
   updated_at: string;
+  request_id: RequestId;
 }
 
 /** Request shape for Project. */
@@ -1378,6 +1413,7 @@ export interface ProjectWrite {
    * settings remain Definition-owned.
    */
   config: ProjectConfig | null;
+  request_id: RequestId;
 }
 
 /** Response shape for Project. */
@@ -1417,6 +1453,7 @@ export interface ProjectRead {
    * Format: date-time
    */
   updated_at: string;
+  request_id: RequestId;
 }
 
 /**
@@ -1524,6 +1561,7 @@ export interface Account {
   plan: "free" | "pro" | "enterprise";
   /** Format: date-time */
   created_at: string;
+  request_id: RequestId;
 }
 
 /** Response shape for Account. */
@@ -1535,6 +1573,7 @@ export interface AccountRead {
   plan: ("free" | "pro" | "enterprise") | (string & {});
   /** Format: date-time */
   created_at: string;
+  request_id: RequestId;
 }
 
 /** How the generated CLI behaves. Part of Config. */
@@ -1943,6 +1982,7 @@ export interface Generation {
   error: string | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
 
 /** Request shape for Generation. */
@@ -1987,6 +2027,7 @@ export interface GenerationWrite {
   error: string | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
 
 /** Response shape for Generation. */
@@ -2032,7 +2073,16 @@ export interface GenerationRead {
   error: string | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
+
+export type GenerationResponse = Generation & ResponseMetadata;
+
+/** Request shape for GenerationResponse. */
+export type GenerationResponseWrite = GenerationWrite & ResponseMetadata;
+
+/** Response shape for GenerationResponse. */
+export type GenerationResponseRead = GenerationRead & ResponseMetadata;
 
 /** A selected target that did not generate in a multi-target run. */
 export interface GenerationFailure {
@@ -2052,16 +2102,19 @@ export interface GenerationFailureRead {
 
 export interface GenerationBatch {
   data: Array<Generation | GenerationFailure>;
+  request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
   data: Array<GenerationWrite | GenerationFailure>;
+  request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
   data: Array<GenerationRead | GenerationFailureRead>;
+  request_id: RequestId;
 }
 
 export interface ApiKey {
@@ -2075,6 +2128,7 @@ export interface ApiKey {
   last_used_at: string | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
 
 /** Response shape for ApiKey. */
@@ -2089,7 +2143,13 @@ export interface ApiKeyRead {
   last_used_at: string | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
+
+export type ApiKeyResponse = ApiKey & ResponseMetadata;
+
+/** Response shape for ApiKeyResponse. */
+export type ApiKeyResponseRead = ApiKeyRead & ResponseMetadata;
 
 export interface UrlDefinitionRevisionSource {
   kind: "url";
@@ -2170,6 +2230,7 @@ export interface DefinitionRevision {
   source: DefinitionRevisionSource | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
 
 /** Response shape for DefinitionRevision. */
@@ -2190,7 +2251,13 @@ export interface DefinitionRevisionRead {
   source: DefinitionRevisionSourceRead | null;
   /** Format: date-time */
   created_at: string;
+  request_id?: RequestId;
 }
+
+export type DefinitionRevisionResponse = DefinitionRevision & ResponseMetadata;
+
+/** Response shape for DefinitionRevisionResponse. */
+export type DefinitionRevisionResponseRead = DefinitionRevisionRead & ResponseMetadata;
 
 export interface ProjectList {
   object: ListObject;
@@ -2199,6 +2266,7 @@ export interface ProjectList {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for ProjectList. */
@@ -2209,6 +2277,7 @@ export interface ProjectListRead {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface GenerationList {
@@ -2218,6 +2287,7 @@ export interface GenerationList {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Request shape for GenerationList. */
@@ -2228,6 +2298,7 @@ export interface GenerationListWrite {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for GenerationList. */
@@ -2238,6 +2309,7 @@ export interface GenerationListRead {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface DefinitionRevisionList {
@@ -2247,6 +2319,7 @@ export interface DefinitionRevisionList {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for DefinitionRevisionList. */
@@ -2257,6 +2330,7 @@ export interface DefinitionRevisionListRead {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface ApiKeyList {
@@ -2266,6 +2340,7 @@ export interface ApiKeyList {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 /** Response shape for ApiKeyList. */
@@ -2276,12 +2351,14 @@ export interface ApiKeyListRead {
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
   next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface DeletedProject {
   id: ProjectId;
   object: "project";
   deleted: true;
+  request_id: RequestId;
 }
 
 /** Response shape for DeletedProject. */
@@ -2289,6 +2366,22 @@ export interface DeletedProjectRead {
   id: ProjectId;
   object: "project" | (string & {});
   deleted: true;
+  request_id: RequestId;
+}
+
+export interface DeletedTarget {
+  id: TargetId;
+  object: "target";
+  deleted: true;
+  request_id: RequestId;
+}
+
+/** Response shape for DeletedTarget. */
+export interface DeletedTargetRead {
+  id: TargetId;
+  object: "target" | (string & {});
+  deleted: true;
+  request_id: RequestId;
 }
 
 /** Stable category for deciding how to handle the error. */

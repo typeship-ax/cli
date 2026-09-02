@@ -21,7 +21,8 @@ export interface ResponseMeta {
    * Use this escape hatch for additive fields or variants introduced after
    * this generator edition. */
   rawBody?: unknown;
-  /** Request identifier from the response headers or error body. */
+  /** Request identifier from the JSON response body, or from headers for
+   * raw and bodyless responses. */
   requestId?: string;
 }
 
@@ -408,16 +409,20 @@ export class HttpCore {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response;
       const attemptStarted = Date.now();
+      const emitResponseDebug = (value: Response, body?: unknown) => this.config.debug?.({
+        method: req.method,
+        path: req.path,
+        status: value.status,
+        durationMs: Date.now() - attemptStarted,
+        attempt: attempt + 1,
+        requestId:
+          requestIdFromBody(body) ??
+          value.headers.get("request-id") ??
+          value.headers.get("x-request-id") ??
+          undefined,
+      });
       try {
         response = await this.send(req, timeoutMs, attempt, autoIdempotencyKey);
-        this.config.debug?.({
-          method: req.method,
-          path: req.path,
-          status: response.status,
-          durationMs: Date.now() - attemptStarted,
-          attempt: attempt + 1,
-          requestId: response.headers.get("request-id") ?? response.headers.get("x-request-id") ?? undefined,
-        });
       } catch (cause) {
         lastError = cause;
         this.config.debug?.({
@@ -444,6 +449,7 @@ export class HttpCore {
         try {
           data = (await parseBody(response, req.method)) as T;
         } catch (cause) {
+          emitResponseDebug(response);
           const error = new TransportError(
             "The response body read was aborted before completing",
             cause,
@@ -451,6 +457,7 @@ export class HttpCore {
           await this.config.onError?.(error, { method: req.method, path: req.path });
           return { ok: false, error, response: meta(response) };
         }
+        emitResponseDebug(response, data);
         const responseMeta = meta(response, data);
         let responseData: unknown = data;
         let shouldValidateResponse = responseData !== undefined;
@@ -477,7 +484,15 @@ export class HttpCore {
         retryableStatuses.has(response.status) &&
         (retryAllowed || response.status === 429);
       if (attempt < maxRetries && retryableStatus) {
-        await sleep(retryAfterMs(response) ?? backoff(attempt, policy));
+        const delay = retryAfterMs(response) ?? backoff(attempt, policy);
+        let retryBody: unknown;
+        try {
+          retryBody = await parseBody(response, req.method);
+        } catch {
+          retryBody = undefined;
+        }
+        emitResponseDebug(response, retryBody);
+        await sleep(delay);
         continue;
       }
 
@@ -487,6 +502,7 @@ export class HttpCore {
       } catch {
         body = undefined; // error responses keep their status even if the body read aborts
       }
+      emitResponseDebug(response, body);
       const responseMeta = meta(response, body);
       const Ctor =
         req.errors?.[String(response.status)] ??
@@ -714,9 +730,9 @@ function meta(response: Response, body?: unknown): ResponseMeta {
     headers: response.headers,
     ...(body !== undefined ? { rawBody: body } : {}),
     requestId:
+      requestIdFromBody(body) ??
       response.headers.get("request-id") ??
       response.headers.get("x-request-id") ??
-      requestIdFromBody(body) ??
       undefined,
   };
 }

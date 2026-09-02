@@ -383,7 +383,10 @@ export class ProjectsResource {
 export interface ProjectsListParams {
   /** Maximum number of resources to return. */
   limit?: number;
-  /** Opaque cursor from the preceding page's next_cursor. */
+  /**
+   * Opaque cursor from the preceding page's next_cursor. Valid only for the same account,
+   * operation, filters, and ordering that issued it.
+   */
   cursor?: string;
 }
 
@@ -499,7 +502,10 @@ export type ProjectsRetrieveIntegrationHealthError =
 export interface ProjectsListGenerationsParams {
   /** Maximum number of resources to return. */
   limit?: number;
-  /** Opaque cursor from the preceding page's next_cursor. */
+  /**
+   * Opaque cursor from the preceding page's next_cursor. Valid only for the same account,
+   * operation, filters, and ordering that issued it.
+   */
   cursor?: string;
   /** Only generations for this persisted Target. */
   targetId?: TargetId;

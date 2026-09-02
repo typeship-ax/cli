@@ -12,7 +12,7 @@ import {
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
-import type { Generation, GenerationId, GenerationRead } from "../types.js";
+import type { GenerationId, GenerationResponse, GenerationResponseRead } from "../types.js";
 
 export class GenerationsResource {
   constructor(private readonly _core: HttpCore) {}
@@ -25,8 +25,8 @@ export class GenerationsResource {
   async retrieve(
     generationId: GenerationId,
     options?: RequestOptions,
-  ): Promise<ApiResult<GenerationRead, GenerationsRetrieveError>> {
-    return this._core.request<GenerationRead, GenerationsRetrieveError>({
+  ): Promise<ApiResult<GenerationResponseRead, GenerationsRetrieveError>> {
+    return this._core.request<GenerationResponseRead, GenerationsRetrieveError>({
       method: "GET",
       path: `/generations/${encodeURIComponent(String(generationId))}`,
       errors: {

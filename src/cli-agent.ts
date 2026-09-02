@@ -35,7 +35,7 @@ export type IssueCode =
   | "UNKNOWN_COMMAND"
   | "UNKNOWN_FLAG"
   | "MISSING_ARGUMENT"
-  | "COMMAND_FAILED";       // anything else
+  | "CALL_FAILED";          // anything else
 
 export interface Issue {
   code: IssueCode;
@@ -93,7 +93,7 @@ export function classifyApiError(
   error: unknown,
   context: { bin: string; hadCredential: boolean; docsUrl: string | null },
 ): EnvelopeInput {
-  const e = (error ?? {}) as { name?: string; message?: string; status?: number; body?: unknown; violations?: unknown };
+  const e = (error ?? {}) as { name?: string; message?: string; status?: number; body?: unknown; violations?: unknown; response?: { requestId?: string } };
   // The message is the API's own words when it sent any, else the SDK's
   // (the spec's response description). The error class name rides in
   // detail, not in front of the message: "NotFoundError: No such account
@@ -116,7 +116,11 @@ export function classifyApiError(
   const body = e.body as { errors?: { code?: string; message?: string }[]; error?: unknown; message?: unknown } | undefined;
   const apiCode = body?.errors?.[0]?.code;
   const apiMessage = body?.errors?.[0]?.message ?? (typeof body?.message === "string" ? body.message : undefined) ?? (typeof body?.error === "string" ? body.error : undefined);
-  const detail = { status, ...(e.name ? { error: e.name } : {}), ...(e.body !== undefined ? { body: e.body } : {}) };
+  const bodyRequestId = e.body && typeof e.body === "object" && !Array.isArray(e.body)
+    ? (e.body as Record<string, unknown>).request_id ?? (e.body as Record<string, unknown>).requestId
+    : undefined;
+  const requestId = e.response?.requestId ?? (typeof bodyRequestId === "string" ? bodyRequestId : undefined);
+  const detail = { status, ...(e.name ? { error: e.name } : {}), ...(requestId ? { request_id: requestId } : {}), ...(e.body !== undefined ? { body: e.body } : {}) };
   const same = apiMessage !== undefined && (apiMessage.toLowerCase() === base.toLowerCase() || base.toLowerCase().includes(apiMessage.toLowerCase()) || apiMessage.toLowerCase().includes(base.toLowerCase()));
   const message = apiMessage === undefined ? base : same ? apiMessage : apiMessage + " (" + base + ")";
   const upgradeUrl = extractUrl(e.body, ["upgrade_url", "upgradeUrl", "signup_url", "claim_url"]);
@@ -136,8 +140,8 @@ export function classifyApiError(
   }
   if (status === 422 && apiCode === "spec_error") return { code: "SPEC_INVALID", message, detail, nextSteps: ["The API rejected the spec it was given; the message says why.", context.docsUrl ? "Look the message up: '" + context.bin + " docs search \"" + (apiMessage ?? "").slice(0, 60).replace(/"/g, "'") + "\"'." : "Fix the spec and run again."] };
   if (status === 400 || status === 422 || status === 409 || status === 413) return { code: "INVALID_REQUEST", message, detail, nextSteps: ["Read detail.body for the field the API named; run the command with --help for its flags."] };
-  if (status >= 500) return { code: "SERVER_ERROR", message, detail, nextSteps: ["Retry once with backoff. If it persists, report the request id in detail.body."] };
-  return { code: "COMMAND_FAILED", message, detail };
+  if (status >= 500) return { code: "SERVER_ERROR", message, detail, nextSteps: ["Retry once with backoff. If it persists, report detail.request_id."] };
+  return { code: "CALL_FAILED", message, detail };
 }
 
 /** A file lookup needs path guidance, not the generic advice for a missing
@@ -189,9 +193,9 @@ export interface AgentModeInput {
  */
 export function agentMode(input: AgentModeInput): boolean {
   if (input.flagMode === "agent") return true;
-  if (input.flagMode === "human" || input.flagMode === "interactive") return false;
+  if (input.flagMode === "human") return false;
   if (input.envMode === "agent") return true;
-  if (input.envMode === "human" || input.envMode === "interactive") return false;
+  if (input.envMode === "human") return false;
   return !input.stdoutIsTTY && !input.stdinIsTTY;
 }
 
@@ -588,7 +592,9 @@ export function bundleProperty(outputSchema: Record<string, unknown> | undefined
  * each item while preserving that envelope, just as it does for pages. */
 export function collectionProperty(outputSchema: Record<string, unknown> | undefined): string | null {
   const props = outputSchema?.properties as Record<string, { type?: string | string[] }> | undefined;
-  const names = props ? Object.keys(props) : [];
+  // Response metadata is not part of the collection's domain shape. APIs
+  // such as typeship put request_id beside the array on every JSON response.
+  const names = props ? Object.keys(props).filter((name) => name !== "request_id" && name !== "requestId") : [];
   if (!props || names.length !== 1) return null;
   const name = names[0]!;
   const type = props[name]?.type;

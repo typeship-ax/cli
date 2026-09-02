@@ -430,6 +430,14 @@
                   "string",
                   "null"
                 ]
+              },
+              "docs_index_url": {
+                "format": "uri",
+                "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "additionalProperties": false,
@@ -530,6 +538,13 @@
               "omitted_operation_count": {
                 "description": "Operations beyond the plan's endpoint allowance, not generated.",
                 "type": "integer"
+              },
+              "omitted_operations": {
+                "description": "METHOD/path identities of operations omitted by the generation cap.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               "pr_url": {
                 "description": "Pull request opened by this regeneration, when one was.",
@@ -1211,6 +1226,14 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "docs_index_url": {
+                          "format": "uri",
+                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "additionalProperties": false,
@@ -1490,6 +1513,14 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -1699,6 +1730,14 @@
                   },
                   "docs_url": {
                     "description": "The API's documentation site.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -1965,6 +2004,14 @@
                   },
                   "docs_url": {
                     "description": "The API's documentation site.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -2328,6 +2375,14 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -2535,6 +2590,14 @@
                   },
                   "docs_url": {
                     "description": "The API's documentation site.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -4990,6 +5053,14 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "docs_index_url": {
+                          "format": "uri",
+                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "type": "object"
@@ -5363,6 +5434,14 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -5580,6 +5659,14 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"
@@ -5769,6 +5856,14 @@
                   },
                   "docs_url": {
                     "description": "The API's documentation site.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -6161,6 +6256,14 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -6371,6 +6474,14 @@
                   },
                   "docs_url": {
                     "description": "The API's documentation site.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "docs_index_url": {
+                    "format": "uri",
+                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"

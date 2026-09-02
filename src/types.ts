@@ -152,6 +152,8 @@ export interface GenerationMeta {
   paginated_operation_count?: number;
   /** Operations beyond the plan's endpoint allowance, not generated. */
   omitted_operation_count?: number;
+  /** METHOD/path identities of operations omitted by the generation cap. */
+  omitted_operations?: string[];
   /** Pull request opened by this regeneration, when one was. */
   pr_url?: string | null;
   pr_number?: number | null;
@@ -236,6 +238,8 @@ export interface GenerationMetaRead {
   paginated_operation_count?: number;
   /** Operations beyond the plan's endpoint allowance, not generated. */
   omitted_operation_count?: number;
+  /** METHOD/path identities of operations omitted by the generation cap. */
+  omitted_operations?: string[];
   /** Pull request opened by this regeneration, when one was. */
   pr_url?: string | null;
   pr_number?: number | null;
@@ -1724,6 +1728,11 @@ export interface Config {
    * externalDocs URL.
    */
   docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
 }
 
 /** Response shape for Config. */
@@ -1750,6 +1759,11 @@ export interface ConfigRead {
    * externalDocs URL.
    */
   docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
 }
 
 /**
@@ -1780,6 +1794,11 @@ export interface ProjectConfig {
    * externalDocs URL.
    */
   docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
 }
 
 /** Response shape for ProjectConfig. */
@@ -1805,6 +1824,11 @@ export interface ProjectConfigRead {
    * externalDocs URL.
    */
   docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
 }
 
 /** What a GraphQL schema cannot say about itself. Ignored for OpenAPI specs. */

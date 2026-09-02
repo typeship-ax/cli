@@ -1,6 +1,6 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.7.0).
+This package contains the generated CLI for **typeship** (API v1.0.0, package v0.8.0).
 
 Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
 selected SDK, CLI, and MCP Target current.
@@ -27,4 +27,4 @@ which works anonymously with the free plan's limits.
 
 ## Documentation
 - The reference for this exact package: `api.md` (offline, always current with the code).
-- Conceptual guides live on the docs site. For questions about how the API's concepts fit together (flows, ordering, environments), fetch `https://typeship.dev/llms-full.txt` and read the relevant sections; `https://typeship.dev/llms.txt` is the page index.
+- Conceptual guides live on the docs site. For questions about how the API's concepts fit together (flows, ordering, environments), fetch `https://typeship.dev/llms-full.txt` and read the relevant sections; `https://typeship.dev/llms.txt` is the page index. Relative links in the spec resolve against `https://typeship.dev`.

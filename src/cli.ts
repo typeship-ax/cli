@@ -12,22 +12,25 @@ import { homedir, hostname } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
-import { GLOBALS, OPS, buildArgs, findOp, missingRequired, type OpSpec, type ParamSpec } from "./ops.js";
+import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
   MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, collectionProperty, detectHarness, envelope,
   exitCodeFor, findMcpClient, installSkills, mcpConfigured, pendingClaims, recordClaim, summarizeDoctor, upsertAgentBlock, writeBundle, writeMcpConfig,
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
-import { fetchDocsText, resolveDocsPageUrl } from "./docs.js";
+import { fetchDocsText, resolveDocsContentUrl } from "./docs.js";
 
 
 const BIN = "typeship";
 const DEFAULT_BASE_URL = "https://typeship.dev/api/v1";
 const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_TOKEN"}];
 const BASIC: { envUser: string; envPass: string } | null = null;
+/** Operations omitted from the generated package by its plan cap. */
 const EXCLUDED_OPS = 0;
-const VERSION = "0.7.0";
+/** Generated CLI operations that are intentionally unavailable to MCP. */
+const MCP_EXCLUDED_OPS = 0;
+const VERSION = "0.8.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const WHOAMI: { resource: string; method: string } | null = {"resource":"account","method":"retrieve"};
@@ -37,6 +40,7 @@ const PKG_NAME = "@typeship-ax/cli";
 const UPDATE_NOTICE = false;
 const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected SDK, CLI, and MCP Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
+const DOCS_INDEX_URL_DEFAULT: string | null = null;
 const RELAY: { mintUrl: string; project: string } | null = null;
 const SUPPORT_URL: string | null = null;
 const OAUTH_TOKEN_URL: string | null = null;
@@ -968,6 +972,9 @@ function agentContext(): AgentContext {
     envPrefix: ENV_PREFIX,
     authEnvVars: [...AUTH_SCALARS.map((a) => a.env), ...(BASIC ? [BASIC.envUser, BASIC.envPass] : [])],
     docsUrl: docsSiteUrl(),
+    docsIndexUrl: docsIndexUrl(),
+    generatedOperationCount: OPS.length,
+    omittedOperations: OMITTED_OPS.map((op) => ({ command: op.command.join(" "), tool: op.tool, method: op.httpMethod, path: op.path })),
     mcpUrl: MCP_URL,
     skillsRepo: SKILLS_REPO,
     hasMcp: HAS_MCP,
@@ -1028,6 +1035,14 @@ function helpJson(): Record<string, unknown> {
         };
       }),
     })),
+    ...(EXCLUDED_OPS > 0 ? {
+      coverage: {
+        generated_operations: OPS.length,
+        total_operations: OPS.length + EXCLUDED_OPS,
+        omitted_operations: OMITTED_OPS.map((op) => ({ command: op.command.join(" "), tool: op.tool, method: op.httpMethod, path: op.path })),
+        reason: "plan_limit",
+      },
+    } : {}),
     discovery: {
       search: BIN + " docs search <term> --json",
       operation: BIN + " docs <resource> <command> --json",
@@ -1439,12 +1454,19 @@ function docsSiteUrl(): string | null {
   return readConfig().docsUrl ?? DOCS_URL_DEFAULT;
 }
 
+function docsIndexUrl(): string | null {
+  const configured = readConfig().docsUrl;
+  return configured
+    ? resolveDocsContentUrl(configured, null, "llms.txt")
+    : DOCS_INDEX_URL_DEFAULT ?? resolveDocsContentUrl(DOCS_URL_DEFAULT, null, "llms.txt");
+}
+
 /** Fetch llms.txt / llms-full.txt / a prose page from the docs site,
  * with a 1h cache in the config dir. Explicit command = explicit fetch;
  * nothing here runs unless the user asked for docs. */
 async function fetchDocs(pathOrFile: string): Promise<string | null> {
   const base = docsSiteUrl();
-  const url = resolveDocsPageUrl(base, pathOrFile);
+  const url = resolveDocsContentUrl(base, docsIndexUrl(), pathOrFile);
   if (url === null) return null;
   const cacheFile = join(configDir(), "docs-cache", url.replace(/[^a-zA-Z0-9.]+/g, "_").slice(-120));
   try {
@@ -1670,6 +1692,8 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
   if (sub !== undefined) {
     const op = findOp(sub!, parsed.positionals[2] ?? "");
     if (!op) {
+      const omitted = omittedCommand(sub!, parsed.positionals[2]);
+      if (omitted) failOmitted(omitted);
       const list = OPS.filter((o) => o.command[0] === sub);
       if (list.length === 0) fail(2, "Unknown docs topic: " + sub + ". Run '" + BIN + " docs' for the overview.");
       const lines = [paintOut("bold", "Commands for " + sub + ":"), ""];
@@ -1869,7 +1893,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship" + " API (v" + "1.0.0" + "), package " + "0.7.0");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.8.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -1886,6 +1910,12 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push("  " + padPaint("cyan", resource, col) + wrapped[0]);
     for (const more of wrapped.slice(1)) lines.push(" ".repeat(2 + col) + more);
   }
+  if (EXCLUDED_OPS > 0) {
+    lines.push("");
+    lines.push(...labeled(paintOut("yellow", "Plan limit:") + " ", "generated " + OPS.length + " of " + (OPS.length + EXCLUDED_OPS) + " operations", width, 14));
+    lines.push(...labeled("Omitted: ", OMITTED_OPS.map((op) => op.command.join(" ") + " (" + op.httpMethod + " " + op.path + ")").join(", "), width, 14));
+    lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
+  }
   lines.push("");
   const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check bodies)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
@@ -1901,9 +1931,9 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   lines.push(...labeled("Docs: ", BIN + " docs [<resource> <command> | search <term> | read <page> | --web]", width, 6));
   if (RELAY) lines.push("Webhooks: " + BIN + " webhooks listen --forward-to <url>  (local event forwarding)");
   if (SUPPORT_URL) lines.push("Feedback: " + BIN + " feedback  (opens the provider's issue tracker)");
-  if (EXCLUDED_OPS > 0 && HAS_MCP) {
+  if (MCP_EXCLUDED_OPS > 0 && HAS_MCP) {
     lines.push("");
-    lines.push("Note: " + EXCLUDED_OPS + " operation(s) with uploads or event streams are CLI/SDK-only, not MCP tools.");
+    lines.push("Note: " + MCP_EXCLUDED_OPS + " generated operation(s) with uploads or event streams are CLI/SDK-only, not MCP tools.");
   }
   lines.push("");
   lines.push("Run '" + BIN + " <resource>' for a resource's commands, '" + BIN + " <resource> <command> --help' for flags.");
@@ -2222,6 +2252,21 @@ function didYouMean(input: string, candidates: Iterable<string>): string | undef
   return best;
 }
 
+function omittedCommand(resource: string, method?: string): OmittedOpSpec | undefined {
+  return OMITTED_OPS.find((op) => op.command[0] === resource &&
+    (method === undefined || op.command[1] === method || op.commandAlias === method));
+}
+
+function failOmitted(op: OmittedOpSpec): never {
+  return failWith({
+    status: "action_required",
+    code: "PLAN_LIMIT",
+    message: "The command '" + BIN + " " + op.command.join(" ") + "' exists in the API Definition but was omitted from this generated package by its plan limit.",
+    detail: { operation: op.tool, method: op.httpMethod, path: op.path, generated_operations: OPS.length, total_operations: OPS.length + EXCLUDED_OPS },
+    nextSteps: ["Upgrade at https://typeship.dev/pricing and regenerate the package without the operation cap.", "Do not invent or retry an omitted command against this generated package."],
+  });
+}
+
 const BUILTIN_COMMANDS = ["login","logout","whoami","config","mcp","docs","upgrade","completion","help","version","init","agent-guide","auth","doctor"];
 
 async function main(): Promise<void> {
@@ -2282,6 +2327,8 @@ async function main(): Promise<void> {
   if (!resourceCmd) { printRoot(parsed.help ? process.stdout : process.stderr); await flushExit(parsed.help ? 0 : 2); }
   const resourceExists = OPS.some((o) => o.command[0] === resourceCmd);
   if (!resourceExists) {
+    const omitted = omittedCommand(resourceCmd, methodCmd);
+    if (omitted) failOmitted(omitted);
     const suggestion = didYouMean(resourceCmd, [...new Set(OPS.map((o) => o.command[0])), ...BUILTIN_COMMANDS]);
     fail(2, "Unknown command: " + resourceCmd + "." + (suggestion ? " Did you mean '" + BIN + " " + suggestion + "'?" : ""),
       undefined, ["Run '" + BIN + " --help' for the commands."]);
@@ -2290,6 +2337,8 @@ async function main(): Promise<void> {
 
   const op = findOp(resourceCmd, methodCmd);
   if (!op) {
+    const omitted = omittedCommand(resourceCmd, methodCmd);
+    if (omitted) failOmitted(omitted);
     const suggestion = didYouMean(methodCmd, OPS.filter((o) => o.command[0] === resourceCmd).map((o) => o.command[1]));
     fail(2, "Unknown command: " + resourceCmd + " " + methodCmd + "." + (suggestion ? " Did you mean '" + BIN + " " + resourceCmd + " " + suggestion + "'?" : ""),
       undefined, ["Run '" + BIN + " " + resourceCmd + "' for its commands."]);

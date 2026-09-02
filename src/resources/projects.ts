@@ -20,28 +20,14 @@ import {
 import type {
   CreateProjectRequest,
   DeletedProject,
-  DeletedProjectRead,
-  DiagnosticRemediation,
-  DiagnosticRemediationRead,
-  DiagnosticRemediationRequest,
-  DiagnosticReport,
-  DiagnosticReportRead,
   Generation,
   GenerationBatch,
-  GenerationBatchRead,
   GenerationList,
-  GenerationListRead,
-  GenerationRead,
+  GithubIntegrationHealth,
+  OutputId,
   Project,
   ProjectId,
   ProjectList,
-  ProjectListRead,
-  ProjectRead,
-  ProjectSummary,
-  ProjectSummaryRead,
-  RepositoryIntegrationHealth,
-  RepositoryIntegrationHealthRead,
-  TargetId,
   UpdateProjectRequest,
 } from "../types.js";
 
@@ -53,11 +39,8 @@ export class ProjectsResource {
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /projects`
    */
-  list(
-    params?: ProjectsListParams,
-    options?: RequestOptions,
-  ): PagePromise<ProjectSummaryRead, ProjectsListError> {
-    return paginate<ProjectSummaryRead, ProjectsListError>(this._core, {
+  list(params?: ProjectsListParams, options?: RequestOptions): PagePromise<Project, ProjectsListError> {
+    return paginate<Project, ProjectsListError>(this._core, {
       method: "GET",
       path: "/projects",
       query: {
@@ -87,9 +70,9 @@ export class ProjectsResource {
    * Create a project
    *
    * Stores a URL- or GitHub-sourced project. Free includes one stored project, every selected
-   * target, and the first 25 operations, while keeping manual and automatic regeneration, history,
+   * output, and the first 25 operations, while keeping manual and automatic regeneration, history,
    * destination pull requests, and preview checks. Stateless POST /generate does not consume this
-   * slot. Pro adds projects and generates every operation in the Definition.
+   * slot. Pro adds projects and the whole spec.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects`
@@ -98,8 +81,8 @@ export class ProjectsResource {
     body: CreateProjectRequest,
     params?: ProjectsCreateParams,
     options?: RequestOptions,
-  ): Promise<ApiResult<ProjectRead, ProjectsCreateError>> {
-    return this._core.request<ProjectRead, ProjectsCreateError>({
+  ): Promise<ApiResult<Project, ProjectsCreateError>> {
+    return this._core.request<Project, ProjectsCreateError>({
       method: "POST",
       path: "/projects",
       headers: {
@@ -112,7 +95,6 @@ export class ProjectsResource {
         "402": PaymentRequiredError,
         "403": ForbiddenError,
         "409": ConflictError,
-        "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
       },
@@ -129,8 +111,8 @@ export class ProjectsResource {
   async retrieve(
     projectId: ProjectId,
     options?: RequestOptions,
-  ): Promise<ApiResult<ProjectRead, ProjectsRetrieveError>> {
-    return this._core.request<ProjectRead, ProjectsRetrieveError>({
+  ): Promise<ApiResult<Project, ProjectsRetrieveError>> {
+    return this._core.request<Project, ProjectsRetrieveError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       errors: {
@@ -152,8 +134,8 @@ export class ProjectsResource {
   async delete(
     projectId: ProjectId,
     options?: RequestOptions,
-  ): Promise<ApiResult<DeletedProjectRead, ProjectsDeleteError>> {
-    return this._core.request<DeletedProjectRead, ProjectsDeleteError>({
+  ): Promise<ApiResult<DeletedProject, ProjectsDeleteError>> {
+    return this._core.request<DeletedProject, ProjectsDeleteError>({
       method: "DELETE",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       errors: {
@@ -176,8 +158,8 @@ export class ProjectsResource {
     projectId: ProjectId,
     body: UpdateProjectRequest,
     options?: RequestOptions,
-  ): Promise<ApiResult<ProjectRead, ProjectsUpdateError>> {
-    return this._core.request<ProjectRead, ProjectsUpdateError>({
+  ): Promise<ApiResult<Project, ProjectsUpdateError>> {
+    return this._core.request<Project, ProjectsUpdateError>({
       method: "PATCH",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       body,
@@ -187,7 +169,6 @@ export class ProjectsResource {
         "402": PaymentRequiredError,
         "403": ForbiddenError,
         "404": NotFoundError,
-        "422": UnprocessableEntityError,
         "429": RateLimitedError,
       },
       schemaKey: "projects.update",
@@ -196,21 +177,20 @@ export class ProjectsResource {
   }
 
   /**
-   * Analyze a project's latest Definition Revision
+   * Diagnose a project's GitHub integration
    *
-   * Runs deterministic OpenAPI or GraphQL authorship checks against the latest observed immutable
-   * Definition Revision after applying the Definition's existing patches. Diagnostics group every
-   * affected location under a stable rule. Exact patches are included only when Typeship can derive
-   * the change without inventing API behavior.
-   * `GET /projects/{project_id}/diagnostics`
+   * Returns machine-actionable source and destination access, spec readability, optional label
+   * setup, required status names, and the latest durable webhook delivery. The console renders this
+   * same result.
+   * `GET /projects/{project_id}/github`
    */
-  async retrieveDiagnostics(
+  async retrieveGithubHealth(
     projectId: ProjectId,
     options?: RequestOptions,
-  ): Promise<ApiResult<DiagnosticReportRead, ProjectsRetrieveDiagnosticsError>> {
-    return this._core.request<DiagnosticReportRead, ProjectsRetrieveDiagnosticsError>({
+  ): Promise<ApiResult<GithubIntegrationHealth, ProjectsRetrieveGithubHealthError>> {
+    return this._core.request<GithubIntegrationHealth, ProjectsRetrieveGithubHealthError>({
       method: "GET",
-      path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics`,
+      path: `/projects/${encodeURIComponent(String(projectId))}/github`,
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -218,91 +198,7 @@ export class ProjectsResource {
         "429": RateLimitedError,
       },
       idempotent: true,
-      schemaKey: "projects.retrieveDiagnostics",
-      options,
-    });
-  }
-
-  /**
-   * Refresh a project's Diagnostics from its configured source
-   *
-   * Fetches the complete configured source, records a new immutable revision only when content
-   * changed, and returns its Diagnostics. This does not generate targets or consume a metered
-   * generation.
-   * `POST /projects/{project_id}/diagnostics`
-   */
-  async refreshDiagnostics(
-    projectId: ProjectId,
-    options?: RequestOptions,
-  ): Promise<ApiResult<DiagnosticReportRead, ProjectsRefreshDiagnosticsError>> {
-    return this._core.request<DiagnosticReportRead, ProjectsRefreshDiagnosticsError>({
-      method: "POST",
-      path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics`,
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-      },
-      schemaKey: "projects.refreshDiagnostics",
-      options,
-    });
-  }
-
-  /**
-   * Apply exact, reviewed diagnostic remediations
-   *
-   * Applies only deterministic patches. Repository sources receive an updateable source pull
-   * request; URL sources receive project overlays. Diagnostics that require API-owner intent return
-   * 422 and include an authoring_brief in the Diagnostic instead.
-   * `POST /projects/{project_id}/diagnostics/remediations`
-   */
-  async remediateDiagnostics(
-    projectId: ProjectId,
-    body: DiagnosticRemediationRequest,
-    options?: RequestOptions,
-  ): Promise<ApiResult<DiagnosticRemediationRead, ProjectsRemediateDiagnosticsError>> {
-    return this._core.request<DiagnosticRemediationRead, ProjectsRemediateDiagnosticsError>({
-      method: "POST",
-      path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics/remediations`,
-      body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-      },
-      schemaKey: "projects.remediateDiagnostics",
-      options,
-    });
-  }
-
-  /**
-   * Diagnose a project's repository integrations
-   *
-   * Returns provider-neutral, machine-actionable source and destination access, Definition
-   * readability, source-approval label setup, required status names, and the latest durable webhook
-   * delivery. The Console renders this same result.
-   * `GET /projects/{project_id}/integration-health`
-   */
-  async retrieveIntegrationHealth(
-    projectId: ProjectId,
-    options?: RequestOptions,
-  ): Promise<ApiResult<RepositoryIntegrationHealthRead, ProjectsRetrieveIntegrationHealthError>> {
-    return this._core.request<RepositoryIntegrationHealthRead, ProjectsRetrieveIntegrationHealthError>({
-      method: "GET",
-      path: `/projects/${encodeURIComponent(String(projectId))}/integration-health`,
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-      },
-      idempotent: true,
-      schemaKey: "projects.retrieveIntegrationHealth",
+      schemaKey: "projects.retrieveGithubHealth",
       options,
     });
   }
@@ -317,14 +213,14 @@ export class ProjectsResource {
     projectId: ProjectId,
     params?: ProjectsListGenerationsParams,
     options?: RequestOptions,
-  ): PagePromise<GenerationRead, ProjectsListGenerationsError> {
-    return paginate<GenerationRead, ProjectsListGenerationsError>(this._core, {
+  ): PagePromise<Generation, ProjectsListGenerationsError> {
+    return paginate<Generation, ProjectsListGenerationsError>(this._core, {
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}/generations`,
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        target_id: params?.targetId,
+        output: params?.output,
       },
       errors: {
         "400": BadRequestError,
@@ -347,7 +243,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Generate targets and open pull requests
+   * Generate outputs and open pull requests
    *
    * Resolves the project's URL or GitHub source, generates every
    * configured delivery package, stores each result in the project's history,
@@ -361,8 +257,8 @@ export class ProjectsResource {
   async generate(
     projectId: ProjectId,
     options?: RequestOptions,
-  ): Promise<ApiResult<GenerationBatchRead, ProjectsGenerateError>> {
-    return this._core.request<GenerationBatchRead, ProjectsGenerateError>({
+  ): Promise<ApiResult<GenerationBatch, ProjectsGenerateError>> {
+    return this._core.request<GenerationBatch, ProjectsGenerateError>({
       method: "POST",
       path: `/projects/${encodeURIComponent(String(projectId))}/generations`,
       errors: {
@@ -413,7 +309,6 @@ export type ProjectsCreateError =
   | PaymentRequiredError
   | ForbiddenError
   | ConflictError
-  | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
@@ -447,47 +342,13 @@ export type ProjectsUpdateError =
   | PaymentRequiredError
   | ForbiddenError
   | NotFoundError
-  | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError
   | TransportError
   | ValidationError;
 
-/** Every error `retrieveDiagnostics` can produce, as a discriminated union. */
-export type ProjectsRetrieveDiagnosticsError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | UnexpectedApiError
-  | TransportError
-  | ValidationError;
-
-/** Every error `refreshDiagnostics` can produce, as a discriminated union. */
-export type ProjectsRefreshDiagnosticsError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | UnexpectedApiError
-  | TransportError
-  | ValidationError;
-
-/** Every error `remediateDiagnostics` can produce, as a discriminated union. */
-export type ProjectsRemediateDiagnosticsError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | UnexpectedApiError
-  | TransportError
-  | ValidationError;
-
-/** Every error `retrieveIntegrationHealth` can produce, as a discriminated union. */
-export type ProjectsRetrieveIntegrationHealthError =
+/** Every error `retrieveGithubHealth` can produce, as a discriminated union. */
+export type ProjectsRetrieveGithubHealthError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
@@ -501,8 +362,8 @@ export interface ProjectsListGenerationsParams {
   limit?: number;
   /** Opaque cursor from the preceding page's next_cursor. */
   cursor?: string;
-  /** Only generations for this persisted Target. */
-  targetId?: TargetId;
+  /** Only generations for this output. */
+  output?: OutputId;
 }
 
 /** Every error `listGenerations` can produce, as a discriminated union. */

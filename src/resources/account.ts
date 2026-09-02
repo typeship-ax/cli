@@ -10,7 +10,7 @@ import {
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
-import type { Account, AccountRead } from "../types.js";
+import type { Account } from "../types.js";
 
 export class AccountResource {
   constructor(private readonly _core: HttpCore) {}
@@ -21,8 +21,8 @@ export class AccountResource {
    * identity endpoint the generated typeship CLI's `whoami` calls.
    * `GET /me`
    */
-  async retrieve(options?: RequestOptions): Promise<ApiResult<AccountRead, AccountRetrieveError>> {
-    return this._core.request<AccountRead, AccountRetrieveError>({
+  async retrieve(options?: RequestOptions): Promise<ApiResult<Account, AccountRetrieveError>> {
+    return this._core.request<Account, AccountRetrieveError>({
       method: "GET",
       path: "/me",
       errors: { "401": UnauthorizedError, "403": ForbiddenError, "429": RateLimitedError },

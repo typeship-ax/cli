@@ -35,7 +35,7 @@ export type IssueCode =
   | "UNKNOWN_COMMAND"
   | "UNKNOWN_FLAG"
   | "MISSING_ARGUMENT"
-  | "CALL_FAILED";          // anything else
+  | "COMMAND_FAILED";       // anything else
 
 export interface Issue {
   code: IssueCode;
@@ -137,7 +137,7 @@ export function classifyApiError(
   if (status === 422 && apiCode === "spec_error") return { code: "SPEC_INVALID", message, detail, nextSteps: ["The API rejected the spec it was given; the message says why.", context.docsUrl ? "Look the message up: '" + context.bin + " docs search \"" + (apiMessage ?? "").slice(0, 60).replace(/"/g, "'") + "\"'." : "Fix the spec and run again."] };
   if (status === 400 || status === 422 || status === 409 || status === 413) return { code: "INVALID_REQUEST", message, detail, nextSteps: ["Read detail.body for the field the API named; run the command with --help for its flags."] };
   if (status >= 500) return { code: "SERVER_ERROR", message, detail, nextSteps: ["Retry once with backoff. If it persists, report the request id in detail.body."] };
-  return { code: "CALL_FAILED", message, detail };
+  return { code: "COMMAND_FAILED", message, detail };
 }
 
 /** A file lookup needs path guidance, not the generic advice for a missing
@@ -189,9 +189,9 @@ export interface AgentModeInput {
  */
 export function agentMode(input: AgentModeInput): boolean {
   if (input.flagMode === "agent") return true;
-  if (input.flagMode === "human") return false;
+  if (input.flagMode === "human" || input.flagMode === "interactive") return false;
   if (input.envMode === "agent") return true;
-  if (input.envMode === "human") return false;
+  if (input.envMode === "human" || input.envMode === "interactive") return false;
   return !input.stdoutIsTTY && !input.stdinIsTTY;
 }
 

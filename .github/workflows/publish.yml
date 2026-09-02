@@ -33,7 +33,7 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match package version $expected" >&2
             exit 1
           }
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm test
       - name: Check whether the version already exists
         if: github.event_name == 'push'

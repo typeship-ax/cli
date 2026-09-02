@@ -12,7 +12,7 @@ import {
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
-import type { Generation, GenerationId } from "../types.js";
+import type { GenerationId, GenerationResponse, GenerationResponseRead } from "../types.js";
 
 export class GenerationsResource {
   constructor(private readonly _core: HttpCore) {}
@@ -25,8 +25,8 @@ export class GenerationsResource {
   async retrieve(
     generationId: GenerationId,
     options?: RequestOptions,
-  ): Promise<ApiResult<Generation, GenerationsRetrieveError>> {
-    return this._core.request<Generation, GenerationsRetrieveError>({
+  ): Promise<ApiResult<GenerationResponseRead, GenerationsRetrieveError>> {
+    return this._core.request<GenerationResponseRead, GenerationsRetrieveError>({
       method: "GET",
       path: `/generations/${encodeURIComponent(String(generationId))}`,
       errors: {
@@ -44,7 +44,7 @@ export class GenerationsResource {
   /**
    * Fetch one file from a generation
    *
-   * Raw file content, for generations whose output was too large to inline (files_omitted true).
+   * Raw file content, for generations whose target was too large to inline (files_omitted true).
    * The generation's files_index lists valid paths.
    * `GET /generations/{generation_id}/file`
    */

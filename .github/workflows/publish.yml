@@ -1,0 +1,65 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Use an OIDC-capable npm client
+        run: npm install --global npm@11.6.2
+      - name: Validate the immutable tag
+        if: github.event_name == 'push'
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          [ "$GITHUB_REF_NAME" = "$expected" ] || {
+            echo "Tag $GITHUB_REF_NAME does not match package version $expected" >&2
+            exit 1
+          }
+      - run: npm ci
+      - run: npm test
+      - name: Check whether the version already exists
+        if: github.event_name == 'push'
+        id: exists
+        run: |
+          package="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "https://registry.npmjs.org/$package/$version")"
+          case "$status" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "npm registry lookup failed with HTTP $status" >&2; exit 1 ;;
+          esac
+      - name: Publish the reviewed package
+        if: github.event_name == 'push' && steps.exists.outputs.published == 'false'
+        run: npm publish --access public
+      - name: Verify the immutable version
+        if: github.event_name == 'push'
+        run: |
+          package="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          body="$(curl --fail --silent --show-error "https://registry.npmjs.org/$package/$version")"
+          node -e '
+            const body = JSON.parse(process.argv[1]);
+            if (body.name !== process.argv[2] || body.version !== process.argv[3]) process.exit(1);
+          ' "$body" "$package" "$version"
+      - name: Dry run
+        if: github.event_name == 'workflow_dispatch'
+        run: npm publish --dry-run --access public

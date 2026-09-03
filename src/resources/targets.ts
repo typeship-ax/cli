@@ -82,16 +82,22 @@ export class TargetsResource {
    *
    * Several Targets may use the same generator with distinct configuration, Deliveries, and release
    * streams.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/targets`
    */
   async create(
     projectId: ProjectId,
     body: TargetFields,
+    params?: TargetsCreateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<TargetResponseRead, TargetsCreateError>> {
     return this._core.request<TargetResponseRead, TargetsCreateError>({
       method: "POST",
       path: `/projects/${encodeURIComponent(String(projectId))}/targets`,
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       body,
       errors: {
         "400": BadRequestError,
@@ -102,6 +108,7 @@ export class TargetsResource {
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.create",
       options,
     });
@@ -266,6 +273,16 @@ export type TargetsListError =
   | UnexpectedApiError
   | TransportError
   | ValidationError;
+
+export interface TargetsCreateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
 
 /** Every error `create` can produce, as a discriminated union. */
 export type TargetsCreateError =

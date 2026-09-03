@@ -8,7 +8,7 @@ For complete input and output schemas, use [`api.json`](./api.json), the machine
 
 ## generate
 
-### `client.generate.run(body)`
+### `client.generate.run(body, params)`
 
 Generate one Target from a Definition
 
@@ -25,10 +25,14 @@ paid plans generate the complete Definition. A present but invalid key is a
 
 Safety: **write** · Authentication: **optional**
 
+| Parameter | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+
 Body: `GenerateRequest` (required)
 
 Returns: `GenerationResult`
-Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `PayloadTooLargeError` (413), `UnprocessableEntityError` (422), `RateLimitedError` (429), `ApiResponseError` (default)
+Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `ConflictError` (409), `PayloadTooLargeError` (413), `UnprocessableEntityError` (422), `RateLimitedError` (429), `ApiResponseError` (default)
 
 <details>
 <summary>Wire arguments (CLI and MCP)</summary>
@@ -85,7 +89,7 @@ Safety: **write** · Authentication: **required**
 
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
-| `idempotencyKey` | header | `string` | no | Uniquely identifies this creation attempt. Retrying the same request with the same key returns the original response instead of creating another project. Reusing a key with different parameters returns 409. |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Body: `CreateProjectRequest` (required)
 
@@ -120,6 +124,8 @@ Errors: `BadRequestError` (400), `UnauthorizedError` (401), `PaymentRequiredErro
 Retrieve a project
 
 `GET /projects/{project_id}`
+
+Returns Project-owned fields only. List Targets separately for Target and Delivery data.
 
 Safety: **read** · Authentication: **required**
 
@@ -223,7 +229,7 @@ Errors: `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404)
 
 </details>
 
-### `client.projects.refreshDiagnostics(projectId)`
+### `client.projects.refreshDiagnostics(projectId, params)`
 
 Refresh a project's Diagnostics from its configured source
 
@@ -236,9 +242,10 @@ Safety: **write** · Authentication: **required**
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `projectId` | path | `ProjectId` | yes | — |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Returns: `DiagnosticReport`
-Errors: `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitedError` (429)
+Errors: `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitedError` (429)
 
 <details>
 <summary>Wire arguments (CLI and MCP)</summary>
@@ -251,7 +258,7 @@ Errors: `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404)
 
 </details>
 
-### `client.projects.remediateDiagnostics(projectId, body)`
+### `client.projects.remediateDiagnostics(projectId, body, params)`
 
 Apply exact, reviewed diagnostic remediations
 
@@ -264,11 +271,12 @@ Safety: **write** · Authentication: **required**
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `projectId` | path | `ProjectId` | yes | — |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Body: `DiagnosticRemediationRequest` (required)
 
 Returns: `DiagnosticRemediation`
-Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitedError` (429)
+Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitedError` (429)
 
 <details>
 <summary>Wire arguments (CLI and MCP)</summary>
@@ -327,7 +335,7 @@ Safety: **read** · Authentication: **required**
 | `cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. |
 | `targetId` | query | `TargetId` | no | Only generations for this persisted Target. |
 
-Returns: `PagePromise<Generation>` — auto-paginating (`for await` walks every page)
+Returns: `PagePromise<GenerationSummary>` — auto-paginating (`for await` walks every page)
 Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `RateLimitedError` (429)
 
 <details>
@@ -341,7 +349,7 @@ Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (40
 
 </details>
 
-### `client.projects.generate(projectId)`
+### `client.projects.generate(projectId, params)`
 
 Generate targets and open pull requests
 
@@ -360,9 +368,10 @@ Safety: **write** · Authentication: **required**
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `projectId` | path | `ProjectId` | yes | — |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Returns: `GenerationBatch`
-Errors: `UnauthorizedError` (401), `PaymentRequiredError` (402), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitedError` (429), `InternalServerError` (500)
+Errors: `UnauthorizedError` (401), `PaymentRequiredError` (402), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitedError` (429), `InternalServerError` (500)
 
 <details>
 <summary>Wire arguments (CLI and MCP)</summary>
@@ -403,7 +412,7 @@ Errors: `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404)
 
 </details>
 
-### `client.definitions.update(definitionId, body)`
+### `client.definitions.update(definitionId, body, params)`
 
 Update and resolve a Definition
 
@@ -416,11 +425,12 @@ Safety: **write** · Authentication: **required**
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `definitionId` | path | `DefinitionId` | yes | — |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Body: `DefinitionUpdateRequest` (required)
 
 Returns: `Definition`
-Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `UnprocessableEntityError` (422), `RateLimitedError` (429)
+Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitedError` (429)
 
 <details>
 <summary>Wire arguments (CLI and MCP)</summary>
@@ -463,7 +473,7 @@ Errors: `BadRequestError` (400), `UnauthorizedError` (401), `ForbiddenError` (40
 
 </details>
 
-### `client.targets.create(projectId, body)`
+### `client.targets.create(projectId, body, params)`
 
 Create an independently configured Target
 
@@ -476,6 +486,7 @@ Safety: **write** · Authentication: **required**
 | Parameter | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `projectId` | path | `ProjectId` | yes | — |
+| `idempotencyKey` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Body: `TargetFields` (required)
 

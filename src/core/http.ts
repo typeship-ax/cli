@@ -376,8 +376,14 @@ export class HttpCore {
     const policy: RetryPolicy = { ...this.config.retry, ...req.retry };
     const maxRetries = req.options?.maxRetries ?? policy.maxRetries ?? this.config.maxRetries;
     const timeoutMs = req.options?.timeoutMs ?? this.config.timeoutMs;
-    const retryAllowed = req.idempotent === true || req.method === "GET" || policy.retryNonIdempotent === true;
-    const retryableStatuses = policy.statuses ? new Set(policy.statuses) : RETRYABLE_STATUSES;
+    const retryAllowed =
+      req.idempotent === true ||
+      req.method === "GET" ||
+      req.idempotencyKey !== undefined ||
+      policy.retryNonIdempotent === true;
+    const retryableStatuses = policy.statuses
+      ? new Set(policy.statuses)
+      : RETRYABLE_STATUSES;
 
     // One key per logical call, reused on every retry — that's the point
     // of idempotency keys.

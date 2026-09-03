@@ -1042,6 +1042,7 @@ export interface Target {
    * never appear here.
    */
   config: ProjectConfig | null;
+  /** At most one repository and one hosted MCP Delivery. */
   deliveries: Delivery[];
   /** Format: date-time */
   created_at: string;
@@ -1072,6 +1073,7 @@ export interface TargetRead {
    * never appear here.
    */
   config: ProjectConfigRead | null;
+  /** At most one repository and one hosted MCP Delivery. */
   deliveries: DeliveryRead[];
   /** Format: date-time */
   created_at: string;
@@ -1350,18 +1352,15 @@ export interface DefinitionUpdateRequestRead {
   diagnostic_policy?: DiagnosticPolicyRead;
 }
 
+/**
+ * Project-owned identity, Definition reference, generation controls, and shared configuration.
+ * Targets and Deliveries are available only through their canonical Target endpoints.
+ */
 export interface Project {
   id: ProjectId;
   object: "project";
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: Target[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: Delivery[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1393,13 +1392,6 @@ export interface Project {
 export interface ProjectWrite {
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: Target[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: Delivery[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1426,13 +1418,6 @@ export interface ProjectRead {
   object: "project" | (string & {});
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: TargetRead[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: DeliveryRead[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1461,8 +1446,8 @@ export interface ProjectRead {
 }
 
 /**
- * Lean Project identity returned by collection endpoints. Retrieve the Project or list its Targets
- * for the complete aggregate.
+ * Lean Project identity returned by collection endpoints. Retrieve the Project for shared
+ * configuration and list its Targets for the complete canonical child collection.
  */
 export interface ProjectSummary {
   id: ProjectId;
@@ -1651,6 +1636,20 @@ export interface McpBehavior {
    * match no operation are reported as generation warnings.
    */
   tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
 }
 
 /** Response shape for McpBehavior. */
@@ -1676,6 +1675,30 @@ export interface McpBehaviorRead {
    * match no operation are reported as generation warnings.
    */
   tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false | (string & {})
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
+}
+
+/** Generated README behavior. Part of Config. */
+export interface ReadmeBehavior {
+  /**
+   * operationId or "METHOD /path" to feature as the README's first API call. It must be present in
+   * the generated package and callable with no required input beyond path placeholders. Missing or
+   * unsuitable choices produce a warning and use the automatic example.
+   */
+  quickstart_operation?: string | null;
 }
 
 /**
@@ -1700,7 +1723,7 @@ export interface PackageBehavior {
 
 /**
  * Everything Typeship needs beyond the Definition, in one object: generation customization
- * (globals, retries, pagination) and how the generated tooling behaves (cli, mcp, package,
+ * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
  * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
  * itself. Stateless generation also accepts GraphQL settings here; stored projects keep those
  * settings on their Definition.
@@ -1721,6 +1744,7 @@ export interface Config {
   graphql?: GraphqlSettings;
   cli?: CliBehavior;
   mcp?: McpBehavior;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1752,6 +1776,7 @@ export interface ConfigRead {
   graphql?: GraphqlSettingsRead;
   cli?: CliBehavior;
   mcp?: McpBehaviorRead;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1769,8 +1794,8 @@ export interface ConfigRead {
 /**
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
- * while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's
- * Definition and are rejected in both stored config scopes.
+ * while cli, mcp, readme, and package merge by field. GraphQL-only source settings live on the
+ * Project's Definition and are rejected in both stored config scopes.
  */
 export interface ProjectConfig {
   /**
@@ -1787,6 +1812,7 @@ export interface ProjectConfig {
   pagination?: Record<string, PaginationRule | boolean>;
   cli?: CliBehavior;
   mcp?: McpBehavior;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1817,6 +1843,7 @@ export interface ProjectConfigRead {
   pagination?: Record<string, PaginationRuleRead | boolean>;
   cli?: CliBehavior;
   mcp?: McpBehaviorRead;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1964,6 +1991,38 @@ export interface FileStub {
   bytes: number;
 }
 
+export const GenerationStatus = {
+  SUCCEEDED: "succeeded",
+  FAILED: "failed",
+} as const;
+export type GenerationStatus = (typeof GenerationStatus)[keyof typeof GenerationStatus];
+
+export const GenerationTrigger = {
+  MANUAL: "manual",
+  WEBHOOK: "webhook",
+  POLL: "poll",
+  PREVIEW: "preview",
+} as const;
+export type GenerationTrigger = (typeof GenerationTrigger)[keyof typeof GenerationTrigger];
+
+export interface GenerationProvenance {
+  /** Pinned generator contract edition. */
+  generator_edition: string;
+  /** Exact engine build identifier used for replay and support. */
+  engine_build: string;
+  /**
+   * Immutable effective Target configuration used by this run; source credentials are never
+   * included.
+   */
+  resolved_config: Record<string, unknown> | null;
+  config_hash: string | null;
+  /** Resolved generator and entitlement plan used to select the emitted public surface. */
+  surface_plan: Record<string, unknown> | null;
+  surface_plan_hash: string | null;
+  entitlement_cap: number | null;
+  package_version: string | null;
+}
+
 export interface Generation {
   id: GenerationId;
   object: "generation";
@@ -1975,29 +2034,13 @@ export interface Generation {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: "succeeded" | "failed";
-  trigger: "manual" | "webhook" | "poll" | "preview";
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
@@ -2020,29 +2063,13 @@ export interface GenerationWrite {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: "succeeded" | "failed";
-  trigger: "manual" | "webhook" | "poll" | "preview";
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
@@ -2066,29 +2093,13 @@ export interface GenerationRead {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: ("succeeded" | "failed") | (string & {});
-  trigger: ("manual" | "webhook" | "poll" | "preview") | (string & {});
+  status: GenerationStatus | (string & {});
+  trigger: GenerationTrigger | (string & {});
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
@@ -2098,6 +2109,71 @@ export interface GenerationRead {
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
+}
+
+/**
+ * Generation metadata returned by collection endpoints. Generated file contents and file indexes
+ * are available only from retrieve and create operations.
+ */
+export interface GenerationSummary {
+  id: GenerationId;
+  object: "generation";
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind;
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMeta | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
+}
+
+/** Request shape for GenerationSummary. */
+export interface GenerationSummaryWrite {
+  id: GenerationId;
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind;
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMeta | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
+}
+
+/** Response shape for GenerationSummary. */
+export interface GenerationSummaryRead {
+  id: GenerationId;
+  object: "generation" | (string & {});
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus | (string & {});
+  trigger: GenerationTrigger | (string & {});
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind | (string & {});
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMetaRead | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
 }
 
 export type GenerationResponse = Generation & ResponseMetadata;
@@ -2124,20 +2200,24 @@ export interface GenerationFailureRead {
   error: string;
 }
 
+/**
+ * Metadata for each Target generation attempted by a Project run. Retrieve one Generation
+ * separately for generated files.
+ */
 export interface GenerationBatch {
-  data: Array<Generation | GenerationFailure>;
+  data: Array<GenerationSummary | GenerationFailure>;
   request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
-  data: Array<GenerationWrite | GenerationFailure>;
+  data: Array<GenerationSummaryWrite | GenerationFailure>;
   request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
-  data: Array<GenerationRead | GenerationFailureRead>;
+  data: Array<GenerationSummaryRead | GenerationFailureRead>;
   request_id: RequestId;
 }
 
@@ -2306,7 +2386,7 @@ export interface ProjectListRead {
 
 export interface GenerationList {
   object: ListObject;
-  data: Generation[];
+  data: GenerationSummary[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -2317,7 +2397,7 @@ export interface GenerationList {
 /** Request shape for GenerationList. */
 export interface GenerationListWrite {
   object: ListObject;
-  data: GenerationWrite[];
+  data: GenerationSummaryWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -2328,7 +2408,7 @@ export interface GenerationListWrite {
 /** Response shape for GenerationList. */
 export interface GenerationListRead {
   object: ListObject;
-  data: GenerationRead[];
+  data: GenerationSummaryRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */

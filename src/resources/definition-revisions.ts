@@ -4,6 +4,7 @@
 import { HttpCore, type ApiResult, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  ResponseParseError,
   TransportError,
   UnexpectedApiError,
   ValidationError,
@@ -168,6 +169,7 @@ export type DefinitionRevisionsListError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -178,6 +180,7 @@ export type DefinitionRevisionsRetrieveError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -188,6 +191,7 @@ export type DefinitionRevisionsRetrieveContentError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -198,5 +202,6 @@ export type DefinitionRevisionsRetrieveDocumentContentError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;

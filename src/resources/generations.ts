@@ -3,6 +3,7 @@
 
 import { HttpCore, type ApiResult, type RequestOptions } from "../core/http.js";
 import {
+  ResponseParseError,
   TransportError,
   UnexpectedApiError,
   ValidationError,
@@ -82,6 +83,7 @@ export type GenerationsRetrieveError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -98,5 +100,6 @@ export type GenerationsRetrieveFileError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;

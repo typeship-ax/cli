@@ -81,6 +81,23 @@ export class UnexpectedApiError extends ApiError<number, unknown> {
   }
 }
 
+/** A successful response declared JSON but carried a body that could not be parsed. */
+export class ResponseParseError extends Error {
+  readonly status: number;
+  readonly body: string;
+  readonly response: ResponseMeta;
+  override readonly cause?: unknown;
+
+  constructor(body: string, response: ResponseMeta, cause?: unknown) {
+    super("HTTP " + response.status + " response body was not valid JSON");
+    this.name = "ResponseParseError";
+    this.status = response.status;
+    this.body = body;
+    this.response = response;
+    this.cause = cause;
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // Optional runtime validation — zero-dependency, schema table in schemas.ts
@@ -222,7 +239,7 @@ function transportFailureMessage(method: string, url: string, cause: unknown): s
   return method + " " + url + " failed: " + detail;
 }
 
-/** The request never produced an HTTP response (network failure, timeout, abort). */
+/** The request failed before a complete HTTP response arrived (network failure, timeout, abort, or truncated body). */
 export class TransportError extends Error {
   override readonly cause?: unknown;
 
@@ -350,7 +367,7 @@ export interface DebugEvent {
   /** 1-based; >1 means this was a retry */
   attempt: number;
   requestId?: string;
-  /** transport failure message, when there was no response */
+  /** transport failure message, when the request failed before a complete response */
   error?: string;
 }
 
@@ -488,13 +505,14 @@ export class HttpCore {
         try {
           data = (await parseBody(response, req.method)) as T;
         } catch (cause) {
-          emitResponseDebug(response);
-          const error = new TransportError(
-            "The response body read was aborted before completing",
+          const parseError = cause instanceof ResponseParseError ? cause : undefined;
+          emitResponseDebug(response, parseError?.body);
+          const error = (parseError ?? new TransportError(
+            "The response body read failed before completing",
             cause,
-          ) as unknown as E;
+          )) as unknown as E;
           await this.config.onError?.(error, { method: req.method, path: req.path });
-          return { ok: false, error, response: meta(response) };
+          return { ok: false, error, response: parseError?.response ?? meta(response) };
         }
         emitResponseDebug(response, data);
         const responseMeta = meta(response, data);
@@ -744,17 +762,28 @@ function serializeBody(req: CoreRequest): { body: NonNullable<RequestInit["body"
 
 async function parseBody(response: Response, method: string): Promise<unknown> {
   if (method === "HEAD" || response.status === 204 || response.status === 205) return undefined;
-  const contentType = response.headers.get("content-type") ?? "";
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  const mediaType = contentType.split(";", 1)[0]!.trim();
+  const slash = mediaType.indexOf("/");
+  const subtype = slash === -1 ? "" : mediaType.slice(slash + 1);
   try {
-    if (contentType.includes("json")) return await response.json();
+    if (subtype === "json" || subtype.endsWith("+json")) {
+      const body = await response.text();
+      if (body.length === 0) return undefined;
+      try {
+        return JSON.parse(body);
+      } catch (cause) {
+        throw new ResponseParseError(body, meta(response, body), cause);
+      }
+    }
     if (contentType.startsWith("text/")) return await response.text();
     if (response.body === null) return undefined;
     return await response.blob();
   } catch (cause) {
-    // A timed-out or aborted body read is a transport failure, not an
-    // empty body — surface it instead of faking success.
-    if (cause instanceof Error && (cause.name === "AbortError" || cause.name === "TimeoutError")) throw cause;
-    return undefined;
+    if (cause instanceof ResponseParseError) throw cause;
+    // A timed-out, aborted, or prematurely terminated body is a transport
+    // failure, not an empty body — surface it instead of faking success.
+    throw cause;
   }
 }
 

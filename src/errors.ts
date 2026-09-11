@@ -4,7 +4,7 @@
 import { ApiError, type ResponseMeta } from "./core/http.js";
 import type { ErrorModel, ErrorModelRead } from "./types.js";
 
-export { ApiError, TransportError, UnexpectedApiError, ValidationError, type Violation, unwrap } from "./core/http.js";
+export { ApiError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation, unwrap } from "./core/http.js";
 
 /**
  * The request body, Definition source, target selection, or package name is invalid.

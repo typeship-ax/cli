@@ -25,6 +25,7 @@
     "src",
     "api.md",
     "api.json",
+    "AGENTS.md",
     "LICENSE"
   ],
   "sideEffects": false,

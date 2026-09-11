@@ -8,6 +8,7 @@ import {
   ValidationError,
   ApiResponseError,
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   PayloadTooLargeError,
   RateLimitedError,
@@ -30,29 +31,47 @@ export class GenerateResource {
    * the first 25 operations and
    * paid plans generate the complete Definition. A present but invalid key is a
    * 401, not a downgrade to anonymous.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /generate`
    */
   async run(
     body: GenerateRequest,
+    params?: GenerateRunParams,
     options?: RequestOptions,
   ): Promise<ApiResult<GenerationResultRead, GenerateRunError>> {
     return this._core.request<GenerationResultRead, GenerateRunError>({
       method: "POST",
       path: "/generate",
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       body,
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
+        "409": ConflictError,
         "413": PayloadTooLargeError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         default: ApiResponseError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "generate.run",
       options,
     });
   }
+}
+
+export interface GenerateRunParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
 }
 
 /** Every error `run` can produce, as a discriminated union. */
@@ -60,6 +79,7 @@ export type GenerateRunError =
   | BadRequestError
   | UnauthorizedError
   | ForbiddenError
+  | ConflictError
   | PayloadTooLargeError
   | UnprocessableEntityError
   | RateLimitedError

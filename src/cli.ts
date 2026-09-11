@@ -19,7 +19,7 @@ import {
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
-import { fetchDocsText, resolveDocsContentUrl } from "./docs.js";
+import { docsReadCommand, docsReadTarget, fetchDocsText, resolveDocsContentUrl, searchConnectedGuides } from "./docs.js";
 
 
 const BIN = "typeship";
@@ -1608,30 +1608,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
       .filter((match) => match.score > 0)
       .sort((a, b) => b.score - a.score || a.op.command.join(" ").localeCompare(b.op.command.join(" ")))
       .map((match) => match.op);
-    const prose = await fetchDocs("llms-full.txt");
-    const proseMatches: { heading: string; excerpt: string; score: number }[] = [];
-    if (prose !== null) {
-      let heading = "";
-      const terms = searchTerms(term);
-      for (const line of prose.split("\n")) {
-        if (/^#{1,3} /.test(line)) heading = line.replace(/^#+ /, "").trim();
-        else {
-          const lowerHeading = heading.toLowerCase();
-          const lowerLine = line.toLowerCase();
-          const matched = terms.filter((word) => lowerHeading.includes(word) || lowerLine.includes(word));
-          if (matched.length > 0) {
-            const allTerms = matched.length === terms.length;
-            proseMatches.push({
-              heading,
-              excerpt: line.trim().slice(0, 160),
-              score: matched.length * 10 + (allTerms ? 50 : 0) + (lowerHeading.includes(term.toLowerCase()) || lowerLine.includes(term.toLowerCase()) ? 25 : 0),
-            });
-          }
-        }
-      }
-      proseMatches.sort((a, b) => b.score - a.score || a.heading.localeCompare(b.heading) || a.excerpt.localeCompare(b.excerpt));
-    }
-    const docsStatus = docsSiteUrl() === null ? "not_configured" : prose === null ? "unavailable" : "ok";
+    const { guides: proseMatches, status: docsStatus } = await searchConnectedGuides(docsSiteUrl(), docsIndexUrl(), fetchDocs, term);
     if (jsonOutput) {
       out({
         schema_version: "1",
@@ -1643,7 +1620,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
           ...(op.summary ? { summary: op.summary } : {}),
           details_command: BIN + " docs " + op.command.join(" ") + " --json",
         })),
-        guides: proseMatches.slice(0, 15).map(({ heading, excerpt }) => ({ heading, excerpt })),
+        guides: proseMatches.slice(0, 15).map((match) => ({ ...match, read_command: docsReadCommand(BIN, match.url) })),
         totals: { reference: refMatches.length, guides: proseMatches.length },
         guides_status: docsStatus,
         ...(docsStatus === "not_configured" ? { next_steps: ["Run '" + BIN + " config set docs-url <url>' to add guide search; the API reference was still searched."] } : {}),
@@ -1658,7 +1635,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     }
     if (proseMatches.length > 0) {
       lines.push(...(lines.length > 0 ? [""] : []), paintOut("bold", "Guides:"));
-      for (const match of proseMatches.slice(0, 15)) lines.push("  " + padPaint("cyan", match.heading.slice(0, 32), 34) + match.excerpt.slice(0, 100));
+      for (const match of proseMatches.slice(0, 15)) lines.push("  " + paintOut("cyan", match.title + (match.section ? " / " + match.section : "")), "    " + match.excerpt, "    " + docsReadCommand(BIN, match.url));
     } else if (docsStatus === "not_configured") {
       lines.push(...(lines.length > 0 ? [""] : []), "(no docs site configured for guide search: '" + BIN + " config set docs-url <url>')");
     } else if (docsStatus === "unavailable") {
@@ -1675,9 +1652,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     let target = page!;
     if (!/^https?:\/\//.test(target)) {
       const index = await fetchDocs("llms.txt");
-      const linked = index?.match(/\((https?:[^)]+)\)/g)?.map((m) => m.slice(1, -1)) ?? [];
-      const hit = linked.find((u) => u.toLowerCase().includes(target.toLowerCase()));
-      if (hit !== undefined) target = hit;
+      target = docsReadTarget(index, docsSiteUrl(), docsIndexUrl(), target);
     }
     const text = await fetchDocs(target);
     if (text === null) {

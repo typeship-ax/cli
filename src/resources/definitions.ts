@@ -7,6 +7,7 @@ import {
   UnexpectedApiError,
   ValidationError,
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   NotFoundError,
   RateLimitedError,
@@ -49,25 +50,33 @@ export class DefinitionsResource {
    * Update and resolve a Definition
    *
    * Resolves the complete document graph and records a new immutable revision before saving.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `PATCH /definitions/{definition_id}`
    */
   async update(
     definitionId: DefinitionId,
     body: DefinitionUpdateRequest,
+    params?: DefinitionsUpdateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<DefinitionRead, DefinitionsUpdateError>> {
     return this._core.request<DefinitionRead, DefinitionsUpdateError>({
       method: "PATCH",
       path: `/definitions/${encodeURIComponent(String(definitionId))}`,
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       body,
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "definitions.update",
       options,
     });
@@ -84,12 +93,23 @@ export type DefinitionsRetrieveError =
   | TransportError
   | ValidationError;
 
+export interface DefinitionsUpdateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
 /** Every error `update` can produce, as a discriminated union. */
 export type DefinitionsUpdateError =
   | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError

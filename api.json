@@ -4,10 +4,61 @@
   "api_version": "1.0.0",
   "spec_format": "openapi",
   "language": "TypeScript",
+  "surface": "cli",
   "operations": [
     {
       "operation": "generate.run",
-      "signature": "client.generate.run(body)",
+      "signature": "typeship generate run [flags]",
+      "command": [
+        "typeship",
+        "generate",
+        "run"
+      ],
+      "parameters": [
+        {
+          "name": "definition",
+          "flag": "--definition",
+          "in": "body",
+          "type": "json",
+          "required": true
+        },
+        {
+          "name": "target",
+          "flag": "--target",
+          "in": "body",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "package_name",
+          "flag": "--package-name",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "module_path",
+          "flag": "--module-path",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "config",
+          "flag": "--config",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship generate run --definition '{\"url\":\"https://example.com\"}' --target '{\"generator\":\"typescript-sdk\"}'",
       "method": "POST",
       "path": "/generate",
       "summary": "Generate one Target from a Definition",
@@ -18,6 +69,13 @@
       "input_schema": {
         "type": "object",
         "properties": {
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
+          },
           "definition": {
             "description": "A Definition for stateless generation, provided as exactly one URL or inline entrypoint.",
             "anyOf": [
@@ -89,7 +147,7 @@
             "type": "string"
           },
           "config": {
-            "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. Stateless generation also accepts GraphQL settings here; stored projects keep those settings on their Definition.",
+            "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. Stateless generation also accepts GraphQL settings here; stored projects keep those settings on their Definition.",
             "properties": {
               "globals": {
                 "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
@@ -265,40 +323,256 @@
                 "additionalProperties": false,
                 "type": "object"
               },
+              "auth": {
+                "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                "properties": {
+                  "oauth_server": {
+                    "anyOf": [
+                      {
+                        "description": "Authorization-server metadata used by generated OAuth flows. Secrets and runtime credentials are never accepted here.",
+                        "properties": {
+                          "issuer": {
+                            "format": "uri",
+                            "description": "Exact authorization-server issuer, including any tenant path.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "discovery_url": {
+                            "format": "uri",
+                            "description": "Exact metadata URL when it cannot be derived from the issuer.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "authorization_url": {
+                            "format": "uri",
+                            "description": "Authorization endpoint override.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "token_url": {
+                            "format": "uri",
+                            "description": "Token endpoint override.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "device_authorization_url": {
+                            "format": "uri",
+                            "description": "Device-authorization endpoint override.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "scopes": {
+                            "description": "Default scopes requested during login.",
+                            "maxItems": 20,
+                            "type": [
+                              "array",
+                              "null"
+                            ]
+                          },
+                          "audience": {
+                            "description": "Default audience included in authorization and token requests.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "resource": {
+                            "format": "uri",
+                            "description": "Protected API resource included in authorization and token requests.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false,
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "oauth_applications": {
+                    "description": "OAuth applications keyed by a stable name.",
+                    "additionalProperties": {
+                      "description": "OAuth application available to generated products. Public clients support interactive login; confidential clients support runtime-supplied machine credentials. Client secrets are never stored.",
+                      "properties": {
+                        "client_id": {
+                          "description": "OAuth client identifier.",
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "login_method": {
+                          "enum": [
+                            "browser",
+                            "device",
+                            null
+                          ],
+                          "description": "Interactive login method. Browser login uses Authorization Code with PKCE.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "client_auth_method": {
+                          "enum": [
+                            "post",
+                            "basic",
+                            null
+                          ],
+                          "description": "How a runtime-supplied client secret is sent for machine grants.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "redirect_uri": {
+                          "format": "uri",
+                          "description": "Loopback callback URL for browser login.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "organization_parameter": {
+                          "enum": [
+                            "organization",
+                            "organization_id",
+                            null
+                          ],
+                          "description": "Provider parameter used to request an organization during browser login.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "client_id"
+                      ],
+                      "additionalProperties": false,
+                      "type": "object"
+                    },
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  },
+                  "oauth_application": {
+                    "description": "Default OAuth application used by generated products.",
+                    "maxLength": 64,
+                    "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "identity_verification": {
+                    "anyOf": [
+                      {
+                        "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                        "properties": {
+                          "operation": {
+                            "description": "resource.method of a safe identity read with no required arguments.",
+                            "maxLength": 2000,
+                            "pattern": "^[\\w$]+\\.[\\w$]+$",
+                            "type": "string"
+                          },
+                          "subject_field": {
+                            "description": "JSON Pointer to the stable caller ID in the identity response.",
+                            "maxLength": 512,
+                            "type": "string"
+                          },
+                          "account_field": {
+                            "description": "JSON Pointer to the customer account ID.",
+                            "maxLength": 512,
+                            "type": "string"
+                          },
+                          "organization_field": {
+                            "description": "JSON Pointer to the customer organization ID.",
+                            "maxLength": 512,
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "approval_url": {
+                    "format": "uri",
+                    "description": "Base URL of a custom browser-approval backend implementing the start, status, and revoke contract. Used only when OAuth is not configured.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "environments": {
+                    "description": "Authentication selections keyed by generated API environment name.",
+                    "additionalProperties": {
+                      "description": "OAuth application and request-value overrides for one named API environment.",
+                      "properties": {
+                        "oauth_application": {
+                          "maxLength": 64,
+                          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "scopes": {
+                          "maxItems": 20,
+                          "type": [
+                            "array",
+                            "null"
+                          ]
+                        },
+                        "audience": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "resource": {
+                          "format": "uri",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false,
+                      "type": "object"
+                    },
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object"
+              },
               "cli": {
                 "description": "How the generated CLI behaves. Part of Config.",
                 "properties": {
                   "command_name": {
                     "description": "Command users run, independent of how the CLI is distributed.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "whoami_operation": {
-                    "description": "resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides auto-detection; a value that matches nothing is reported as a generation warning.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "oauth_client_id": {
-                    "description": "OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts for a pasted credential.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "oauth_scopes": {
-                    "description": "Scopes requested during device-flow login. Include offline_access if the authorization server gates refresh tokens behind it.",
-                    "maxItems": 20,
-                    "items": {
-                      "type": "string"
-                    },
-                    "type": "array"
-                  },
-                  "oauth_audience": {
-                    "description": "Audience sent with the device-authorization request, for authorization servers that require one to issue API-valid access tokens.",
                     "type": [
                       "string",
                       "null"
@@ -310,13 +584,6 @@
                   },
                   "support_url": {
                     "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "auth_url": {
-                    "description": "Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier and receives the credential directly; no key is pasted through a conversation.",
                     "type": [
                       "string",
                       "null"
@@ -341,7 +608,7 @@
                 "type": "object"
               },
               "mcp": {
-                "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                 "properties": {
                   "registry_name": {
                     "description": "Stable official MCP registry name, independent of the server runtime.",
@@ -349,6 +616,40 @@
                       "string",
                       "null"
                     ]
+                  },
+                  "access": {
+                    "description": "Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting application resolves upstream API credentials separately at runtime. This setting does not apply to the Typeship-hosted endpoint.",
+                    "properties": {
+                      "issuer": {
+                        "format": "uri",
+                        "description": "Exact issuer allowed to sign MCP connection tokens.",
+                        "type": "string"
+                      },
+                      "resource": {
+                        "format": "uri",
+                        "description": "Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.",
+                        "type": "string"
+                      },
+                      "jwks_url": {
+                        "format": "uri",
+                        "description": "Public signing-key endpoint. Omit to discover it from the issuer.",
+                        "type": "string"
+                      },
+                      "scopes": {
+                        "description": "Minimum scopes required to connect to the self-hosted MCP server.",
+                        "maxItems": 20,
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "issuer",
+                      "resource"
+                    ],
+                    "additionalProperties": false,
+                    "type": "object"
                   },
                   "tool_mode": {
                     "enum": [
@@ -374,6 +675,41 @@
                       "type": "string"
                     },
                     "type": "object"
+                  },
+                  "reference_resolvers": {
+                    "description": "Exact name-or-ID resolver overrides keyed first by the target operationId or \"METHOD /path\", then by its wire argument name. A resolver names one read collection operation plus 1-4 item fields to match case-insensitively; false opts that argument out of strict inference.",
+                    "additionalProperties": {
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              false
+                            ],
+                            "type": "boolean"
+                          },
+                          {
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "object"
+                    },
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "type": "object"
+              },
+              "readme": {
+                "description": "Generated README behavior. Part of Config.",
+                "properties": {
+                  "quickstart_operation": {
+                    "description": "operationId or \"METHOD /path\" to feature as the README's first API call. It must be present in the generated package and callable with no required input beyond path placeholders. Missing or unsuitable choices produce a warning and use the automatic example.",
+                    "maxLength": 500,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -767,7 +1103,29 @@
     },
     {
       "operation": "projects.list",
-      "signature": "client.projects.list(params)",
+      "signature": "typeship projects list [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects list",
       "method": "GET",
       "path": "/projects",
       "summary": "List projects",
@@ -796,7 +1154,7 @@
           "items": {
             "type": "array",
             "items": {
-              "description": "Lean Project identity returned by collection endpoints. Retrieve the Project or list its Targets for the complete aggregate.",
+              "description": "Lean Project identity returned by collection endpoints. Retrieve the Project for shared configuration and list its Targets for the complete canonical child collection.",
               "properties": {
                 "id": {
                   "description": "Unique identifier for a project.",
@@ -857,7 +1215,64 @@
     },
     {
       "operation": "projects.create",
-      "signature": "client.projects.create(body, params)",
+      "signature": "typeship projects create [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "create"
+      ],
+      "parameters": [
+        {
+          "name": "name",
+          "flag": "--name",
+          "in": "body",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "definition",
+          "flag": "--definition",
+          "in": "body",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "targets",
+          "flag": "--targets",
+          "in": "body",
+          "type": "array",
+          "required": true
+        },
+        {
+          "name": "auto_generate",
+          "flag": "--auto-generate",
+          "in": "body",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "relay_enabled",
+          "flag": "--relay-enabled",
+          "in": "body",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "config",
+          "flag": "--config",
+          "in": "body",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects create --name example --definition '{\"source\":{\"kind\":\"url\",\"url\":\"https://example.com\"}}' --targets '[{\"name\":\"example\",\"generator\":\"typescript-sdk\"}]'",
       "method": "POST",
       "path": "/projects",
       "summary": "Create a project",
@@ -873,7 +1288,7 @@
             "maxLength": 255,
             "pattern": "^[!-~]+$",
             "type": "string",
-            "description": "Uniquely identifies this creation attempt. Retrying the same request with the same key returns the original response instead of creating another project. Reusing a key with different parameters returns 409."
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           },
           "name": {
             "minLength": 1,
@@ -1193,10 +1608,9 @@
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
                   "anyOf": [
                     {
-                      "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                      "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
                       "properties": {
                         "globals": {
-                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
                           "maxItems": 20,
                           "type": "array"
                         },
@@ -1205,7 +1619,10 @@
                           "type": "object"
                         },
                         "pagination": {
-                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
+                          "type": "object"
+                        },
+                        "auth": {
+                          "description": "Selects a Project OAuth application for one Target. OAuth server metadata, applications, and identity policy remain Project-owned.",
                           "type": "object"
                         },
                         "cli": {
@@ -1213,7 +1630,11 @@
                           "type": "object"
                         },
                         "mcp": {
-                          "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
+                          "type": "object"
+                        },
+                        "readme": {
+                          "description": "Generated README behavior. Part of Config.",
                           "type": "object"
                         },
                         "package": {
@@ -1221,7 +1642,7 @@
                           "type": "object"
                         },
                         "docs_url": {
-                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's externalDocs URL.",
+                          "format": "uri",
                           "type": [
                             "string",
                             "null"
@@ -1229,7 +1650,6 @@
                         },
                         "docs_index_url": {
                           "format": "uri",
-                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                           "type": [
                             "string",
                             "null"
@@ -1245,6 +1665,7 @@
                   ]
                 },
                 "deliveries": {
+                  "maxItems": 2,
                   "items": {
                     "anyOf": [
                       {
@@ -1281,7 +1702,7 @@
             "description": "Shared defaults inherited by every Target. GraphQL settings belong in definition.graphql.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
                 "properties": {
                   "globals": {
                     "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
@@ -1348,40 +1769,79 @@
                     },
                     "type": "object"
                   },
+                  "auth": {
+                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                    "properties": {
+                      "oauth_server": {
+                        "anyOf": [
+                          {
+                            "description": "Authorization-server metadata used by generated OAuth flows. Secrets and runtime credentials are never accepted here.",
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "oauth_applications": {
+                        "description": "OAuth applications keyed by a stable name.",
+                        "additionalProperties": {
+                          "description": "OAuth application available to generated products. Public clients support interactive login; confidential clients support runtime-supplied machine credentials. Client secrets are never stored.",
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "oauth_application": {
+                        "description": "Default OAuth application used by generated products.",
+                        "maxLength": 64,
+                        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "identity_verification": {
+                        "anyOf": [
+                          {
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "approval_url": {
+                        "format": "uri",
+                        "description": "Base URL of a custom browser-approval backend implementing the start, status, and revoke contract. Used only when OAuth is not configured.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "environments": {
+                        "description": "Authentication selections keyed by generated API environment name.",
+                        "additionalProperties": {
+                          "description": "OAuth application and request-value overrides for one named API environment.",
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
                   "cli": {
                     "description": "How the generated CLI behaves. Part of Config.",
                     "properties": {
                       "command_name": {
                         "description": "Command users run, independent of how the CLI is distributed.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "whoami_operation": {
-                        "description": "resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides auto-detection; a value that matches nothing is reported as a generation warning.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_client_id": {
-                        "description": "OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts for a pasted credential.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_scopes": {
-                        "description": "Scopes requested during device-flow login. Include offline_access if the authorization server gates refresh tokens behind it.",
-                        "maxItems": 20,
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "oauth_audience": {
-                        "description": "Audience sent with the device-authorization request, for authorization servers that require one to issue API-valid access tokens.",
                         "type": [
                           "string",
                           "null"
@@ -1393,13 +1853,6 @@
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "auth_url": {
-                        "description": "Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier and receives the credential directly; no key is pasted through a conversation.",
                         "type": [
                           "string",
                           "null"
@@ -1424,7 +1877,7 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                     "properties": {
                       "registry_name": {
                         "description": "Stable official MCP registry name, independent of the server runtime.",
@@ -1432,6 +1885,37 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "access": {
+                        "description": "Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting application resolves upstream API credentials separately at runtime. This setting does not apply to the Typeship-hosted endpoint.",
+                        "properties": {
+                          "issuer": {
+                            "format": "uri",
+                            "description": "Exact issuer allowed to sign MCP connection tokens.",
+                            "type": "string"
+                          },
+                          "resource": {
+                            "format": "uri",
+                            "description": "Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.",
+                            "type": "string"
+                          },
+                          "jwks_url": {
+                            "format": "uri",
+                            "description": "Public signing-key endpoint. Omit to discover it from the issuer.",
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "description": "Minimum scopes required to connect to the self-hosted MCP server.",
+                            "maxItems": 20,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "issuer",
+                          "resource"
+                        ],
+                        "additionalProperties": false,
+                        "type": "object"
                       },
                       "tool_mode": {
                         "enum": [
@@ -1457,6 +1941,28 @@
                           "type": "string"
                         },
                         "type": "object"
+                      },
+                      "reference_resolvers": {
+                        "description": "Exact name-or-ID resolver overrides keyed first by the target operationId or \"METHOD /path\", then by its wire argument name. A resolver names one read collection operation plus 1-4 item fields to match case-insensitively; false opts that argument out of strict inference.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior. Part of Config.",
+                    "properties": {
+                      "quickstart_operation": {
+                        "description": "operationId or \"METHOD /path\" to feature as the README's first API call. It must be present in the generated package and callable with no required input beyond path placeholders. Missing or unsuitable choices produce a warning and use the automatic example.",
+                        "maxLength": 500,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "additionalProperties": false,
@@ -1539,6 +2045,7 @@
         ]
       },
       "output_schema": {
+        "description": "Project-owned identity, Definition reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -1563,131 +2070,6 @@
             ],
             "pattern": "^def_[a-z0-9]{16}$",
             "type": "string"
-          },
-          "targets": {
-            "description": "All configured Targets, including disabled Targets and their saved Deliveries.",
-            "items": {
-              "properties": {
-                "id": {
-                  "description": "Stable identifier for one configured generated product.",
-                  "examples": [
-                    "tgt_5m8q2v7k1p9d4h6c"
-                  ],
-                  "pattern": "^tgt_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "target",
-                  "type": "string"
-                },
-                "project_id": {
-                  "description": "Unique identifier for a project.",
-                  "examples": [
-                    "prj_4f8k2m7x9q1v6b3n"
-                  ],
-                  "pattern": "^prj_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "definition_id": {
-                  "description": "Unique identifier for a project's logical API Definition.",
-                  "examples": [
-                    "def_2p8m4q7k1v9d6h3c"
-                  ],
-                  "pattern": "^def_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "generator": {
-                  "enum": [
-                    "typescript-sdk",
-                    "python-sdk",
-                    "go-sdk",
-                    "cli",
-                    "mcp"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
-                "state": {
-                  "enum": [
-                    "active",
-                    "disabled"
-                  ],
-                  "type": "string"
-                },
-                "edition": {
-                  "type": "string"
-                },
-                "release_channel": {
-                  "enum": [
-                    "stable",
-                    "prerelease"
-                  ],
-                  "type": "string"
-                },
-                "version_policy": {
-                  "type": "object"
-                },
-                "current_version": {
-                  "type": "string"
-                },
-                "proposed_version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "config": {
-                  "description": "Target-specific overrides merged over Project.config.",
-                  "anyOf": [
-                    {
-                      "description": "Shared generated-client and tooling behavior for a stored Project.",
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "deliveries": {
-                  "type": "array"
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "deliveries": {
-            "description": "Flattened convenience view derived from the same Target bundles.",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object"
-                },
-                {
-                  "type": "object"
-                }
-              ]
-            },
-            "type": "array"
           },
           "auto_generate": {
             "description": "Regenerate when the Definition changes: on every push to the default branch for a repository source…",
@@ -1716,12 +2098,20 @@
                     "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
                     "type": "object"
                   },
+                  "auth": {
+                    "description": "Public authentication defaults for generated clients and tools.",
+                    "type": "object"
+                  },
                   "cli": {
                     "description": "How the generated CLI behaves.",
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -1789,10 +2179,26 @@
     },
     {
       "operation": "projects.retrieve",
-      "signature": "client.projects.retrieve(projectId)",
+      "signature": "typeship projects retrieve <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "retrieve"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship projects retrieve prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}",
       "summary": "Retrieve a project",
+      "description": "Returns Project-owned fields only. List Targets separately for Target and Delivery data.",
       "safety": "read",
       "auth": "required",
       "paginated": false,
@@ -1800,11 +2206,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -1813,6 +2219,7 @@
         ]
       },
       "output_schema": {
+        "description": "Project-owned identity, Definition reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -1837,131 +2244,6 @@
             ],
             "pattern": "^def_[a-z0-9]{16}$",
             "type": "string"
-          },
-          "targets": {
-            "description": "All configured Targets, including disabled Targets and their saved Deliveries.",
-            "items": {
-              "properties": {
-                "id": {
-                  "description": "Stable identifier for one configured generated product.",
-                  "examples": [
-                    "tgt_5m8q2v7k1p9d4h6c"
-                  ],
-                  "pattern": "^tgt_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "target",
-                  "type": "string"
-                },
-                "project_id": {
-                  "description": "Unique identifier for a project.",
-                  "examples": [
-                    "prj_4f8k2m7x9q1v6b3n"
-                  ],
-                  "pattern": "^prj_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "definition_id": {
-                  "description": "Unique identifier for a project's logical API Definition.",
-                  "examples": [
-                    "def_2p8m4q7k1v9d6h3c"
-                  ],
-                  "pattern": "^def_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "generator": {
-                  "enum": [
-                    "typescript-sdk",
-                    "python-sdk",
-                    "go-sdk",
-                    "cli",
-                    "mcp"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
-                "state": {
-                  "enum": [
-                    "active",
-                    "disabled"
-                  ],
-                  "type": "string"
-                },
-                "edition": {
-                  "type": "string"
-                },
-                "release_channel": {
-                  "enum": [
-                    "stable",
-                    "prerelease"
-                  ],
-                  "type": "string"
-                },
-                "version_policy": {
-                  "type": "object"
-                },
-                "current_version": {
-                  "type": "string"
-                },
-                "proposed_version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "config": {
-                  "description": "Target-specific overrides merged over Project.config.",
-                  "anyOf": [
-                    {
-                      "description": "Shared generated-client and tooling behavior for a stored Project.",
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "deliveries": {
-                  "type": "array"
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "deliveries": {
-            "description": "Flattened convenience view derived from the same Target bundles.",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object"
-                },
-                {
-                  "type": "object"
-                }
-              ]
-            },
-            "type": "array"
           },
           "auto_generate": {
             "description": "Regenerate when the Definition changes: on every push to the default branch for a repository source…",
@@ -1990,12 +2272,20 @@
                     "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
                     "type": "object"
                   },
+                  "auth": {
+                    "description": "Public authentication defaults for generated clients and tools.",
+                    "type": "object"
+                  },
                   "cli": {
                     "description": "How the generated CLI behaves.",
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -2051,7 +2341,22 @@
     },
     {
       "operation": "projects.delete",
-      "signature": "client.projects.delete(projectId)",
+      "signature": "typeship projects delete <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship projects delete prj_4f8k2m7x9q1v6b3n --force",
       "method": "DELETE",
       "path": "/projects/{project_id}",
       "summary": "Delete a project",
@@ -2062,11 +2367,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -2109,7 +2414,50 @@
     },
     {
       "operation": "projects.update",
-      "signature": "client.projects.update(projectId, body)",
+      "signature": "typeship projects update <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "update"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "flag": "--name",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "auto_generate",
+          "flag": "--auto-generate",
+          "in": "body",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "relay_enabled",
+          "flag": "--relay-enabled",
+          "in": "body",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "name": "config",
+          "flag": "--config",
+          "in": "body",
+          "type": "json",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects update prj_4f8k2m7x9q1v6b3n",
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
@@ -2120,11 +2468,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           },
           "name": {
@@ -2143,7 +2491,7 @@
             "description": "Replaces the Project's shared Target defaults. Send null to clear them.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
                 "properties": {
                   "globals": {
                     "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
@@ -2210,40 +2558,79 @@
                     },
                     "type": "object"
                   },
+                  "auth": {
+                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                    "properties": {
+                      "oauth_server": {
+                        "anyOf": [
+                          {
+                            "description": "Authorization-server metadata used by generated OAuth flows. Secrets and runtime credentials are never accepted here.",
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "oauth_applications": {
+                        "description": "OAuth applications keyed by a stable name.",
+                        "additionalProperties": {
+                          "description": "OAuth application available to generated products. Public clients support interactive login; confidential clients support runtime-supplied machine credentials. Client secrets are never stored.",
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      },
+                      "oauth_application": {
+                        "description": "Default OAuth application used by generated products.",
+                        "maxLength": 64,
+                        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "identity_verification": {
+                        "anyOf": [
+                          {
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "approval_url": {
+                        "format": "uri",
+                        "description": "Base URL of a custom browser-approval backend implementing the start, status, and revoke contract. Used only when OAuth is not configured.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "environments": {
+                        "description": "Authentication selections keyed by generated API environment name.",
+                        "additionalProperties": {
+                          "description": "OAuth application and request-value overrides for one named API environment.",
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
                   "cli": {
                     "description": "How the generated CLI behaves. Part of Config.",
                     "properties": {
                       "command_name": {
                         "description": "Command users run, independent of how the CLI is distributed.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "whoami_operation": {
-                        "description": "resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides auto-detection; a value that matches nothing is reported as a generation warning.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_client_id": {
-                        "description": "OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts for a pasted credential.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_scopes": {
-                        "description": "Scopes requested during device-flow login. Include offline_access if the authorization server gates refresh tokens behind it.",
-                        "maxItems": 20,
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "oauth_audience": {
-                        "description": "Audience sent with the device-authorization request, for authorization servers that require one to issue API-valid access tokens.",
                         "type": [
                           "string",
                           "null"
@@ -2255,13 +2642,6 @@
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "auth_url": {
-                        "description": "Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier and receives the credential directly; no key is pasted through a conversation.",
                         "type": [
                           "string",
                           "null"
@@ -2286,7 +2666,7 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                     "properties": {
                       "registry_name": {
                         "description": "Stable official MCP registry name, independent of the server runtime.",
@@ -2294,6 +2674,37 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "access": {
+                        "description": "Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting application resolves upstream API credentials separately at runtime. This setting does not apply to the Typeship-hosted endpoint.",
+                        "properties": {
+                          "issuer": {
+                            "format": "uri",
+                            "description": "Exact issuer allowed to sign MCP connection tokens.",
+                            "type": "string"
+                          },
+                          "resource": {
+                            "format": "uri",
+                            "description": "Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.",
+                            "type": "string"
+                          },
+                          "jwks_url": {
+                            "format": "uri",
+                            "description": "Public signing-key endpoint. Omit to discover it from the issuer.",
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "description": "Minimum scopes required to connect to the self-hosted MCP server.",
+                            "maxItems": 20,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "issuer",
+                          "resource"
+                        ],
+                        "additionalProperties": false,
+                        "type": "object"
                       },
                       "tool_mode": {
                         "enum": [
@@ -2319,6 +2730,28 @@
                           "type": "string"
                         },
                         "type": "object"
+                      },
+                      "reference_resolvers": {
+                        "description": "Exact name-or-ID resolver overrides keyed first by the target operationId or \"METHOD /path\", then by its wire argument name. A resolver names one read collection operation plus 1-4 item fields to match case-insensitively; false opts that argument out of strict inference.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior. Part of Config.",
+                    "properties": {
+                      "quickstart_operation": {
+                        "description": "operationId or \"METHOD /path\" to feature as the README's first API call. It must be present in the generated package and callable with no required input beyond path placeholders. Missing or unsuitable choices produce a warning and use the automatic example.",
+                        "maxLength": 500,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "additionalProperties": false,
@@ -2399,6 +2832,7 @@
         ]
       },
       "output_schema": {
+        "description": "Project-owned identity, Definition reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -2423,131 +2857,6 @@
             ],
             "pattern": "^def_[a-z0-9]{16}$",
             "type": "string"
-          },
-          "targets": {
-            "description": "All configured Targets, including disabled Targets and their saved Deliveries.",
-            "items": {
-              "properties": {
-                "id": {
-                  "description": "Stable identifier for one configured generated product.",
-                  "examples": [
-                    "tgt_5m8q2v7k1p9d4h6c"
-                  ],
-                  "pattern": "^tgt_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "target",
-                  "type": "string"
-                },
-                "project_id": {
-                  "description": "Unique identifier for a project.",
-                  "examples": [
-                    "prj_4f8k2m7x9q1v6b3n"
-                  ],
-                  "pattern": "^prj_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "definition_id": {
-                  "description": "Unique identifier for a project's logical API Definition.",
-                  "examples": [
-                    "def_2p8m4q7k1v9d6h3c"
-                  ],
-                  "pattern": "^def_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "generator": {
-                  "enum": [
-                    "typescript-sdk",
-                    "python-sdk",
-                    "go-sdk",
-                    "cli",
-                    "mcp"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
-                "state": {
-                  "enum": [
-                    "active",
-                    "disabled"
-                  ],
-                  "type": "string"
-                },
-                "edition": {
-                  "type": "string"
-                },
-                "release_channel": {
-                  "enum": [
-                    "stable",
-                    "prerelease"
-                  ],
-                  "type": "string"
-                },
-                "version_policy": {
-                  "type": "object"
-                },
-                "current_version": {
-                  "type": "string"
-                },
-                "proposed_version": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "config": {
-                  "description": "Target-specific overrides merged over Project.config.",
-                  "anyOf": [
-                    {
-                      "description": "Shared generated-client and tooling behavior for a stored Project.",
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "deliveries": {
-                  "type": "array"
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "deliveries": {
-            "description": "Flattened convenience view derived from the same Target bundles.",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "object"
-                },
-                {
-                  "type": "object"
-                }
-              ]
-            },
-            "type": "array"
           },
           "auto_generate": {
             "description": "Regenerate when the Definition changes: on every push to the default branch for a repository source…",
@@ -2576,12 +2885,20 @@
                     "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
                     "type": "object"
                   },
+                  "auth": {
+                    "description": "Public authentication defaults for generated clients and tools.",
+                    "type": "object"
+                  },
                   "cli": {
                     "description": "How the generated CLI behaves.",
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -2637,7 +2954,22 @@
     },
     {
       "operation": "projects.retrieveDiagnostics",
-      "signature": "client.projects.retrieveDiagnostics(projectId)",
+      "signature": "typeship projects retrieve-diagnostics <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "retrieve-diagnostics"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship projects retrieve-diagnostics prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}/diagnostics",
       "summary": "Analyze a project's latest Definition Revision",
@@ -2649,11 +2981,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -2915,7 +3247,29 @@
     },
     {
       "operation": "projects.refreshDiagnostics",
-      "signature": "client.projects.refreshDiagnostics(projectId)",
+      "signature": "typeship projects refresh-diagnostics <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "refresh-diagnostics"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects refresh-diagnostics prj_4f8k2m7x9q1v6b3n",
       "method": "POST",
       "path": "/projects/{project_id}/diagnostics",
       "summary": "Refresh a project's Diagnostics from its configured source",
@@ -2927,12 +3281,19 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           }
         },
         "required": [
@@ -3193,7 +3554,36 @@
     },
     {
       "operation": "projects.remediateDiagnostics",
-      "signature": "client.projects.remediateDiagnostics(projectId, body)",
+      "signature": "typeship projects remediate-diagnostics <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "remediate-diagnostics"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "diagnostic_ids",
+          "flag": "--diagnostic-ids",
+          "in": "body",
+          "type": "array",
+          "required": true
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects remediate-diagnostics prj_4f8k2m7x9q1v6b3n --diagnostic-ids '[\"value\"]'",
       "method": "POST",
       "path": "/projects/{project_id}/diagnostics/remediations",
       "summary": "Apply exact, reviewed diagnostic remediations",
@@ -3205,12 +3595,19 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           },
           "diagnostic_ids": {
             "description": "Stable IDs of current diagnostics whose exact patches should be reviewed and applied.",
@@ -3273,7 +3670,22 @@
     },
     {
       "operation": "projects.retrieveIntegrationHealth",
-      "signature": "client.projects.retrieveIntegrationHealth(projectId)",
+      "signature": "typeship projects retrieve-integration-health <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "retrieve-integration-health"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship projects retrieve-integration-health prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}/integration-health",
       "summary": "Diagnose a project's repository integrations",
@@ -3285,11 +3697,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           }
         },
@@ -3468,7 +3880,43 @@
     },
     {
       "operation": "projects.listGenerations",
-      "signature": "client.projects.listGenerations(projectId, params)",
+      "signature": "typeship projects list-generations <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "list-generations"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "target_id",
+          "flag": "--target-id",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects list-generations prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}/generations",
       "summary": "List a project's generations",
@@ -3479,11 +3927,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           },
           "limit": {
@@ -3498,7 +3946,7 @@
             "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
           },
           "target_id": {
-            "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
+            "description": "Stable identifier for one configured generated product.",
             "examples": [
               "tgt_5m8q2v7k1p9d4h6c"
             ],
@@ -3516,6 +3964,7 @@
           "items": {
             "type": "array",
             "items": {
+              "description": "Generation metadata returned by collection endpoints.",
               "examples": [
                 {
                   "id": "gen_7h2p5d9c3m8w1k6q",
@@ -3564,16 +4013,6 @@
                 "object": {
                   "const": "generation",
                   "type": "string"
-                },
-                "files_omitted": {
-                  "description": "Present and true when the generated target was too large to inline; files_index lists paths, fetche…",
-                  "type": "boolean"
-                },
-                "files_index": {
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array"
                 },
                 "project_id": {
                   "description": "Unique identifier for a project.",
@@ -3712,13 +4151,6 @@
                   },
                   "type": "array"
                 },
-                "files": {
-                  "description": "Present on retrieve and create; omitted in lists.",
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
                 "error": {
                   "type": [
                     "string",
@@ -3727,14 +4159,6 @@
                 },
                 "created_at": {
                   "format": "date-time",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
                   "type": "string"
                 }
               },
@@ -3763,7 +4187,29 @@
     },
     {
       "operation": "projects.generate",
-      "signature": "client.projects.generate(projectId)",
+      "signature": "typeship projects generate <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "generate"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects generate prj_4f8k2m7x9q1v6b3n",
       "method": "POST",
       "path": "/projects/{project_id}/generations",
       "summary": "Generate targets and open pull requests",
@@ -3775,12 +4221,19 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           }
         },
         "required": [
@@ -3788,11 +4241,13 @@
         ]
       },
       "output_schema": {
+        "description": "Metadata for each Target generation attempted by a Project run. Retrieve one Generation separately for generated files.",
         "properties": {
           "data": {
             "items": {
               "anyOf": [
                 {
+                  "description": "Generation metadata returned by collection endpoints. Generated file contents and file indexes are available only from retrieve and create operations.",
                   "examples": [
                     {
                       "id": "gen_7h2p5d9c3m8w1k6q",
@@ -3841,13 +4296,6 @@
                     "object": {
                       "const": "generation",
                       "type": "string"
-                    },
-                    "files_omitted": {
-                      "description": "Present and true when the generated target was too large to inline; files_index lists paths, fetched one at a time via GET /generations/{generation_id}/file.",
-                      "type": "boolean"
-                    },
-                    "files_index": {
-                      "type": "array"
                     },
                     "project_id": {
                       "description": "Unique identifier for a project.",
@@ -3932,10 +4380,6 @@
                     "warnings": {
                       "type": "array"
                     },
-                    "files": {
-                      "description": "Present on retrieve and create; omitted in lists.",
-                      "type": "array"
-                    },
                     "error": {
                       "type": [
                         "string",
@@ -3944,14 +4388,6 @@
                     },
                     "created_at": {
                       "format": "date-time",
-                      "type": "string"
-                    },
-                    "request_id": {
-                      "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                      "examples": [
-                        "req_3k8m1v6q9p2d7h4c"
-                      ],
-                      "pattern": "^req_[a-z0-9]{16}$",
                       "type": "string"
                     }
                   },
@@ -4010,7 +4446,22 @@
     },
     {
       "operation": "definitions.retrieve",
-      "signature": "client.definitions.retrieve(definitionId)",
+      "signature": "typeship definitions retrieve <definition_id> [flags]",
+      "command": [
+        "typeship",
+        "definitions",
+        "retrieve"
+      ],
+      "parameters": [
+        {
+          "name": "definition_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship definitions retrieve def_2p8m4q7k1v9d6h3c",
       "method": "GET",
       "path": "/definitions/{definition_id}",
       "summary": "Retrieve a Definition",
@@ -4317,7 +4768,57 @@
     },
     {
       "operation": "definitions.update",
-      "signature": "client.definitions.update(definitionId, body)",
+      "signature": "typeship definitions update <definition_id> [flags]",
+      "command": [
+        "typeship",
+        "definitions",
+        "update"
+      ],
+      "parameters": [
+        {
+          "name": "definition_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "source",
+          "flag": "--source",
+          "in": "body",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "patches",
+          "flag": "--patches",
+          "in": "body",
+          "type": "array",
+          "required": false
+        },
+        {
+          "name": "graphql",
+          "flag": "--graphql",
+          "in": "body",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "diagnostic_policy",
+          "flag": "--diagnostic-policy",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship definitions update def_2p8m4q7k1v9d6h3c",
       "method": "PATCH",
       "path": "/definitions/{definition_id}",
       "summary": "Update and resolve a Definition",
@@ -4335,6 +4836,13 @@
             ],
             "pattern": "^def_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           },
           "source": {
             "anyOf": [
@@ -4894,7 +5402,36 @@
     },
     {
       "operation": "targets.list",
-      "signature": "client.targets.list(projectId, params)",
+      "signature": "typeship targets list <project_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets list prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}/targets",
       "summary": "List a project's Targets",
@@ -4905,11 +5442,11 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
           },
           "limit": {
@@ -5020,10 +5557,9 @@
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and never appear here.",
                   "anyOf": [
                     {
-                      "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                      "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
                       "properties": {
                         "globals": {
-                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
                           "maxItems": 20,
                           "type": "array"
                         },
@@ -5032,7 +5568,10 @@
                           "type": "object"
                         },
                         "pagination": {
-                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
+                          "type": "object"
+                        },
+                        "auth": {
+                          "description": "Selects a Project OAuth application for one Target. OAuth server metadata, applications, and identity policy remain Project-owned.",
                           "type": "object"
                         },
                         "cli": {
@@ -5040,7 +5579,11 @@
                           "type": "object"
                         },
                         "mcp": {
-                          "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
+                          "type": "object"
+                        },
+                        "readme": {
+                          "description": "Generated README behavior. Part of Config.",
                           "type": "object"
                         },
                         "package": {
@@ -5048,7 +5591,7 @@
                           "type": "object"
                         },
                         "docs_url": {
-                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's externalDocs URL.",
+                          "format": "uri",
                           "type": [
                             "string",
                             "null"
@@ -5056,7 +5599,6 @@
                         },
                         "docs_index_url": {
                           "format": "uri",
-                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                           "type": [
                             "string",
                             "null"
@@ -5071,6 +5613,8 @@
                   ]
                 },
                 "deliveries": {
+                  "description": "At most one repository and one hosted MCP Delivery.",
+                  "maxItems": 2,
                   "items": {
                     "anyOf": [
                       {
@@ -5125,7 +5669,92 @@
     },
     {
       "operation": "targets.create",
-      "signature": "client.targets.create(projectId, body)",
+      "signature": "typeship targets create <project_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "create"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "flag": "--name",
+          "in": "body",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "definition_id",
+          "flag": "--definition-id",
+          "in": "body",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "generator",
+          "flag": "--generator",
+          "in": "body",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "state",
+          "flag": "--state",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "edition",
+          "flag": "--edition",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "release_channel",
+          "flag": "--release-channel",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "proposed_version",
+          "flag": "--proposed-version",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "config",
+          "flag": "--config",
+          "in": "body",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "deliveries",
+          "flag": "--deliveries",
+          "in": "body",
+          "type": "array",
+          "required": false
+        },
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets create prj_4f8k2m7x9q1v6b3n --name example --definition-id def_2p8m4q7k1v9d6h3c --generator typescript-sdk",
       "method": "POST",
       "path": "/projects/{project_id}/targets",
       "summary": "Create an independently configured Target",
@@ -5137,12 +5766,19 @@
         "type": "object",
         "properties": {
           "project_id": {
-            "description": "Unique identifier for a project. IDs come from projects_list.",
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
             "examples": [
+              "example-name",
               "prj_4f8k2m7x9q1v6b3n"
             ],
-            "pattern": "^prj_[a-z0-9]{16}$",
             "type": "string"
+          },
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           },
           "name": {
             "minLength": 1,
@@ -5202,10 +5838,9 @@
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
                 "properties": {
                   "globals": {
-                    "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
                     "maxItems": 20,
                     "items": {
                       "type": "string"
@@ -5255,18 +5890,42 @@
                     "type": "object"
                   },
                   "pagination": {
-                    "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
                     "additionalProperties": {
                       "anyOf": [
                         {
                           "type": "object"
                         },
                         {
-                          "description": "false disables pagination detection for the operation.",
                           "type": "boolean"
                         }
                       ]
                     },
+                    "type": "object"
+                  },
+                  "auth": {
+                    "description": "Selects a Project OAuth application for one Target. OAuth server metadata, applications, and identity policy remain Project-owned.",
+                    "properties": {
+                      "oauth_application": {
+                        "description": "Project OAuth application to use. Omit to inherit the Project default.",
+                        "maxLength": 64,
+                        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "environments": {
+                        "description": "Project OAuth application selections keyed by API environment.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
                     "type": "object"
                   },
                   "cli": {
@@ -5279,48 +5938,12 @@
                           "null"
                         ]
                       },
-                      "whoami_operation": {
-                        "description": "resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides auto-detection; a value that matches nothing is reported as a generation warning.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_client_id": {
-                        "description": "OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts for a pasted credential.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_scopes": {
-                        "description": "Scopes requested during device-flow login. Include offline_access if the authorization server gates refresh tokens behind it.",
-                        "maxItems": 20,
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "oauth_audience": {
-                        "description": "Audience sent with the device-authorization request, for authorization servers that require one to issue API-valid access tokens.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
                       "update_notice": {
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "auth_url": {
-                        "description": "Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier and receives the credential directly; no key is pasted through a conversation.",
                         "type": [
                           "string",
                           "null"
@@ -5345,7 +5968,7 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                     "properties": {
                       "registry_name": {
                         "description": "Stable official MCP registry name, independent of the server runtime.",
@@ -5353,6 +5976,37 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "access": {
+                        "description": "Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting application resolves upstream API credentials separately at runtime. This setting does not apply to the Typeship-hosted endpoint.",
+                        "properties": {
+                          "issuer": {
+                            "format": "uri",
+                            "description": "Exact issuer allowed to sign MCP connection tokens.",
+                            "type": "string"
+                          },
+                          "resource": {
+                            "format": "uri",
+                            "description": "Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.",
+                            "type": "string"
+                          },
+                          "jwks_url": {
+                            "format": "uri",
+                            "description": "Public signing-key endpoint. Omit to discover it from the issuer.",
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "description": "Minimum scopes required to connect to the self-hosted MCP server.",
+                            "maxItems": 20,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "issuer",
+                          "resource"
+                        ],
+                        "additionalProperties": false,
+                        "type": "object"
                       },
                       "tool_mode": {
                         "enum": [
@@ -5378,6 +6032,28 @@
                           "type": "string"
                         },
                         "type": "object"
+                      },
+                      "reference_resolvers": {
+                        "description": "Exact name-or-ID resolver overrides keyed first by the target operationId or \"METHOD /path\", then by its wire argument name. A resolver names one read collection operation plus 1-4 item fields to match case-insensitively; false opts that argument out of strict inference.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior. Part of Config.",
+                    "properties": {
+                      "quickstart_operation": {
+                        "description": "operationId or \"METHOD /path\" to feature as the README's first API call. It must be present in the generated package and callable with no required input beyond path placeholders. Missing or unsuitable choices produce a warning and use the automatic example.",
+                        "maxLength": 500,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "additionalProperties": false,
@@ -5429,7 +6105,7 @@
                     "type": "object"
                   },
                   "docs_url": {
-                    "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's externalDocs URL.",
+                    "format": "uri",
                     "type": [
                       "string",
                       "null"
@@ -5437,7 +6113,6 @@
                   },
                   "docs_index_url": {
                     "format": "uri",
-                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -5453,6 +6128,7 @@
             ]
           },
           "deliveries": {
+            "maxItems": 2,
             "items": {
               "anyOf": [
                 {
@@ -5626,10 +6302,9 @@
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project.",
+                "description": "Target-specific generation and delivery overrides.",
                 "properties": {
                   "globals": {
-                    "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
                     "maxItems": 20,
                     "type": "array"
                   },
@@ -5638,7 +6313,10 @@
                     "type": "object"
                   },
                   "pagination": {
-                    "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
+                    "type": "object"
+                  },
+                  "auth": {
+                    "description": "Selects a Project OAuth application for one Target.",
                     "type": "object"
                   },
                   "cli": {
@@ -5646,7 +6324,11 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -5654,7 +6336,7 @@
                     "type": "object"
                   },
                   "docs_url": {
-                    "description": "The API's documentation site.",
+                    "format": "uri",
                     "type": [
                       "string",
                       "null"
@@ -5662,7 +6344,6 @@
                   },
                   "docs_index_url": {
                     "format": "uri",
-                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -5677,6 +6358,8 @@
             ]
           },
           "deliveries": {
+            "description": "At most one repository and one hosted MCP Delivery.",
+            "maxItems": 2,
             "items": {
               "anyOf": [
                 {
@@ -5717,7 +6400,22 @@
     },
     {
       "operation": "targets.retrieve",
-      "signature": "client.targets.retrieve(targetId)",
+      "signature": "typeship targets retrieve <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve tgt_5m8q2v7k1p9d4h6c",
       "method": "GET",
       "path": "/targets/{target_id}",
       "summary": "Retrieve a Target",
@@ -5728,7 +6426,7 @@
         "type": "object",
         "properties": {
           "target_id": {
-            "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
+            "description": "Stable identifier for one configured generated product.",
             "examples": [
               "tgt_5m8q2v7k1p9d4h6c"
             ],
@@ -5827,10 +6525,9 @@
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project.",
+                "description": "Target-specific generation and delivery overrides.",
                 "properties": {
                   "globals": {
-                    "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
                     "maxItems": 20,
                     "type": "array"
                   },
@@ -5839,7 +6536,10 @@
                     "type": "object"
                   },
                   "pagination": {
-                    "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
+                    "type": "object"
+                  },
+                  "auth": {
+                    "description": "Selects a Project OAuth application for one Target.",
                     "type": "object"
                   },
                   "cli": {
@@ -5847,7 +6547,11 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -5855,7 +6559,7 @@
                     "type": "object"
                   },
                   "docs_url": {
-                    "description": "The API's documentation site.",
+                    "format": "uri",
                     "type": [
                       "string",
                       "null"
@@ -5863,7 +6567,6 @@
                   },
                   "docs_index_url": {
                     "format": "uri",
-                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -5878,6 +6581,8 @@
             ]
           },
           "deliveries": {
+            "description": "At most one repository and one hosted MCP Delivery.",
+            "maxItems": 2,
             "items": {
               "anyOf": [
                 {
@@ -5915,7 +6620,22 @@
     },
     {
       "operation": "targets.delete",
-      "signature": "client.targets.delete(targetId)",
+      "signature": "typeship targets delete <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets delete tgt_5m8q2v7k1p9d4h6c --force",
       "method": "DELETE",
       "path": "/targets/{target_id}",
       "summary": "Delete an unused Target",
@@ -5927,7 +6647,7 @@
         "type": "object",
         "properties": {
           "target_id": {
-            "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
+            "description": "Stable identifier for one configured generated product.",
             "examples": [
               "tgt_5m8q2v7k1p9d4h6c"
             ],
@@ -5974,7 +6694,71 @@
     },
     {
       "operation": "targets.update",
-      "signature": "client.targets.update(targetId, body)",
+      "signature": "typeship targets update <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "update"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "name",
+          "flag": "--name",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "state",
+          "flag": "--state",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "edition",
+          "flag": "--edition",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "release_channel",
+          "flag": "--release-channel",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "proposed_version",
+          "flag": "--proposed-version",
+          "in": "body",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "config",
+          "flag": "--config",
+          "in": "body",
+          "type": "json",
+          "required": false
+        },
+        {
+          "name": "deliveries",
+          "flag": "--deliveries",
+          "in": "body",
+          "type": "array",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets update tgt_5m8q2v7k1p9d4h6c",
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target, its Deliveries, or its next reviewed version",
@@ -5985,7 +6769,7 @@
         "type": "object",
         "properties": {
           "target_id": {
-            "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
+            "description": "Stable identifier for one configured generated product.",
             "examples": [
               "tgt_5m8q2v7k1p9d4h6c"
             ],
@@ -6024,10 +6808,9 @@
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's Definition and are rejected in both stored config scopes.",
+                "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
                 "properties": {
                   "globals": {
-                    "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
                     "maxItems": 20,
                     "items": {
                       "type": "string"
@@ -6077,18 +6860,42 @@
                     "type": "object"
                   },
                   "pagination": {
-                    "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
                     "additionalProperties": {
                       "anyOf": [
                         {
                           "type": "object"
                         },
                         {
-                          "description": "false disables pagination detection for the operation.",
                           "type": "boolean"
                         }
                       ]
                     },
+                    "type": "object"
+                  },
+                  "auth": {
+                    "description": "Selects a Project OAuth application for one Target. OAuth server metadata, applications, and identity policy remain Project-owned.",
+                    "properties": {
+                      "oauth_application": {
+                        "description": "Project OAuth application to use. Omit to inherit the Project default.",
+                        "maxLength": 64,
+                        "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "environments": {
+                        "description": "Project OAuth application selections keyed by API environment.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": [
+                          "object",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
                     "type": "object"
                   },
                   "cli": {
@@ -6101,48 +6908,12 @@
                           "null"
                         ]
                       },
-                      "whoami_operation": {
-                        "description": "resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides auto-detection; a value that matches nothing is reported as a generation warning.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_client_id": {
-                        "description": "OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts for a pasted credential.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "oauth_scopes": {
-                        "description": "Scopes requested during device-flow login. Include offline_access if the authorization server gates refresh tokens behind it.",
-                        "maxItems": 20,
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "oauth_audience": {
-                        "description": "Audience sent with the device-authorization request, for authorization servers that require one to issue API-valid access tokens.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
                       "update_notice": {
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
-                        "type": [
-                          "string",
-                          "null"
-                        ]
-                      },
-                      "auth_url": {
-                        "description": "Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier and receives the credential directly; no key is pasted through a conversation.",
                         "type": [
                           "string",
                           "null"
@@ -6167,7 +6938,7 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave. Part of Config.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                     "properties": {
                       "registry_name": {
                         "description": "Stable official MCP registry name, independent of the server runtime.",
@@ -6175,6 +6946,37 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "access": {
+                        "description": "Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting application resolves upstream API credentials separately at runtime. This setting does not apply to the Typeship-hosted endpoint.",
+                        "properties": {
+                          "issuer": {
+                            "format": "uri",
+                            "description": "Exact issuer allowed to sign MCP connection tokens.",
+                            "type": "string"
+                          },
+                          "resource": {
+                            "format": "uri",
+                            "description": "Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.",
+                            "type": "string"
+                          },
+                          "jwks_url": {
+                            "format": "uri",
+                            "description": "Public signing-key endpoint. Omit to discover it from the issuer.",
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "description": "Minimum scopes required to connect to the self-hosted MCP server.",
+                            "maxItems": 20,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "issuer",
+                          "resource"
+                        ],
+                        "additionalProperties": false,
+                        "type": "object"
                       },
                       "tool_mode": {
                         "enum": [
@@ -6200,6 +7002,28 @@
                           "type": "string"
                         },
                         "type": "object"
+                      },
+                      "reference_resolvers": {
+                        "description": "Exact name-or-ID resolver overrides keyed first by the target operationId or \"METHOD /path\", then by its wire argument name. A resolver names one read collection operation plus 1-4 item fields to match case-insensitively; false opts that argument out of strict inference.",
+                        "additionalProperties": {
+                          "type": "object"
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior. Part of Config.",
+                    "properties": {
+                      "quickstart_operation": {
+                        "description": "operationId or \"METHOD /path\" to feature as the README's first API call. It must be present in the generated package and callable with no required input beyond path placeholders. Missing or unsuitable choices produce a warning and use the automatic example.",
+                        "maxLength": 500,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       }
                     },
                     "additionalProperties": false,
@@ -6251,7 +7075,7 @@
                     "type": "object"
                   },
                   "docs_url": {
-                    "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's externalDocs URL.",
+                    "format": "uri",
                     "type": [
                       "string",
                       "null"
@@ -6259,7 +7083,6 @@
                   },
                   "docs_index_url": {
                     "format": "uri",
-                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -6275,6 +7098,7 @@
             ]
           },
           "deliveries": {
+            "maxItems": 2,
             "items": {
               "anyOf": [
                 {
@@ -6445,10 +7269,9 @@
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
               {
-                "description": "Shared generated-client and tooling behavior for a stored Project.",
+                "description": "Target-specific generation and delivery overrides.",
                 "properties": {
                   "globals": {
-                    "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
                     "maxItems": 20,
                     "type": "array"
                   },
@@ -6457,7 +7280,10 @@
                     "type": "object"
                   },
                   "pagination": {
-                    "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
+                    "type": "object"
+                  },
+                  "auth": {
+                    "description": "Selects a Project OAuth application for one Target.",
                     "type": "object"
                   },
                   "cli": {
@@ -6465,7 +7291,11 @@
                     "type": "object"
                   },
                   "mcp": {
-                    "description": "How the generated MCP server and the hosted endpoint behave.",
+                    "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                    "type": "object"
+                  },
+                  "readme": {
+                    "description": "Generated README behavior.",
                     "type": "object"
                   },
                   "package": {
@@ -6473,7 +7303,7 @@
                     "type": "object"
                   },
                   "docs_url": {
-                    "description": "The API's documentation site.",
+                    "format": "uri",
                     "type": [
                       "string",
                       "null"
@@ -6481,7 +7311,6 @@
                   },
                   "docs_index_url": {
                     "format": "uri",
-                    "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
                     "type": [
                       "string",
                       "null"
@@ -6496,6 +7325,8 @@
             ]
           },
           "deliveries": {
+            "description": "At most one repository and one hosted MCP Delivery.",
+            "maxItems": 2,
             "items": {
               "anyOf": [
                 {
@@ -6533,7 +7364,36 @@
     },
     {
       "operation": "targets.listReleases",
-      "signature": "client.targets.listReleases(targetId, params)",
+      "signature": "typeship targets list-releases <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "list-releases"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets list-releases tgt_5m8q2v7k1p9d4h6c",
       "method": "GET",
       "path": "/targets/{target_id}/releases",
       "summary": "List immutable releases for a Target",
@@ -6544,7 +7404,7 @@
         "type": "object",
         "properties": {
           "target_id": {
-            "description": "Stable identifier for one configured generated product. IDs come from targets_list.",
+            "description": "Stable identifier for one configured generated product.",
             "examples": [
               "tgt_5m8q2v7k1p9d4h6c"
             ],
@@ -6700,7 +7560,22 @@
     },
     {
       "operation": "targets.retrieveRelease",
-      "signature": "client.targets.retrieveRelease(targetReleaseId)",
+      "signature": "typeship targets retrieve-release <target_release_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve-release"
+      ],
+      "parameters": [
+        {
+          "name": "target_release_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve-release rel_7m2q8v4k1p9d5h6c",
       "method": "GET",
       "path": "/target_releases/{target_release_id}",
       "summary": "Retrieve an immutable Target release",
@@ -6833,7 +7708,22 @@
     },
     {
       "operation": "generations.retrieve",
-      "signature": "client.generations.retrieve(generationId)",
+      "signature": "typeship generations retrieve <generation_id> [flags]",
+      "command": [
+        "typeship",
+        "generations",
+        "retrieve"
+      ],
+      "parameters": [
+        {
+          "name": "generation_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship generations retrieve gen_7h2p5d9c3m8w1k6q",
       "method": "GET",
       "path": "/generations/{generation_id}",
       "summary": "Retrieve a generation",
@@ -7052,7 +7942,29 @@
     },
     {
       "operation": "generations.retrieveFile",
-      "signature": "client.generations.retrieveFile(generationId, params)",
+      "signature": "typeship generations retrieve-file <generation_id> [flags]",
+      "command": [
+        "typeship",
+        "generations",
+        "retrieve-file"
+      ],
+      "parameters": [
+        {
+          "name": "generation_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "path",
+          "flag": "--path",
+          "in": "query",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship generations retrieve-file gen_7h2p5d9c3m8w1k6q --path openapi.yaml",
       "method": "GET",
       "path": "/generations/{generation_id}/file",
       "summary": "Fetch one file from a generation",
@@ -7088,7 +8000,36 @@
     },
     {
       "operation": "definitionRevisions.list",
-      "signature": "client.definitionRevisions.list(definitionId, params)",
+      "signature": "typeship definition-revisions list <definition_id> [flags]",
+      "command": [
+        "typeship",
+        "definition-revisions",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "definition_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship definition-revisions list def_2p8m4q7k1v9d6h3c",
       "method": "GET",
       "path": "/definitions/{definition_id}/revisions",
       "summary": "List Definition Revisions",
@@ -7274,7 +8215,22 @@
     },
     {
       "operation": "definitionRevisions.retrieve",
-      "signature": "client.definitionRevisions.retrieve(definitionRevisionId)",
+      "signature": "typeship definition-revisions retrieve <definition_revision_id> [flags]",
+      "command": [
+        "typeship",
+        "definition-revisions",
+        "retrieve"
+      ],
+      "parameters": [
+        {
+          "name": "definition_revision_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship definition-revisions retrieve drev_6m1q8v4k2p9d7h3c",
       "method": "GET",
       "path": "/definition_revisions/{definition_revision_id}",
       "summary": "Retrieve a Definition Revision",
@@ -7286,7 +8242,7 @@
         "type": "object",
         "properties": {
           "definition_revision_id": {
-            "description": "Unique identifier for an immutable resolved Definition Revision. IDs come from definition_revisions_list.",
+            "description": "Unique identifier for an immutable resolved Definition Revision.",
             "examples": [
               "drev_6m1q8v4k2p9d7h3c"
             ],
@@ -7464,7 +8420,22 @@
     },
     {
       "operation": "definitionRevisions.retrieveContent",
-      "signature": "client.definitionRevisions.retrieveContent(definitionRevisionId)",
+      "signature": "typeship definition-revisions retrieve-content <definition_revision_id> [flags]",
+      "command": [
+        "typeship",
+        "definition-revisions",
+        "retrieve-content"
+      ],
+      "parameters": [
+        {
+          "name": "definition_revision_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship definition-revisions retrieve-content drev_6m1q8v4k2p9d7h3c",
       "method": "GET",
       "path": "/definition_revisions/{definition_revision_id}/content",
       "summary": "Retrieve a Definition Revision's canonical content",
@@ -7476,7 +8447,7 @@
         "type": "object",
         "properties": {
           "definition_revision_id": {
-            "description": "Unique identifier for an immutable resolved Definition Revision. IDs come from definition_revisions_list.",
+            "description": "Unique identifier for an immutable resolved Definition Revision.",
             "examples": [
               "drev_6m1q8v4k2p9d7h3c"
             ],
@@ -7494,7 +8465,29 @@
     },
     {
       "operation": "definitionRevisions.retrieveDocumentContent",
-      "signature": "client.definitionRevisions.retrieveDocumentContent(definitionRevisionId, documentId)",
+      "signature": "typeship definition-revisions retrieve-document-content <definition_revision_id> <document_id> [flags]",
+      "command": [
+        "typeship",
+        "definition-revisions",
+        "retrieve-document-content"
+      ],
+      "parameters": [
+        {
+          "name": "definition_revision_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "document_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship definition-revisions retrieve-document-content drev_6m1q8v4k2p9d7h3c doc_8q2m5v1k9p4d7h3c",
       "method": "GET",
       "path": "/definition_revisions/{definition_revision_id}/documents/{document_id}/content",
       "summary": "Retrieve one source document from a Definition Revision",
@@ -7505,7 +8498,7 @@
         "type": "object",
         "properties": {
           "definition_revision_id": {
-            "description": "Unique identifier for an immutable resolved Definition Revision. IDs come from definition_revisions_list.",
+            "description": "Unique identifier for an immutable resolved Definition Revision.",
             "examples": [
               "drev_6m1q8v4k2p9d7h3c"
             ],
@@ -7533,7 +8526,14 @@
     },
     {
       "operation": "account.retrieve",
-      "signature": "client.account.retrieve()",
+      "signature": "typeship account retrieve [flags]",
+      "command": [
+        "typeship",
+        "account",
+        "retrieve"
+      ],
+      "parameters": [],
+      "example_command": "typeship account retrieve",
       "method": "GET",
       "path": "/me",
       "summary": "The account behind the presented credentials",
@@ -7590,7 +8590,29 @@
     },
     {
       "operation": "apiKeys.list",
-      "signature": "client.apiKeys.list(params)",
+      "signature": "typeship api-keys list [flags]",
+      "command": [
+        "typeship",
+        "api-keys",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship api-keys list",
       "method": "GET",
       "path": "/api_keys",
       "summary": "List API keys",
@@ -7681,7 +8703,22 @@
     },
     {
       "operation": "apiKeys.revoke",
-      "signature": "client.apiKeys.revoke(apiKeyId)",
+      "signature": "typeship api-keys revoke <api_key_id> [flags]",
+      "command": [
+        "typeship",
+        "api-keys",
+        "revoke"
+      ],
+      "parameters": [
+        {
+          "name": "api_key_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship api-keys revoke api_key_123 --force",
       "method": "DELETE",
       "path": "/api_keys/{api_key_id}",
       "summary": "Revoke an API key",
@@ -7693,8 +8730,11 @@
         "type": "object",
         "properties": {
           "api_key_id": {
-            "description": "Identifier returned by the API key list. IDs come from api_keys_list.",
-            "type": "string"
+            "description": "Identifier returned by the API key list. Accepts an ID or an exact name (resolved via api_keys_list). IDs come from api_keys_list.",
+            "type": "string",
+            "examples": [
+              "example-name"
+            ]
           }
         },
         "required": [

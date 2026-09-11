@@ -4,6 +4,7 @@
 import { HttpCore, type ApiResult, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  ResponseParseError,
   TransportError,
   UnexpectedApiError,
   ValidationError,
@@ -108,6 +109,7 @@ export type ApiKeysListError =
   | ForbiddenError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -118,5 +120,6 @@ export type ApiKeysRevokeError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;

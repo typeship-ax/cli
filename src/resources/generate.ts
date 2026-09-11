@@ -3,6 +3,7 @@
 
 import { HttpCore, type ApiResult, type RequestOptions } from "../core/http.js";
 import {
+  ResponseParseError,
   TransportError,
   UnexpectedApiError,
   ValidationError,
@@ -86,5 +87,6 @@ export type GenerateRunError =
   | RateLimitedError
   | ApiResponseError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;

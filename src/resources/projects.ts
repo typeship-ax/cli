@@ -4,6 +4,7 @@
 import { HttpCore, type ApiResult, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  ResponseParseError,
   TransportError,
   UnexpectedApiError,
   ValidationError,
@@ -437,6 +438,7 @@ export type ProjectsListError =
   | ForbiddenError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -461,6 +463,7 @@ export type ProjectsCreateError =
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -471,6 +474,7 @@ export type ProjectsRetrieveError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -481,6 +485,7 @@ export type ProjectsDeleteError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -496,6 +501,7 @@ export type ProjectsUpdateError =
   | RateLimitedError
   | BadGatewayError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -506,6 +512,7 @@ export type ProjectsRetrieveDiagnosticsError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -528,6 +535,7 @@ export type ProjectsRefreshDiagnosticsError =
   | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -551,6 +559,7 @@ export type ProjectsRemediateDiagnosticsError =
   | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -561,6 +570,7 @@ export type ProjectsRetrieveIntegrationHealthError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -584,6 +594,7 @@ export type ProjectsListGenerationsError =
   | NotFoundError
   | RateLimitedError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;
 
@@ -608,5 +619,6 @@ export type ProjectsGenerateError =
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
+  | ResponseParseError
   | TransportError
   | ValidationError;

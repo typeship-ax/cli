@@ -45,6 +45,7 @@ export class DefinitionRevisionsResource {
     return paginate<DefinitionRevisionRead, DefinitionRevisionsListError>(this._core, {
       method: "GET",
       path: `/definitions/${encodeURIComponent(String(definitionId))}/revisions`,
+      security: [{"apiKey":[]}],
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
@@ -83,6 +84,7 @@ export class DefinitionRevisionsResource {
     return this._core.request<DefinitionRevisionResponseRead, DefinitionRevisionsRetrieveError>({
       method: "GET",
       path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -109,6 +111,7 @@ export class DefinitionRevisionsResource {
     return this._core.request<string, DefinitionRevisionsRetrieveContentError>({
       method: "GET",
       path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}/content`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -133,6 +136,7 @@ export class DefinitionRevisionsResource {
     return this._core.request<string, DefinitionRevisionsRetrieveDocumentContentError>({
       method: "GET",
       path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}/documents/${encodeURIComponent(String(documentId))}/content`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,

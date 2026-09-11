@@ -6,7 +6,16 @@
 // Exit codes: 0 success, 1 API/transport error, 2 usage error.
 
 import { spawnSync } from "node:child_process";
-import { createHash, randomBytes } from "node:crypto";
+import { oauthBrowserLogin, type OAuthLoginSession } from "./oauth-login.js";
+import { oauthDeviceLogin, customBrowserApproval, loginEndpoint, type ApprovedCredential } from "./polling-login.js";
+import { oauthStatusRequest } from "./oauth-request.js";
+import { checkConsoleBrowserLogin } from "./console-login-check.js";
+import { type FileCredentialStore, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
+import { createCredentialStore } from "./credential-storage.js";
+import { identityPolicyOf, identityFetch, identityResult, verifyApiIdentity, verifyClientIdentity, readApiIdentity, assertApiIdentity, type ApiIdentity, type IdentityConfiguration, type IdentityPolicy, type VerifiedIdentity } from "./api-identity.js";
+import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
+import { resolveProfile, listProfiles, selectProfile, removeProfile, readProfileConfig, updateProfileConfig, type ProfileContext } from "./auth-profiles.js";
+import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -19,20 +28,23 @@ import {
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
-import { fetchDocsText, resolveDocsContentUrl } from "./docs.js";
+import { docsReadCommand, docsReadTarget, fetchDocsText, resolveDocsContentUrl, searchConnectedGuides } from "./docs.js";
 
 
 const BIN = "typeship";
 const DEFAULT_BASE_URL = "https://typeship.dev/api/v1";
+const NAMED_SCHEMES: CredentialSchemes = {"apiKey":{"kind":"bearer","options":["bearerToken"]}};
 const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_TOKEN"}];
 const BASIC: { envUser: string; envPass: string } | null = null;
 /** Operations omitted from the generated package by its plan cap. */
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.8.0";
+const VERSION = "0.9.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
+const IDENTITY_POLICY: IdentityPolicy = {};
+let LOGIN_IDENTITY: VerifiedIdentity | undefined;
 const WHOAMI: { resource: string; method: string } | null = {"resource":"account","method":"retrieve"};
 const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
@@ -44,6 +56,15 @@ const DOCS_INDEX_URL_DEFAULT: string | null = null;
 const RELAY: { mintUrl: string; project: string } | null = null;
 const SUPPORT_URL: string | null = null;
 const OAUTH_TOKEN_URL: string | null = null;
+const OAUTH_ISSUER: string | null = null;
+const OAUTH_DISCOVERY_URL: string | undefined = undefined;
+const OAUTH_DISCOVERY_URLS: string[] = [];
+const OAUTH_DEVICE_URL: string | null = null;
+const HAS_OAUTH_LOGIN = OAUTH_TOKEN_URL !== null || OAUTH_DISCOVERY_URLS.length > 0;
+const OAUTH_LOGIN_METHOD: string = "device";
+const OAUTH_REDIRECT_URI: string | undefined = undefined;
+const OAUTH_ORGANIZATION_PARAMETER: "organization" | "organization_id" | undefined = undefined;
+const OAUTH_AUTHORIZATION_URL: string | undefined = undefined;
 const OAUTH_CLIENT_ID: string | null = null;
 const OAUTH_SCOPES: string[] = [];
 const OAUTH_TOKEN_PARAMS: Record<string, string> = {};
@@ -70,11 +91,12 @@ interface Parsed {
  * is known. */
 const CORE_BOOLEAN_FLAGS = new Set(["all", "version", "non-interactive", "debug", "validate", "yes", "force", "json"]);
 const BUILTIN_BOOLEAN_FLAGS: Record<string, string[]> = {
-  login: ["with-token", "no-browser"],
+  login: ["with-token", "no-browser", "device"],
+  logout: ["local"],
   upgrade: ["check"],
   mcp: ["claude", "cursor", "claude-desktop", "codex", "vscode", "windsurf", "gemini", "opencode", "zed", "all", "read-only"],
   docs: ["web", "schema"],
-  init: ["all", "yes", "no-skills", "no-mcp", "no-agents-md"],
+  init: ["all", "yes", "no-skills", "no-mcp", "no-agents-md", "no-browser"],
   auth: ["live"],
   doctor: [],
 };
@@ -308,35 +330,84 @@ function failApi(error: unknown, hadCredential: boolean): never {
 // credentials — written by `login`, cleared by `logout`
 // ---------------------------------------------------------------------------
 
-interface StoredCreds {
-  scalars?: Record<string, string>;
-  basic?: { username: string; password: string };
-  oauth?: { accessToken: string; refreshToken?: string; expiresAt?: number };
-  /** Set when this CLI minted the stored credential for itself (browser
-   * approval), so `logout` knows it may revoke it. A pasted key is not. */
-  minted?: { via: "browser"; key_name: string; org_id?: string };
-}
-
-function configDir(): string {
+function configRoot(): string {
   const base = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
   return join(base, BIN);
 }
+let PROFILE: ProfileContext;
+function configDir(): string { return PROFILE.directory; }
 
 function credsPath(): string {
-  return join(configDir(), "credentials.json");
+  return credentialStore().path;
 }
 
-function readCreds(): StoredCreds | null {
-  try {
-    return JSON.parse(readFileSync(credsPath(), "utf8")) as StoredCreds;
-  } catch {
-    return null;
+function credentialStore(): FileCredentialStore { return createCredentialStore(configDir(), process.env["TYPESHIP_CREDENTIAL_STORE"], "TYPESHIP_CREDENTIAL_STORE"); }
+function readCreds(): StoredCreds | null { return credentialStore().read(); }
+function sessionConfiguration(baseUrl: string, config = readConfig()): SessionConfiguration {
+  return {
+    apiBaseUrl: baseUrl, environment: config.environment, profile: PROFILE.name,
+    identity: identityConfiguration(),
+    clientId: process.env["TYPESHIP_CLIENT_ID"] ?? OAUTH_CLIENT_ID,
+    issuer: OAUTH_ISSUER, discoveryUrl: OAUTH_DISCOVERY_URL, tokenUrl: OAUTH_TOKEN_URL,
+    authorizationUrl: OAUTH_AUTHORIZATION_URL, scopes: OAUTH_SCOPES,
+    audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
+    organizationParameter: OAUTH_ORGANIZATION_PARAMETER,
+  };
+}
+
+function identityConfiguration(): IdentityConfiguration | undefined {
+  return Object.keys(IDENTITY_POLICY).length && WHOAMI ? { operation: WHOAMI.resource + "." + WHOAMI.method, fields: IDENTITY_POLICY } : undefined;
+}
+function expectedLoginIdentity(flags: Map<string, string | boolean>): ApiIdentity | undefined {
+  const expected: ApiIdentity = {};
+  for (const kind of ["subject", "account", "organization"] as const) {
+    const value = flags.get(kind);
+    if (value === undefined) continue;
+    if (typeof value !== "string" || !value || !IDENTITY_POLICY[kind]) fail(2, "--" + kind + " requires an expected ID and a configured identity field for that ID.");
+    expected[kind] = value as string;
   }
+  const selection = requestedLoginOrganization(flags);
+  if (selection) {
+    if (expected.organization !== undefined && expected.organization !== selection.id) fail(2, "--organization must match --login-organization when both are provided.");
+    expected.organization = selection.id;
+  }
+  return Object.keys(expected).length ? expected : undefined;
 }
+function requestedLoginOrganization(flags: Map<string, string | boolean>): { parameter: "organization" | "organization_id"; id: string } | undefined {
+  const id = flags.get("login-organization");
+  if (id === undefined) return;
+  if (!OAUTH_ORGANIZATION_PARAMETER || !IDENTITY_POLICY.organization) fail(2, "--login-organization requires auth.oauth_organization_parameter and identity_organization configured by the API owner.");
+  if (typeof id !== "string" || !id || id.length > 512 || /\s|[\u0000-\u001F\u007F]/.test(id)) fail(2, "--login-organization requires a nonempty provider organization ID without whitespace.");
+  return { parameter: OAUTH_ORGANIZATION_PARAMETER!, id: id as string };
+}
+function loginIdentityReport(): Record<string, unknown> { return LOGIN_IDENTITY ? { verified_identity: LOGIN_IDENTITY.values, identity_checked_at: LOGIN_IDENTITY.checkedAt } : {}; }
 
-function writeCreds(creds: StoredCreds): void {
-  mkdirSync(configDir(), { recursive: true, mode: 0o700 });
-  writeFileSync(credsPath(), JSON.stringify(creds, null, 2) + "\n", { mode: 0o600 });
+/** Each login replaces this profile's credentials and retains its API destination. */
+async function saveLoginCredentials(credentials: StoredCreds, flags: Map<string, string | boolean>, destination?: CredentialDestination, onIdentityFailure?: () => Promise<void>): Promise<void> {
+  const config = readConfig();
+  const apiBaseUrl = destination?.apiBaseUrl ?? resolveBaseUrl(flags, config);
+  if (!apiBaseUrl) fail(2, "Set the API base URL before logging in.");
+  const url = new URL(apiBaseUrl!);
+  if (!["https:", "http:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) fail(2, "The API base URL must be HTTP or HTTPS without credentials, query, or fragment.");
+  const bound = destination ? { apiBaseUrl: destination.apiBaseUrl, environment: destination.environment, profile: destination.profile } : { apiBaseUrl: url.href, environment: config.environment, profile: PROFILE.name };
+  const next: StoredCreds = { ...credentials, destination: bound };
+  const identity = identityConfiguration();
+  if (identity && WHOAMI) {
+    const op = OPS.find((op) => op.resource === WHOAMI.resource && op.method === WHOAMI.method);
+    if (!op) fail(2, "The identity operation is unavailable. Regenerate this product with the configured identity read.");
+    const transport = identityFetch(bound.apiBaseUrl);
+    const verified = await verifyApiIdentity(async (anonymous) => {
+      const client = anonymous ? new TypeshipClient({ baseUrl: bound.apiBaseUrl, fetch: transport, maxRetries: 0, timeoutMs: 10_000 }) : await makeClient(flags, op!, next, true);
+      return identityResult(client, op!);
+    }, identity.fields, expectedLoginIdentity(flags)).catch(async (error) => {
+      await onIdentityFailure?.();
+      throw error;
+    });
+    next.identity = { ...verified, binding: credentialIdentityBinding(next, identity) };
+    LOGIN_IDENTITY = verified;
+  }
+  await credentialStore().update(() => next);
+  await updateProfileConfig(configDir(), (current) => ({ ...current, baseUrl: bound.apiBaseUrl }));
 }
 
 function readStdin(): Promise<string> {
@@ -396,118 +467,41 @@ function promptHidden(promptText: string): Promise<string> {
   });
 }
 
-async function oauthForm(url: string, params: Record<string, string>): Promise<{ status: number; body: Record<string, unknown> | null }> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: new URLSearchParams(params).toString(),
-  });
-  let body: Record<string, unknown> | null = null;
-  try { body = await response.json() as Record<string, unknown>; } catch { /* non-JSON error body */ }
-  return { status: response.status, body };
+async function withLoginCancellation<T>(work: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  process.once("SIGINT", cancel); process.once("SIGTERM", cancel);
+  try { return await work(controller.signal); }
+  finally { process.off("SIGINT", cancel); process.off("SIGTERM", cancel); }
 }
 
-/** RFC 8628 device flow: discover the device endpoint from the token URL's
- * well-known metadata, show the code, poll until authorized. */
-async function deviceLogin(clientId: string, agent = false): Promise<void> {
-  if (!OAUTH_TOKEN_URL) fail(2, "This API declares no OAuth token URL.");
-  const origin = new URL(OAUTH_TOKEN_URL).origin;
-  let deviceEndpoint: string | undefined;
-  let tokenEndpoint = OAUTH_TOKEN_URL;
-  for (const wellKnown of ["/.well-known/oauth-authorization-server", "/.well-known/openid-configuration"]) {
-    try {
-      const response = await fetch(origin + wellKnown, { headers: { Accept: "application/json" } });
-      if (!response.ok) continue;
-      const meta = await response.json() as { device_authorization_endpoint?: string; token_endpoint?: string };
-      if (meta.device_authorization_endpoint) {
-        deviceEndpoint = meta.device_authorization_endpoint;
-        if (meta.token_endpoint) tokenEndpoint = meta.token_endpoint;
-        break;
-      }
-    } catch { /* try the next well-known path */ }
-  }
-  if (!deviceEndpoint) {
-    fail(1, "The authorization server does not advertise a device flow. Run '" + BIN + " login' with a pasted credential instead.");
-  }
-  const start = await oauthForm(deviceEndpoint!, {
-    client_id: clientId,
-    ...(OAUTH_SCOPES.length > 0 ? { scope: OAUTH_SCOPES.join(" ") } : {}),
-    ...OAUTH_TOKEN_PARAMS,
-  });
-  const startBody = start.body as { device_code?: string; user_code?: string; verification_uri?: string; verification_uri_complete?: string; interval?: number; expires_in?: number } | null;
-  if (start.status !== 200 || !startBody?.device_code) {
-    fail(1, "Device authorization failed (HTTP " + start.status + ").", start.body);
-  }
-  const uri = startBody!.verification_uri_complete ?? startBody!.verification_uri;
-  process.stderr.write("Open " + paintErr("cyan", String(uri)) + " and enter code: " + paintErr("bold", String(startBody!.user_code)) + "\n");
-  // Under an agent the same facts also go out as one JSON line (stderr,
-  // so stdout stays the single result document), for the agent to hand
-  // the URL and code to the user while this polls.
-  if (agent) process.stderr.write(JSON.stringify({ event: "device_code", verification_uri: uri, user_code: startBody!.user_code, expires_in: startBody!.expires_in ?? 900 }) + "\n");
-  let intervalMs = (startBody!.interval ?? 5) * 1000;
-  const deadline = Date.now() + (startBody!.expires_in ?? 900) * 1000;
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, intervalMs));
-    const poll = await oauthForm(tokenEndpoint, {
-      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-      device_code: startBody!.device_code!,
-      client_id: clientId,
-    });
-    const tokenBody = poll.body as { access_token?: string; refresh_token?: string; expires_in?: number; error?: string } | null;
-    if (poll.status === 200 && tokenBody?.access_token) {
-      writeCreds({
-        ...(readCreds() ?? {}),
-        oauth: {
-          accessToken: tokenBody.access_token,
-          refreshToken: tokenBody.refresh_token,
-          expiresAt: tokenBody.expires_in ? Date.now() + tokenBody.expires_in * 1000 : undefined,
-        },
-      });
-      process.stderr.write(paintErr("green", "Logged in.") + "\n");
-      out({ ok: true, method: "device", credentials: credsPath() });
-      await flushExit(0);
-    }
-    const errorCode = tokenBody?.error;
-    if (errorCode === "authorization_pending") continue;
-    if (errorCode === "slow_down") { intervalMs += 5000; continue; }
-    fail(1, "Device login failed: " + (errorCode ?? "HTTP " + poll.status), poll.body);
-  }
-  fail(1, "Device login timed out before the code was entered.");
+async function deviceLogin(clientId: string, parsed: Parsed): Promise<void> {
+  const apiBaseUrl = resolveBaseUrl(parsed.flags);
+  if (!apiBaseUrl) fail(2, "Set the API base URL before logging in.");
+  const loginConfiguration = sessionConfiguration(apiBaseUrl!);
+  await credentialStore().prepare();
+  const session = await withLoginCancellation((signal) => oauthDeviceLogin({
+    clientId, issuer: OAUTH_ISSUER, discoveryUrls: OAUTH_DISCOVERY_URLS,
+    deviceUrl: OAUTH_DEVICE_URL, tokenUrl: OAUTH_TOKEN_URL, scopes: OAUTH_SCOPES,
+    audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
+  }, { signal, authorize({ verificationUri, userCode, expiresIn }) {
+    process.stderr.write("Open " + paintErr("cyan", verificationUri) + " and enter code: " + paintErr("bold", userCode) + "\n");
+    if (isAgentMode(parsed)) process.stderr.write(JSON.stringify({ event: "device_code", verification_uri: verificationUri, user_code: userCode, expires_in: expiresIn }) + "\n");
+  } }));
+  await saveLoginCredentials({ oauth: { ...session,
+    sessionId: randomBytes(16).toString("hex"), binding: sessionBinding(loginConfiguration),
+    apiBaseUrl, configuredClientId: loginConfiguration.clientId ?? null,
+  } }, parsed.flags, loginConfiguration);
+  process.stderr.write(paintErr("green", "Logged in.") + "\n");
+  out({ ok: true, method: "device", credentials: credsPath(), ...loginIdentityReport() });
+  await flushExit(0);
 }
 
-/** Stored OAuth access token, refreshed through the token URL when expired.
- * A failed refresh returns the stale token; the API's 401 explains better
- * than a local guess. */
-async function refreshedOauthToken(stored: StoredCreds): Promise<string | undefined> {
-  const oauth = stored.oauth;
-  if (!oauth) return undefined;
-  const expired = oauth.expiresAt !== undefined && Date.now() > oauth.expiresAt - 60_000;
-  if (!expired || !oauth.refreshToken || !OAUTH_TOKEN_URL) return oauth.accessToken;
-  const clientId = process.env["TYPESHIP_CLIENT_ID"] ?? OAUTH_CLIENT_ID;
-  const result = await oauthForm(OAUTH_TOKEN_URL, {
-    grant_type: "refresh_token",
-    refresh_token: oauth.refreshToken,
-    ...(clientId ? { client_id: clientId } : {}),
-  });
-  const body = result.body as { access_token?: string; refresh_token?: string; expires_in?: number } | null;
-  if (result.status === 200 && body?.access_token) {
-    const next = {
-      accessToken: body.access_token,
-      refreshToken: body.refresh_token ?? oauth.refreshToken,
-      expiresAt: body.expires_in ? Date.now() + body.expires_in * 1000 : undefined,
-    };
-    writeCreds({ ...stored, oauth: next });
-    return next.accessToken;
-  }
-  return oauth.accessToken;
-}
-
-async function storePastedToken(stored: StoredCreds, token: string): Promise<void> {
+async function storePastedToken(token: string, flags: Map<string, string | boolean>): Promise<void> {
   const first = AUTH_SCALARS[0];
   if (!first) fail(2, "This API declares no credential the CLI can store. Use --username/--password if it uses basic auth.");
-  stored.scalars = { ...stored.scalars, [first!.option]: token };
-  writeCreds(stored);
-  out({ ok: true, method: "paste", stored_as: first!.flag, credentials: credsPath() });
+  await saveLoginCredentials({ scalars: { [first!.option]: token } }, flags);
+  out({ ok: true, method: "paste", stored_as: first!.flag, credentials: credsPath(), ...loginIdentityReport() });
   await flushExit(0);
 }
 
@@ -518,92 +512,126 @@ async function storePastedToken(stored: StoredCreds, token: string): Promise<voi
  * until the API hands back a key minted for this CLI, store it. The key
  * never crosses the chat: the agent relays a URL, the person clicks once.
  */
-/** The approval endpoint follows the base URL: a preview or local deployment
- * of the API approves its own logins. */
+/** A same-origin API override uses that deployment's approval route. A
+ * separately hosted identity service retains its explicitly configured URL. */
 function cliAuthUrl(flags: Map<string, string | boolean>): string {
+  const auth = loginEndpoint(CLI_AUTH_URL!);
   const base = resolveBaseUrl(flags);
-  try {
-    if (CLI_AUTH_URL && DEFAULT_BASE_URL && base) {
-      const defaultOrigin = new URL(DEFAULT_BASE_URL).origin;
-      const origin = new URL(base).origin;
-      if (origin !== defaultOrigin && CLI_AUTH_URL.startsWith(defaultOrigin)) return origin + CLI_AUTH_URL.slice(defaultOrigin.length);
-    }
-  } catch { /* fall through to the configured URL */ }
-  return CLI_AUTH_URL!;
+  if (DEFAULT_BASE_URL && base && auth.origin === new URL(DEFAULT_BASE_URL).origin) {
+    const selected = loginEndpoint(base);
+    auth.protocol = selected.protocol; auth.host = selected.host;
+  }
+  return auth.href;
 }
 
-/** Browser approval, start to key: opens (or prints) the approval URL and
- * polls until a person decides. Returns the minted credential; every
- * failure exits with the envelope. Shared by `login` and `init`. */
-async function browserApprove(headless: boolean, flags: Map<string, string | boolean>): Promise<{ api_key: string; key_name: string; org_id?: string }> {
-  const first = AUTH_SCALARS[0]!;
-  const authUrl = cliAuthUrl(flags);
-  const verifier = randomBytes(32).toString("base64url");
-  const challenge = createHash("sha256").update(verifier).digest("base64url");
-  const name = BIN + " CLI on " + hostname();
-  const source = headless && !process.stdin.isTTY ? "agent" : "cli";
-  let start: { session?: string; verification_url?: string; expires_in?: number; interval?: number; error?: string };
-  try {
-    const response = await fetch(authUrl + "/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code_challenge: challenge, name, source }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    start = await response.json() as typeof start;
-    if (!response.ok || !start.session || !start.verification_url) {
-      failWith({ code: "CALL_FAILED", message: "Could not start the browser login: " + (start.error ?? "HTTP " + response.status), nextSteps: ["Pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
-    }
-  } catch (e) {
-    failWith({ code: "NETWORK_ERROR", message: "Could not reach " + authUrl + "/start: " + (e as Error).message, nextSteps: ["Check the network, or pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
-  }
-  const url = start!.verification_url!;
-  const expiresIn = start!.expires_in ?? 600;
-  const intervalMs = Math.max(1, start!.interval ?? 3) * 1000;
-  process.stderr.write("Approve this CLI in your browser: " + paintErr("cyan", url) + "\n");
-  if (headless) {
-    process.stderr.write(JSON.stringify({ event: "browser_approval", verification_url: url, expires_in: expiresIn, note: "Give this URL to the user; polling until they approve or it expires." }) + "\n");
-  } else {
-    openInBrowser(url);
-  }
-  const deadline = Date.now() + expiresIn * 1000;
-  while (Date.now() < deadline) {
-    await new Promise((r) => setTimeout(r, intervalMs));
-    let poll: { status?: string; api_key?: string; key_name?: string; org_id?: string };
-    try {
-      const response = await fetch(authUrl + "/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session: start!.session, code_verifier: verifier }),
-        signal: AbortSignal.timeout(15_000),
-      });
-      poll = await response.json() as typeof poll;
-    } catch {
-      continue; // a blip; the next tick tries again
-    }
-    if (poll.status === "pending") continue;
-    if (poll.status === "complete" && poll.api_key) {
-      return { api_key: poll.api_key, key_name: poll.key_name ?? name, ...(poll.org_id ? { org_id: poll.org_id } : {}) };
-    }
-    if (poll.status === "denied") failWith({ status: "action_required", code: "AUTH_INVALID", message: "The request was denied in the browser.", nextSteps: ["Run '" + BIN + " login' again if that was a mistake, or pass a credential directly with --" + first.flag + "."] });
-    if (poll.status === "expired") break;
-    failWith({ code: "CALL_FAILED", message: "Browser login stopped: " + (poll.status ?? "unknown status"), nextSteps: ["Run '" + BIN + " login' again."] });
-  }
-  failWith({ status: "action_required", code: "TTY_REQUIRED", message: "The browser approval expired after " + expiresIn + "s without a decision.", nextSteps: ["Run '" + BIN + " login' again and approve the link within ten minutes.", "Or pass the credential directly: '" + BIN + " login --" + first.flag + " <value>'."] });
+async function browserApprove(headless: boolean, flags: Map<string, string | boolean>): Promise<ApprovedCredential> {
+  return withLoginCancellation((signal) => customBrowserApproval({
+    authUrl: cliAuthUrl(flags), name: BIN + " CLI on " + hostname(), source: headless && !process.stdin.isTTY ? "agent" : "cli",
+  }, { signal, authorize({ verificationUrl, expiresIn }) {
+    process.stderr.write("Approve this CLI in your browser: " + paintErr("cyan", verificationUrl) + "\n");
+    if (headless) process.stderr.write(JSON.stringify({ event: "browser_approval", verification_url: verificationUrl, expires_in: expiresIn, note: "Give this URL to the user; polling until they approve or it expires." }) + "\n");
+    else openInBrowser(verificationUrl);
+  } }));
 }
 
 /** Store what the browser approval minted, marked as this CLI's own. */
-function storeMinted(stored: StoredCreds, minted: { api_key: string; key_name: string; org_id?: string }): void {
+async function storeMinted(minted: ApprovedCredential, flags: Map<string, string | boolean>): Promise<void> {
   const first = AUTH_SCALARS[0]!;
-  stored.scalars = { ...stored.scalars, [first.option]: minted.api_key };
-  stored.minted = { via: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}) };
-  writeCreds(stored);
+  await saveLoginCredentials({
+    scalars: { [first.option]: minted.api_key },
+    minted: { via: "browser", key_name: minted.key_name, revocationUrl: minted.revocationUrl, ...(minted.org_id ? { org_id: minted.org_id } : {}) },
+  }, flags, undefined, async () => {
+    try {
+      const saved = credentialStore().read();
+      if ([...Object.values(saved?.scalars ?? {}), ...Object.values(saved?.named ?? {}), saved?.oauth?.accessToken, saved?.oauth?.refreshToken].includes(minted.api_key)) {
+        process.stderr.write("The rejected approval returned an existing saved credential; it was not revoked.\n");
+        return;
+      }
+      const response = await oauthStatusRequest(loginEndpoint(minted.revocationUrl), { method: "POST", headers: { Authorization: "Bearer " + minted.api_key } }, 15_000);
+      if (response.status < 200 || response.status >= 300) throw new Error("Revocation failed");
+    } catch {
+      process.stderr.write("The rejected approval's new credential could not be revoked. Revoke it in your API account.\n");
+    }
+  });
 }
 
-async function browserLogin(stored: StoredCreds, headless: boolean, flags: Map<string, string | boolean>): Promise<void> {
+async function browserLogin(headless: boolean, flags: Map<string, string | boolean>): Promise<void> {
+  await credentialStore().prepare();
   const minted = await browserApprove(headless, flags);
-  storeMinted(stored, minted);
-  out({ ok: true, method: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), credentials: credsPath() });
+  await storeMinted(minted, flags);
+  out({ ok: true, method: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), credentials: credsPath(), ...loginIdentityReport() });
+  await flushExit(0);
+}
+
+async function acquireOAuthBrowserSession(parsed: Parsed, clientId: string): Promise<void> {
+  if (!OAUTH_ISSUER) fail(2, "Browser OAuth requires the exact auth.oauth_issuer configured by the API owner.");
+  const apiBaseUrl = resolveBaseUrl(parsed.flags);
+  if (!apiBaseUrl) fail(2, "Set the API base URL before logging in.");
+  const loginConfiguration = sessionConfiguration(apiBaseUrl!);
+  await credentialStore().prepare();
+  const session = await startOAuthBrowserSession(parsed, clientId);
+  await saveLoginCredentials({ oauth: { ...session, apiBaseUrl,
+    sessionId: randomBytes(16).toString("hex"), binding: sessionBinding(loginConfiguration),
+    configuredClientId: loginConfiguration.clientId ?? null,
+  } }, parsed.flags, loginConfiguration);
+}
+
+/** Normal login and Console verification use the same native exchange. */
+async function startOAuthBrowserSession(parsed: Parsed, clientId: string, timeoutMs?: number): Promise<OAuthLoginSession> {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  process.once("SIGINT", cancel);
+  process.once("SIGTERM", cancel);
+  try {
+    return await oauthBrowserLogin({
+      issuer: OAUTH_ISSUER!, clientId, discoveryUrl: OAUTH_DISCOVERY_URL,
+      authorizationUrl: OAUTH_AUTHORIZATION_URL, tokenUrl: OAUTH_TOKEN_URL ?? undefined,
+      redirectUri: OAUTH_REDIRECT_URI, scopes: OAUTH_SCOPES,
+      audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
+      organization: requestedLoginOrganization(parsed.flags),
+    }, { signal: controller.signal, timeoutMs, authorize(url) {
+      process.stderr.write("Sign in to your existing account: " + url + "\n");
+      if (isAgentMode(parsed) || parsed.flags.get("no-browser") === true) process.stderr.write(JSON.stringify({ event: "oauth_browser", authorization_url: url, note: "Open this URL in a browser on the same computer as the CLI." }) + "\n");
+      else openInBrowser(url);
+    } });
+  } finally { process.off("SIGINT", cancel); process.off("SIGTERM", cancel); }
+}
+
+async function cmdConsoleLoginCheck(parsed: Parsed): Promise<void> {
+  const file = parsed.flags.get("console-check");
+  if (typeof file !== "string" || !file || parsed.flags.get("device") === true || parsed.flags.get("with-token") === true || explicitNonInteractive(parsed)) fail(2, "--console-check requires a downloaded JSON file and browser login. Use --no-browser to print the sign-in link.");
+  const baseUrl = resolveBaseUrl(parsed.flags);
+  const clientId = (typeof parsed.flags.get("client-id") === "string" ? parsed.flags.get("client-id") as string : undefined) ?? process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID;
+  const op = WHOAMI && OPS.find((value) => value.resource === WHOAMI.resource && value.method === WHOAMI.method);
+  if (!baseUrl || !OAUTH_ISSUER || !clientId || OAUTH_LOGIN_METHOD !== "browser" || !op || op.auth !== "required" || !op.security?.length) fail(2, "Configure browser OAuth and a required-authentication identity read, then regenerate this CLI.");
+  const envOptions: Record<string, unknown> = {}, flagOptions: Record<string, unknown> = {};
+  for (const scalar of AUTH_SCALARS) {
+    if (process.env[scalar.env] !== undefined) envOptions[scalar.option] = process.env[scalar.env];
+    if (typeof parsed.flags.get(scalar.flag) === "string") flagOptions[scalar.option] = parsed.flags.get(scalar.flag);
+  }
+  if (BASIC && process.env[BASIC.envUser] && process.env[BASIC.envPass]) envOptions.basicAuth = { username: process.env[BASIC.envUser], password: process.env[BASIC.envPass] };
+  if (BASIC && typeof parsed.flags.get("username") === "string" && typeof parsed.flags.get("password") === "string") flagOptions.basicAuth = { username: parsed.flags.get("username"), password: parsed.flags.get("password") };
+  const environment = (typeof parsed.flags.get("environment") === "string" ? parsed.flags.get("environment") as string : Object.entries(ENVIRONMENTS).find(([, url]) => new URL(url).href === new URL(baseUrl!).href)?.[0]) ?? null;
+  const result = await checkConsoleBrowserLogin({
+    file: file as string, configuration: {
+      baseUrl: baseUrl!, environment, operation: op!.resource + "." + op!.method, requirements: op!.security!,
+      request: { method: op!.graphql ? "POST" : op!.httpMethod, path: op!.graphql ? "" : op!.path, graphqlField: op!.graphql?.field ?? null, graphqlQuery: op!.graphql ? op!.graphql.docPrefix + op!.graphql.defaultSelection + " }" : null },
+      issuer: OAUTH_ISSUER!, clientId: clientId!, discoveryUrl: OAUTH_DISCOVERY_URL ?? null,
+      authorizationUrl: OAUTH_AUTHORIZATION_URL ?? null, tokenUrl: OAUTH_TOKEN_URL,
+      redirectUri: OAUTH_REDIRECT_URI ?? "http://127.0.0.1/callback", scopes: OAUTH_SCOPES,
+      audience: OAUTH_TOKEN_PARAMS.audience ?? null, resource: OAUTH_TOKEN_PARAMS.resource ?? null,
+    }, schemes: NAMED_SCHEMES,
+    credentials: resolveNamedCredentials(NAMED_SCHEMES, [{ options: envOptions, named: environmentCredentials() }, { options: flagOptions, named: flagCredentials(parsed.flags) }]),
+    login: (timeoutMs) => startOAuthBrowserSession(parsed, clientId!, timeoutMs),
+    async verify(credentials, expectations) {
+      const kind = (value: "user" | "account" | "organization") => value === "user" ? "subject" : value;
+      const policy = Object.fromEntries(expectations.map((entry) => [kind(entry.kind), entry.pointer])) as IdentityPolicy;
+      const expected = Object.fromEntries(expectations.map((entry) => [kind(entry.kind), String(entry.expected)])) as ApiIdentity;
+      await verifyClientIdentity((options) => new TypeshipClient(options as unknown as ClientOptions), { baseUrl: baseUrl!,  credentials }, op!, policy, expected);
+    },
+    progress: (message) => process.stderr.write(message + "\n"),
+  });
+  out(result);
   await flushExit(0);
 }
 
@@ -615,17 +643,30 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
       ...AUTH_SCALARS.map((a) => "  " + BIN + " login --" + a.flag + " <value>"),
       ...(CLI_AUTH_URL ? ["  " + BIN + " login                        approve in the browser: a key is minted for you (add --no-browser to print the link instead of opening it)"] : []),
       "  " + BIN + " login --with-token           read the credential from stdin (CI)",
-      ...(OAUTH_TOKEN_URL ? ["  " + BIN + " login --client-id <id>       OAuth device flow" + (OAUTH_CLIENT_ID ? " (a default id is built in)" : "")] : []),
+      "  " + BIN + " login --console-check <file> test browser login for your Typeship Console without replacing saved logins",
+      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --client-id <id>       OAuth " + OAUTH_LOGIN_METHOD + " login" + (OAUTH_CLIENT_ID ? " (a default id is built in)" : "")] : []),
+      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --no-browser           print the approval URL instead of opening a browser", "  " + BIN + " login --device               use device authorization when your provider supports it"] : []),
       ...(BASIC ? ["  " + BIN + " login --username <u> --password <p>"] : []),
-      ...(CLI_AUTH_URL ? [] : ["  " + BIN + " login                        interactive prompt (TTY only)"]),
+      ...(CLI_AUTH_URL || HAS_OAUTH_LOGIN ? [] : ["  " + BIN + " login                        interactive prompt (TTY only)"]),
       "",
-      "Precedence at request time: flags > env vars > stored credentials.",
+      "Precedence per scheme: flags > env vars > stored credentials. Named inputs beat convenience flags within the same source.",
+      "  " + BIN + " login --credentials @<JSON-file>   store named credentials (use - for stdin)",
+      "Named schemes: " + Object.entries(NAMED_SCHEMES).map(([name, scheme]) => name + " (" + scheme.kind + ")").join(", "),
+      "JSON values are tokens/API keys, or {username, password} for Basic auth. Runtime env: TYPESHIP_CREDENTIALS.",
+      "--profile <name> selects an isolated login. Use auth profiles to list profiles and auth use <name> to select a default.",
+      ...(Object.keys(IDENTITY_POLICY).length ? ["Login verifies your API identity before saving. Add --subject <id>, --account <id> or --organization <id> to require a particular mapped identity."] : []),
+      ...(OAUTH_ORGANIZATION_PARAMETER ? ["--login-organization <id> requests that provider organization during browser login and requires the API to confirm the same ID."] : []),
+      "Saved credentials use OS protection by default. TYPESHIP_CREDENTIAL_STORE=file explicitly opts into plaintext storage.",
     ];
     process.stdout.write(lines.join("\n") + "\n");
     await flushExit(0);
   }
-  const stored: StoredCreds = readCreds() ?? {};
-
+  if (parsed.flags.has("login-organization")) {
+    expectedLoginIdentity(parsed.flags);
+    if (!HAS_OAUTH_LOGIN || OAUTH_LOGIN_METHOD !== "browser" || parsed.flags.has("device") || parsed.flags.has("console-check") || parsed.flags.has("with-token") || explicitNonInteractive(parsed)) fail(2, "--login-organization is available only for interactive OAuth browser login, including --no-browser.");
+  }
+  if (parsed.flags.has("console-check")) { await cmdConsoleLoginCheck(parsed); return; }
+  const named = flagCredentials(parsed.flags);
   const scalarValues: Record<string, string> = {};
   for (const a of AUTH_SCALARS) {
     const v = parsed.flags.get(a.flag);
@@ -634,31 +675,39 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
   const username = parsed.flags.get("username");
   const password = parsed.flags.get("password");
   const gotBasic = BASIC !== null && typeof username === "string" && typeof password === "string";
-  if (Object.keys(scalarValues).length > 0 || gotBasic) {
-    if (Object.keys(scalarValues).length > 0) stored.scalars = { ...stored.scalars, ...scalarValues };
-    if (gotBasic) stored.basic = { username: username as string, password: password as string };
-    writeCreds(stored);
-    out({ ok: true, method: "flags", credentials: credsPath() });
+  if (Object.keys(scalarValues).length > 0 || gotBasic || Object.keys(named).length > 0) {
+    if (parsed.flags.has("login-organization")) fail(2, "--login-organization cannot be combined with pasted credentials.");
+    await saveLoginCredentials({
+      ...(Object.keys(named).length ? { named } : {}),
+      ...(Object.keys(scalarValues).length > 0 ? { scalars: scalarValues } : {}),
+      ...(gotBasic ? { basic: { username: username as string, password: password as string } } : {}),
+    }, parsed.flags);
+    out({ ok: true, method: "flags", credentials: credsPath(), ...loginIdentityReport() });
     await flushExit(0);
   }
 
   if (parsed.flags.get("with-token") === true) {
     const token = (await readStdin()).trim();
     if (!token) fail(2, "--with-token expects the credential on stdin.");
-    await storePastedToken(stored, token);
+    await storePastedToken(token, parsed.flags);
   }
 
   const clientId = (typeof parsed.flags.get("client-id") === "string" ? parsed.flags.get("client-id") as string : undefined)
     ?? process.env["TYPESHIP_CLIENT_ID"] ?? OAUTH_CLIENT_ID ?? undefined;
-  if (OAUTH_TOKEN_URL && clientId !== undefined && !explicitNonInteractive(parsed)) {
-    await deviceLogin(clientId, isAgentMode(parsed));
+  if (HAS_OAUTH_LOGIN && clientId !== undefined && !explicitNonInteractive(parsed)) {
+    if (OAUTH_LOGIN_METHOD === "browser" && parsed.flags.get("device") !== true) {
+      await acquireOAuthBrowserSession(parsed, clientId);
+      out({ ok: true, method: "oauth_browser", credentials: credsPath(), ...loginIdentityReport() });
+      await flushExit(0);
+    }
+    await deviceLogin(clientId, parsed);
   }
 
   // Browser approval: the API mints a key for this CLI once a person
   // approves in the browser. Works under an agent too (it prints the URL and
   // polls); only the explicit non-interactive switch turns it off.
   if (CLI_AUTH_URL && AUTH_SCALARS[0] && !explicitNonInteractive(parsed)) {
-    await browserLogin(stored, isAgentMode(parsed) || parsed.flags.get("no-browser") === true, parsed.flags);
+    await browserLogin(isAgentMode(parsed) || parsed.flags.get("no-browser") === true, parsed.flags);
   }
 
   if (nonInteractive(parsed) || !process.stdin.isTTY) {
@@ -669,7 +718,7 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
       nextSteps: [
         ...AUTH_SCALARS.map((a) => "Pass the credential: '" + BIN + " login --" + a.flag + " <value>', or set " + a.env + " in the environment."),
         "Pipe it: echo \"$TOKEN\" | " + BIN + " login --with-token",
-        ...(OAUTH_TOKEN_URL ? ["Device flow: '" + BIN + " login --client-id <id>' (prints a URL and code for the user)."] : []),
+        ...(HAS_OAUTH_LOGIN ? ["OAuth login (or --device when supported by your provider): '" + BIN + " login --client-id <id>' (opens or prints the provider sign-in URL)."] : []),
         ...(CLI_AUTH_URL ? ["Browser approval: '" + BIN + " login --no-browser' prints a link for the user to approve and waits."] : []),
       ],
     });
@@ -678,27 +727,39 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
   if (!first) fail(2, "This API declares no credential the CLI can prompt for. See '" + BIN + " login --help'.");
   const token = (await promptHidden("Paste " + first.flag.replace(/-/g, " ") + " (input hidden): ")).trim();
   if (!token) fail(2, "Nothing entered.");
-  await storePastedToken(stored, token);
+  await storePastedToken(token, parsed.flags);
 }
 
-async function cmdLogout(): Promise<void> {
-  const stored = readCreds();
-  const existed = existsSync(credsPath());
+async function cmdLogout(parsed: Parsed): Promise<void> {
+  if (parsed.flags.get("local") === true) {
+    const removed = await credentialStore().clear();
+    out({ ok: true, removed: removed ? credsPath() : null, revoked: false, revocation_skipped: true });
+    await flushExit(0);
+  }
+  const stored = await credentialStore().take();
+  const existed = stored !== null;
   // A key this CLI minted for itself (browser approval) is revoked on the
   // way out, so logging out ends the credential and not just the file. A
   // pasted or CI key is someone else's to revoke, and is left alone.
   let revoked: boolean | null = null;
   const first = AUTH_SCALARS[0];
   const ownKey = first && stored?.minted?.via === "browser" ? stored.scalars?.[first.option] : undefined;
-  if (ownKey && CLI_AUTH_URL) {
+  if (ownKey) {
     try {
-      const response = await fetch(CLI_AUTH_URL + "/revoke", { method: "POST", headers: { Authorization: "Bearer " + ownKey }, signal: AbortSignal.timeout(15_000) });
-      revoked = response.ok;
+      const response = await oauthStatusRequest(loginEndpoint(stored!.minted!.revocationUrl!), { method: "POST", headers: { Authorization: "Bearer " + ownKey } }, 15_000);
+      revoked = response.status >= 200 && response.status < 300;
     } catch {
       revoked = false;
     }
   }
-  rmSync(credsPath(), { force: true });
+  if (stored?.oauth?.revocationUrl) {
+    try {
+      const oauth = stored.oauth;
+      const token = oauth.refreshToken ?? oauth.accessToken;
+      const result = await oauthStatusRequest(loginEndpoint(oauth.revocationUrl!), { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ token, token_type_hint: oauth.refreshToken ? "refresh_token" : "access_token", ...(oauth.clientId ? { client_id: oauth.clientId } : {}) }) });
+      revoked = result.status >= 200 && result.status < 300;
+    } catch { revoked = false; }
+  }
   out({ ok: true, removed: existed ? credsPath() : null, ...(revoked === null ? {} : { revoked, key_name: stored?.minted?.key_name }) });
   await flushExit(0);
 }
@@ -706,21 +767,13 @@ async function cmdLogout(): Promise<void> {
 async function cmdWhoami(parsed: Parsed): Promise<void> {
   const op = WHOAMI ? OPS.find((o) => o.resource === WHOAMI.resource && o.method === WHOAMI.method) : undefined;
   if (op) {
-    const client = await makeClient(parsed.flags);
+    const client = await makeClient(parsed.flags, op);
     const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; data?: unknown; error?: unknown }>>>)[op.resource]!;
     const result = await target[op.method]!();
     if (result.ok) { out(result.data ?? { ok: true }); await flushExit(0); }
     failApi(result.error, LAST_CLIENT_HAD_CREDENTIAL);
   }
-  const stored = readCreds();
-  let source = "none";
-  if (AUTH_SCALARS.some((a) => typeof parsed.flags.get(a.flag) === "string")) {
-    source = "flags";
-  } else {
-    const envScalar = AUTH_SCALARS.find((a) => process.env[a.env] !== undefined);
-    if (envScalar) source = "env:" + envScalar.env;
-    else if (stored && (stored.scalars || stored.basic || stored.oauth)) source = "login";
-  }
+  const source = credentialSource(parsed.flags) ?? "none";
   out({ authenticated: source !== "none", source, credentials: existsSync(credsPath()) ? credsPath() : null });
   await flushExit(source === "none" ? 1 : 0);
 }
@@ -739,18 +792,7 @@ function configFilePath(): string {
   return join(configDir(), "config.json");
 }
 
-function readConfig(): CliConfigFile {
-  try {
-    return JSON.parse(readFileSync(configFilePath(), "utf8")) as CliConfigFile;
-  } catch {
-    return {};
-  }
-}
-
-function writeConfig(config: CliConfigFile): void {
-  mkdirSync(configDir(), { recursive: true, mode: 0o700 });
-  writeFileSync(configFilePath(), JSON.stringify(config, null, 2) + "\n");
-}
+function readConfig(): CliConfigFile { return readProfileConfig(configDir()); }
 
 const CONFIG_KEYS = ["base-url", "environment", "docs-url"];
 
@@ -784,6 +826,7 @@ async function cmdConfig(parsed: Parsed): Promise<void> {
   if (sub === undefined || sub === "list") {
     const config = readConfig();
     out({
+      profile: PROFILE.name, profile_source: PROFILE.source,
       base_url: config.baseUrl ?? null,
       environment: config.environment ?? null,
       docs_url: config.docsUrl ?? DOCS_URL_DEFAULT,
@@ -806,10 +849,13 @@ async function cmdConfig(parsed: Parsed): Promise<void> {
       await flushExit(0);
     }
     if (sub === "unset") {
-      if (key === "base-url") delete config.baseUrl;
-      else if (key === "environment") delete config.environment;
-      else delete config.docsUrl;
-      writeConfig(config);
+      await updateProfileConfig(configDir(), (current) => {
+        const next = { ...current };
+        if (key === "base-url") delete next.baseUrl;
+        else if (key === "environment") delete next.environment;
+        else delete next.docsUrl;
+        return next;
+      });
       out({ ok: true });
       await flushExit(0);
     }
@@ -820,17 +866,14 @@ async function cmdConfig(parsed: Parsed): Promise<void> {
       } catch {
         fail(2, key + " must be a valid URL");
       }
-      if (key === "base-url") config.baseUrl = value;
-      else config.docsUrl = value;
     } else {
       if (!(value! in ENVIRONMENTS)) {
         fail(2, Object.keys(ENVIRONMENTS).length > 0
           ? "environment must be one of: " + Object.keys(ENVIRONMENTS).join(", ")
           : "The spec declares no named environments; use 'config set base-url' instead.");
       }
-      config.environment = value;
     }
-    writeConfig(config);
+    await updateProfileConfig(configDir(), (current) => key === "base-url" ? { ...current, baseUrl: value } : key === "docs-url" ? { ...current, docsUrl: value } : { ...current, environment: value, baseUrl: undefined });
     out({ ok: true, [key.replace(/-/g, "_")]: value });
     await flushExit(0);
   }
@@ -873,7 +916,12 @@ function mcpEntryFor(url: string | undefined, readOnly = false): { entry: McpEnt
   }
   const server = mcpServerPath();
   if (server.warning) warnings.push(server.warning);
-  return { entry: { command: "node", args: [server.path, ...(readOnly ? ["--read-only"] : [])] }, warnings };
+  const environment = {
+    ...(process.env.XDG_CONFIG_HOME !== undefined ? { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME } : {}),
+    ...(process.env["TYPESHIP_CREDENTIAL_STORE"] !== undefined ? { "TYPESHIP_CREDENTIAL_STORE": process.env["TYPESHIP_CREDENTIAL_STORE"]! } : {}),
+  };
+  const pinned = PROFILE.source === "flag" || PROFILE.source === "environment";
+  return { entry: { command: "node", args: [server.path, ...(pinned ? ["--profile", PROFILE.name] : []), ...(readOnly ? ["--read-only"] : [])], ...(Object.keys(environment).length ? { env: environment } : {}) }, warnings };
 }
 
 const MCP_CLIENT_FLAGS: Record<string, string> = {
@@ -970,7 +1018,7 @@ function agentContext(): AgentContext {
     apiTitle: API_TITLE,
     version: VERSION,
     envPrefix: ENV_PREFIX,
-    authEnvVars: [...AUTH_SCALARS.map((a) => a.env), ...(BASIC ? [BASIC.envUser, BASIC.envPass] : [])],
+    authEnvVars: [...AUTH_SCALARS.map((a) => a.env), ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []), ...(Object.keys(NAMED_SCHEMES).length ? ["TYPESHIP_CREDENTIALS"] : [])],
     docsUrl: docsSiteUrl(),
     docsIndexUrl: docsIndexUrl(),
     generatedOperationCount: OPS.length,
@@ -1049,7 +1097,7 @@ function helpJson(): Record<string, unknown> {
       note: "Choose an operation from this index, then read only that operation's complete schemas and example arguments.",
     },
     builtins: BUILTIN_COMMANDS,
-    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--base-url <url>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
+    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
     auth_env_vars: agentContext().authEnvVars,
   };
 }
@@ -1066,29 +1114,44 @@ async function cmdAgentGuide(parsed: Parsed): Promise<void> {
 /** Which credential the CLI would send, without sending it. --live calls the identity endpoint too. */
 async function cmdAuth(parsed: Parsed): Promise<void> {
   const sub = parsed.positionals[1];
+  if (!parsed.help && sub === "profiles") {
+    out({ profile: PROFILE.name, source: PROFILE.source, profiles: listProfiles(configRoot()).map((entry) => ({ name: entry.name, selected: entry.name === PROFILE.name, has_saved_credentials: entry.hasSavedCredentials, base_url: entry.config.baseUrl ?? (entry.config.environment ? ENVIRONMENTS[entry.config.environment] : undefined) ?? DEFAULT_BASE_URL, environment: entry.config.environment ?? null })) });
+    await flushExit(0);
+  }
+  if (!parsed.help && (sub === "use" || sub === "remove")) {
+    const name = parsed.positionals[2];
+    if (!name) fail(2, "auth " + sub + " requires a profile name.");
+    if (sub === "use") selectProfile(configRoot(), name!);
+    else await removeProfile(configRoot(), name!);
+    const effective = resolveProfile(configRoot(), { flag: typeof parsed.flags.get("profile") === "string" ? parsed.flags.get("profile") as string : undefined, environment: process.env["TYPESHIP_PROFILE"], allowMissing: true });
+    out({ ok: true, ...(sub === "use" ? { selected: name } : { removed: name }), profile: effective.name, source: effective.source });
+    await flushExit(0);
+  }
   if (parsed.help || sub !== "check") {
     process.stdout.write([
       BIN + " auth check [--live] — report the credential the CLI would use, as JSON: {status: ok|action_required, authenticated, source, ...}",
+      "  " + BIN + " auth profiles                 list profiles without unlocking credentials",
+      "  " + BIN + " auth use <name>               select the default profile",
+      "  " + BIN + " auth remove <name>            remove a profile after logout",
+      "  --profile <name> overrides TYPESHIP_PROFILE, then the saved selection, then default.",
       "  --live   also call the API's identity endpoint" + (WHOAMI ? "" : " (none in this API; --live is a no-op)"),
       "",
       "Precedence: flags > env vars > stored credentials (" + credsPath() + ").",
     ].join("\n") + "\n");
     await flushExit(parsed.help ? 0 : 2);
   }
-  const stored = readCreds();
-  let source = "none";
-  if (AUTH_SCALARS.some((a) => typeof parsed.flags.get(a.flag) === "string")) source = "flags";
-  else {
-    const envScalar = AUTH_SCALARS.find((a) => process.env[a.env] !== undefined);
-    if (envScalar) source = "env:" + envScalar.env;
-    else if (stored && (stored.scalars || stored.basic || stored.oauth)) source = "login";
-  }
+  const source = credentialSource(parsed.flags) ?? "none";
   const authenticated = source !== "none";
+  const savedIdentity = source === "login" ? readCreds() : null;
+  if (savedIdentity) assertStoredIdentity(savedIdentity, identityConfiguration());
   const report: Record<string, unknown> = {
     status: authenticated ? "ok" : "action_required",
     authenticated,
     source,
     credentials_path: existsSync(credsPath()) ? credsPath() : null,
+    credential_storage: credentialStore().backend,
+    verified_identity: savedIdentity?.identity?.values ?? null, identity_checked_at: savedIdentity?.identity?.checkedAt ?? null,
+    profile: PROFILE.name, profile_source: PROFILE.source,
     auth_env_vars: agentContext().authEnvVars,
     base_url: resolveBaseUrl(parsed.flags) ?? null,
     next_steps: authenticated ? [] : [
@@ -1099,10 +1162,13 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
   if (authenticated && parsed.flags.get("live") === true && WHOAMI) {
     const op = OPS.find((o) => o.resource === WHOAMI.resource && o.method === WHOAMI.method);
     if (op) {
-      const client = await makeClient(parsed.flags);
+      const client = await makeClient(parsed.flags, op);
       const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; data?: unknown; error?: unknown }>>>)[op.resource]!;
       const result = await target[op.method]!();
-      if (result.ok) report.identity = result.data;
+      if (result.ok) {
+        if (identityConfiguration() && savedIdentity?.identity) assertApiIdentity(savedIdentity.identity.values, readApiIdentity(result.data, IDENTITY_POLICY));
+        report.identity = result.data;
+      }
       else {
         const why = classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT });
         report.status = "action_required";
@@ -1124,10 +1190,11 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
   const nodeMajor = Number(process.versions.node.split(".")[0]);
   checks.push({ name: "node", ok: nodeMajor >= 18, detail: process.version, ...(nodeMajor >= 18 ? {} : { fix: "Install Node 18 or newer." }) });
   checks.push({ name: "cli", ok: true, detail: BIN + " " + VERSION + " (" + PKG_NAME + ")" });
-  const stored = readCreds();
-  const envScalar = AUTH_SCALARS.find((a) => process.env[a.env] !== undefined);
-  const hasCred = Boolean(envScalar) || Boolean(stored && (stored.scalars || stored.basic || stored.oauth));
-  checks.push({ name: "credentials", ok: hasCred, detail: envScalar ? "env:" + envScalar.env : hasCred ? credsPath() : "none", ...(hasCred ? {} : { fix: AUTH_SCALARS[0] ? "Set " + AUTH_SCALARS[0].env + " or run '" + BIN + " login'." : "Run '" + BIN + " login'." }) });
+  let source: string | null = null;
+  let storageProblem: string | undefined;
+  try { source = credentialSource(parsed.flags); } catch (error) { storageProblem = (error as Error).message; }
+  const hasCred = source !== null;
+  checks.push({ name: "credentials", ok: hasCred, detail: storageProblem ?? (source === "login" ? credentialStore().backend : source ?? "none"), ...(hasCred ? {} : { fix: storageProblem ?? (AUTH_SCALARS[0] ? "Set " + AUTH_SCALARS[0].env + " or run '" + BIN + " login'." : "Run '" + BIN + " login'.") }) });
   const baseUrl = resolveBaseUrl(parsed.flags);
   if (baseUrl) {
     try {
@@ -1143,7 +1210,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
     const op = OPS.find((o) => o.resource === WHOAMI.resource && o.method === WHOAMI.method);
     if (op) {
       try {
-        const client = await makeClient(parsed.flags);
+        const client = await makeClient(parsed.flags, op);
         const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; error?: unknown }>>>)[op.resource]!;
         const result = await target[op.method]!();
         checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message, fix: "The credential was rejected; run '" + BIN + " login' with a current one." });
@@ -1196,24 +1263,33 @@ async function cmdInit(parsed: Parsed): Promise<void> {
   const harness = detectHarness();
 
   // 1. credential
-  const stored: StoredCreds = readCreds() ?? {};
   const first = AUTH_SCALARS[0];
+  const named = flagCredentials(parsed.flags), envNamed = environmentCredentials();
+  const stored: StoredCreds = Object.keys(named).length || Object.keys(envNamed).length || first && process.env[first.env] ? {} : readCreds() ?? {};
   const given = (typeof parsed.flags.get("k") === "string" ? parsed.flags.get("k") as string : undefined)
     ?? (first && typeof parsed.flags.get(first.flag) === "string" ? parsed.flags.get(first.flag) as string : undefined);
-  if (given && first) {
-    stored.scalars = { ...stored.scalars, [first.option]: given };
-    writeCreds(stored);
+  if (Object.keys(named).length) {
+    await saveLoginCredentials({ named }, parsed.flags);
+    report.credential = { status: "stored", path: credsPath() };
+  } else if (given && first) {
+    await saveLoginCredentials({ scalars: { [first.option]: given } }, parsed.flags);
     report.credential = { status: "stored", path: credsPath() };
   } else if (first && process.env[first.env]) {
     report.credential = { status: "env", variable: first.env };
-  } else if (stored.scalars || stored.basic || stored.oauth) {
+  } else if (Object.keys(envNamed).length) {
+    report.credential = { status: "env", variable: "TYPESHIP_CREDENTIALS" };
+  } else if (stored.scalars || stored.basic || stored.oauth || stored.named) {
     report.credential = { status: "stored", path: credsPath() };
+  } else if (first && HAS_OAUTH_LOGIN && OAUTH_LOGIN_METHOD === "browser" && (process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID) && !explicitNonInteractive(parsed)) {
+    await acquireOAuthBrowserSession(parsed, (process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID)!);
+    report.credential = { status: "stored", method: "oauth_browser", path: credsPath() };
   } else if (first && CLI_AUTH_URL && !explicitNonInteractive(parsed)) {
     // Nothing anywhere: approve a credential in the browser, as `login`
     // would, then carry on. Under an agent the URL is printed for the person
     // and polled; only the explicit non-interactive switch skips this.
+    await credentialStore().prepare();
     const minted = await browserApprove(isAgentMode(parsed) || parsed.flags.get("no-browser") === true, parsed.flags);
-    storeMinted(stored, minted);
+    await storeMinted(minted, parsed.flags);
     report.credential = { status: "minted", method: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), path: credsPath() };
   } else {
     report.credential = { status: "none" };
@@ -1348,7 +1424,7 @@ function completionFlagsFor(op: OpSpec): { flags: string[]; values: Record<strin
   return { flags, values };
 }
 
-const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--base-url", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
+const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
 const BUILTIN_WORDS: Record<string, string[]> = {
   config: ["list", "get", "set", "unset", "path"],
   completion: ["bash", "zsh", "fish"],
@@ -1608,30 +1684,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
       .filter((match) => match.score > 0)
       .sort((a, b) => b.score - a.score || a.op.command.join(" ").localeCompare(b.op.command.join(" ")))
       .map((match) => match.op);
-    const prose = await fetchDocs("llms-full.txt");
-    const proseMatches: { heading: string; excerpt: string; score: number }[] = [];
-    if (prose !== null) {
-      let heading = "";
-      const terms = searchTerms(term);
-      for (const line of prose.split("\n")) {
-        if (/^#{1,3} /.test(line)) heading = line.replace(/^#+ /, "").trim();
-        else {
-          const lowerHeading = heading.toLowerCase();
-          const lowerLine = line.toLowerCase();
-          const matched = terms.filter((word) => lowerHeading.includes(word) || lowerLine.includes(word));
-          if (matched.length > 0) {
-            const allTerms = matched.length === terms.length;
-            proseMatches.push({
-              heading,
-              excerpt: line.trim().slice(0, 160),
-              score: matched.length * 10 + (allTerms ? 50 : 0) + (lowerHeading.includes(term.toLowerCase()) || lowerLine.includes(term.toLowerCase()) ? 25 : 0),
-            });
-          }
-        }
-      }
-      proseMatches.sort((a, b) => b.score - a.score || a.heading.localeCompare(b.heading) || a.excerpt.localeCompare(b.excerpt));
-    }
-    const docsStatus = docsSiteUrl() === null ? "not_configured" : prose === null ? "unavailable" : "ok";
+    const { guides: proseMatches, status: docsStatus } = await searchConnectedGuides(docsSiteUrl(), docsIndexUrl(), fetchDocs, term);
     if (jsonOutput) {
       out({
         schema_version: "1",
@@ -1643,7 +1696,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
           ...(op.summary ? { summary: op.summary } : {}),
           details_command: BIN + " docs " + op.command.join(" ") + " --json",
         })),
-        guides: proseMatches.slice(0, 15).map(({ heading, excerpt }) => ({ heading, excerpt })),
+        guides: proseMatches.slice(0, 15).map((match) => ({ ...match, read_command: docsReadCommand(BIN, match.url) })),
         totals: { reference: refMatches.length, guides: proseMatches.length },
         guides_status: docsStatus,
         ...(docsStatus === "not_configured" ? { next_steps: ["Run '" + BIN + " config set docs-url <url>' to add guide search; the API reference was still searched."] } : {}),
@@ -1658,7 +1711,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     }
     if (proseMatches.length > 0) {
       lines.push(...(lines.length > 0 ? [""] : []), paintOut("bold", "Guides:"));
-      for (const match of proseMatches.slice(0, 15)) lines.push("  " + padPaint("cyan", match.heading.slice(0, 32), 34) + match.excerpt.slice(0, 100));
+      for (const match of proseMatches.slice(0, 15)) lines.push("  " + paintOut("cyan", match.title + (match.section ? " / " + match.section : "")), "    " + match.excerpt, "    " + docsReadCommand(BIN, match.url));
     } else if (docsStatus === "not_configured") {
       lines.push(...(lines.length > 0 ? [""] : []), "(no docs site configured for guide search: '" + BIN + " config set docs-url <url>')");
     } else if (docsStatus === "unavailable") {
@@ -1675,9 +1728,7 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     let target = page!;
     if (!/^https?:\/\//.test(target)) {
       const index = await fetchDocs("llms.txt");
-      const linked = index?.match(/\((https?:[^)]+)\)/g)?.map((m) => m.slice(1, -1)) ?? [];
-      const hit = linked.find((u) => u.toLowerCase().includes(target.toLowerCase()));
-      if (hit !== undefined) target = hit;
+      target = docsReadTarget(index, docsSiteUrl(), docsIndexUrl(), target);
     }
     const text = await fetchDocs(target);
     if (text === null) {
@@ -1893,7 +1944,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.8.0");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.9.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -1917,11 +1968,11 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
   }
   lines.push("");
-  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check bodies)" +
+  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check bodies)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
   lines.push(...labeled(paintOut("bold", "Global flags:") + " ", flagsText, width, 14).map((l, i) => (i === 0 ? l : l)));
   lines.push(...labeled("Credential env vars: ", [
-    ...AUTH_SCALARS.map((a) => a.env),
+    "TYPESHIP_CREDENTIALS", ...AUTH_SCALARS.map((a) => a.env),
     ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []),
   ].join(", ") || "none", width, 21));
   lines.push(...labeled("Endpoint env var: ", "TYPESHIP_BASE_URL", width, 18));
@@ -1963,6 +2014,7 @@ function printResource(resource: string, stream: NodeJS.WriteStream = process.st
 /** Flags the CLI itself adds to an API command, as [flag, description] rows. */
 function commandExtras(op: OpSpec): [string, string][] {
   const extras: [string, string][] = [];
+  if (op.auth !== "none" && Object.keys(NAMED_SCHEMES).length) extras.push(["--credentials @<file>|-", "named credentials as JSON; use - for stdin"]);
   if (op.hasBody && op.bodyKind === "binary") extras.push(["--file <path>", "raw request body, uploaded as-is (- reads stdin)"]);
   else if (op.hasBody) extras.push(["--data '<json>'", "raw JSON body" + (op.bodyStyle === "fields" ? " (merged under field flags)" : "") + "; @<file> reads a file, - reads stdin"]);
   if (op.select) extras.push(["--select '<selection>'", "GraphQL selection set replacing the default, e.g. '{ id name }'"]);
@@ -2006,7 +2058,7 @@ function exampleLine(op: OpSpec): string {
 
 /** " (no auth needed)" for an anonymous operation in an API that otherwise authenticates. */
 function authNote(op: OpSpec): string {
-  const apiHasAuth = AUTH_SCALARS.length > 0 || BASIC !== null || OAUTH_TOKEN_URL !== null;
+  const apiHasAuth = AUTH_SCALARS.length > 0 || BASIC !== null || HAS_OAUTH_LOGIN;
   return apiHasAuth && op.auth === "none" ? " (no auth needed)" : apiHasAuth && op.auth === "optional" ? " (auth optional)" : "";
 }
 
@@ -2158,21 +2210,48 @@ function coerce(spec: ParamSpec, raw: string | boolean, repeated?: string[]): un
 /** Whether the last client built carried any credential; failApi tells NO_AUTH from AUTH_INVALID with it. */
 let LAST_CLIENT_HAD_CREDENTIAL = false;
 
+function validateCredentialsInput(flags: Map<string, string | boolean>): void {
+  const input = flags.get("credentials");
+  if (BASIC && flags.has("username") !== flags.has("password")) fail(2, "Supply --username and --password together, or use a complete named Basic credential.");
+  if (input === undefined) return;
+  if (typeof input !== "string" || (input !== "-" && (!input.startsWith("@") || input.length < 2))) fail(2, "--credentials expects @<JSON-file> or - to read JSON from stdin.");
+  if (input === "-" && (flags.get("data") === "-" || flags.get("file") === "-" || flags.get("with-token") === true)) fail(2, "Stdin cannot supply both named credentials and another input. Use a credential file instead.");
+}
+let namedFlagCache: NamedCredentials | undefined;
+function flagCredentials(flags: Map<string, string | boolean>): NamedCredentials {
+  if (namedFlagCache) return namedFlagCache;
+  validateCredentialsInput(flags);
+  const input = flags.get("credentials");
+  if (input === undefined) return {};
+  try {
+    const named = readNamedCredentialsFile(input as string, NAMED_SCHEMES);
+    if (!Object.keys(named).length) fail(2, "The named credential file must contain at least one security scheme.");
+    return namedFlagCache = named;
+  }
+  catch (error) { fail(2, (error as Error).message); }
+}
+function environmentCredentials(): NamedCredentials {
+  if (BASIC && (process.env[BASIC.envUser] !== undefined) !== (process.env[BASIC.envPass] !== undefined)) fail(2, "Supply both Basic-auth environment variables together, or use a complete named Basic credential.");
+  const value = process.env["TYPESHIP_CREDENTIALS"];
+  return value === undefined ? {} : parseNamedCredentials(value, NAMED_SCHEMES);
+}
+
 /** Where a credential would come from, without sending it: "flags", "env:<VAR>", "login", or null. */
 function credentialSource(flags: Map<string, string | boolean>): string | null {
+  if (Object.keys(flagCredentials(flags)).length) return "flags";
   if (AUTH_SCALARS.some((a) => typeof flags.get(a.flag) === "string")) return "flags";
   if (BASIC && typeof flags.get("username") === "string" && typeof flags.get("password") === "string") return "flags";
+  if (Object.keys(environmentCredentials()).length) return "env:TYPESHIP_CREDENTIALS";
   const envScalar = AUTH_SCALARS.find((a) => process.env[a.env] !== undefined);
   if (envScalar) return "env:" + envScalar.env;
   if (BASIC && process.env[BASIC.envUser] !== undefined && process.env[BASIC.envPass] !== undefined) return "env:" + BASIC.envUser;
   const stored = readCreds();
-  if (stored && (stored.scalars || stored.basic || stored.oauth)) return "login";
+  if (stored && (stored.scalars || stored.basic || stored.oauth || stored.named)) return "login";
   return null;
 }
 
 /** Base URL resolution: --base-url > env > config base-url > config environment > spec default. */
-function resolveBaseUrl(flags: Map<string, string | boolean>): string | undefined {
-  const config = readConfig();
+function resolveBaseUrl(flags: Map<string, string | boolean>, config = readConfig()): string | undefined {
   return (typeof flags.get("base-url") === "string" ? flags.get("base-url") as string : undefined)
     ?? process.env["TYPESHIP_BASE_URL"]
     ?? config.baseUrl
@@ -2180,10 +2259,22 @@ function resolveBaseUrl(flags: Map<string, string | boolean>): string | undefine
     ?? DEFAULT_BASE_URL ?? undefined;
 }
 
-async function makeClient(flags: Map<string, string | boolean>): Promise<TypeshipClient> {
-  const stored = readCreds();
-  const baseUrl = resolveBaseUrl(flags);
+async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, candidate?: StoredCreds, forIdentity = false): Promise<TypeshipClient> {
+  const flagNamed = flagCredentials(flags), envNamed = environmentCredentials();
+  const explicitOptions = new Set(AUTH_SCALARS.filter((a) => typeof flags.get(a.flag) === "string" || process.env[a.env] !== undefined).map((a) => a.option));
+  if (BASIC && (typeof flags.get("username") === "string" || process.env[BASIC.envUser] !== undefined) && (typeof flags.get("password") === "string" || process.env[BASIC.envPass] !== undefined)) explicitOptions.add("basicAuth");
+  namedCredentialAvailability(NAMED_SCHEMES, explicitOptions, { ...envNamed, ...flagNamed });
+  const explicitCredentials = op.credentialOptions?.some((alternative) => alternative.length > 0 && alternative.every((option) => explicitOptions.has(option)));
+  // A complete explicit alternative for this endpoint does not unlock or mix
+  // in saved credentials for another API, account, or authentication method.
+  const stored = candidate ?? (op.auth === "none" || explicitCredentials ? null : readCreds());
+  const config = readConfig();
+  const baseUrl = resolveBaseUrl(flags, config);
   if (baseUrl === undefined) fail(2, "No base URL. Pass --base-url, set TYPESHIP_BASE_URL, or run '" + BIN + " config set base-url <url>'.");
+  if (stored) {
+    assertCredentialDestination(stored, { apiBaseUrl: baseUrl, environment: config.environment, profile: PROFILE.name });
+    if (!forIdentity) assertStoredIdentity(stored, identityConfiguration());
+  }
   const options: ClientOptions & Record<string, unknown> = { baseUrl };
   for (const a of AUTH_SCALARS) {
     const v = (typeof flags.get(a.flag) === "string" ? flags.get(a.flag) as string : undefined)
@@ -2197,9 +2288,24 @@ async function makeClient(flags: Map<string, string | boolean>): Promise<Typeshi
       ?? process.env[BASIC.envPass] ?? stored?.basic?.password;
     if (username !== undefined && password !== undefined) options.basicAuth = { username, password };
   }
-  if (options.bearerToken === undefined && stored?.oauth) {
-    const token = await refreshedOauthToken(stored);
-    if (token !== undefined) options.bearerToken = token;
+  const envOptions: Record<string, unknown> = {}, flagOptions: Record<string, unknown> = {};
+  for (const a of AUTH_SCALARS) {
+    if (process.env[a.env] !== undefined) envOptions[a.option] = process.env[a.env];
+    if (typeof flags.get(a.flag) === "string") flagOptions[a.option] = flags.get(a.flag);
+  }
+  if (BASIC && process.env[BASIC.envUser] !== undefined && process.env[BASIC.envPass] !== undefined) envOptions.basicAuth = { username: process.env[BASIC.envUser], password: process.env[BASIC.envPass] };
+  if (BASIC && typeof flags.get("username") === "string" && typeof flags.get("password") === "string") flagOptions.basicAuth = { username: flags.get("username"), password: flags.get("password") };
+  options.credentials = resolveNamedCredentials(NAMED_SCHEMES, [
+    { named: stored?.named, options: { ...stored?.scalars, ...(stored?.basic ? { basicAuth: stored.basic } : {}) } },
+    { named: envNamed, options: envOptions }, { named: flagNamed, options: flagOptions },
+    ...(forIdentity && candidate ? [{ named: candidate.named, options: { ...candidate.scalars, ...(candidate.basic ? { basicAuth: candidate.basic } : {}), ...(candidate.oauth ? { bearerToken: candidate.oauth.accessToken } : {}) } }] : []),
+  ]);
+  if (stored?.oauth && (forIdentity || options.bearerToken === undefined)) {
+    const sessionId = stored.oauth.sessionId;
+    options.bearerToken = forIdentity ? stored.oauth.accessToken : () => oauthSessionToken(credentialStore(), {
+      ...sessionConfiguration(baseUrl, config),
+      ...(identityConfiguration() && WHOAMI ? { verifyIdentity: (accessToken: string) => verifyClientIdentity((values) => new TypeshipClient(values as unknown as ClientOptions), { ...options, bearerToken: accessToken, credentials: resolveNamedCredentials(NAMED_SCHEMES, [{ named: options.credentials as NamedCredentials }, { options: { bearerToken: accessToken } }]) }, WHOAMI!, IDENTITY_POLICY) } : {}),
+    }, sessionId, OAUTH_TOKEN_PARAMS);
   }
   if (flags.get("debug") === true || process.env["TYPESHIP_DEBUG"] === "1") {
     options.debug = (event: DebugEvent) => process.stderr.write(paintErr("dim", formatDebugEvent(BIN, event)) + "\n");
@@ -2210,7 +2316,7 @@ async function makeClient(flags: Map<string, string | boolean>): Promise<Typeshi
     const value = typeof flagValue === "string" ? flagValue : process.env["TYPESHIP_" + g.envSuffix];
     if (value !== undefined) options[g.option] = value;
   }
-  LAST_CLIENT_HAD_CREDENTIAL = AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
+  LAST_CLIENT_HAD_CREDENTIAL = Object.keys(options.credentials ?? {}).length > 0 || AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
   // Who is calling: the CLI, under which agent harness, and whether an
   // agent is driving. "agent" means a harness was detected or the caller
   // said so (--mode agent / env); a bare non-TTY run (CI, a pipeline) is
@@ -2224,6 +2330,7 @@ async function makeClient(flags: Map<string, string | boolean>): Promise<Typeshi
     ...(options.defaultHeaders as Record<string, string> | undefined),
     "User-Agent": PKG_NAME + "-cli/" + VERSION + " (typeship" + (harness ? "; harness=" + harness : "") + caller + ")",
   };
+  if (forIdentity) { options.fetch = identityFetch(baseUrl); options.maxRetries = 0; options.timeoutMs = 10_000; }
   return new TypeshipClient(options);
 }
 
@@ -2272,6 +2379,11 @@ const BUILTIN_COMMANDS = ["login","logout","whoami","config","mcp","docs","upgra
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const parsed = parseArgv(argv);
+  if (!parsed.help) validateCredentialsInput(parsed.flags);
+  const profileFlag = parsed.flags.get("profile");
+  if (profileFlag !== undefined && typeof profileFlag !== "string") fail(2, "--profile requires a profile name.");
+  PROFILE = resolveProfile(configRoot(), { flag: profileFlag as string | undefined, environment: process.env["TYPESHIP_PROFILE"], allowMissing: ["login", "config", "auth", "init", "help"].includes(parsed.positionals[0] ?? "") || parsed.help });
+  if (!parsed.help && ["login", "init"].includes(parsed.positionals[0] ?? "")) expectedLoginIdentity(parsed.flags);
   if (parsed.positionals[0] === "help") {
     // help --json: the command surface as data (agents read this once).
     if (parsed.flags.get("json") === true || parsed.flags.get("format") === "json") { out(helpJson()); await flushExit(0); }
@@ -2309,8 +2421,8 @@ async function main(): Promise<void> {
   if (resourceCmd === "mcp") { await cmdMcp(parsed); }
   if (resourceCmd === "login") { await cmdLogin(parsed); }
   if (resourceCmd === "logout") {
-    if (parsed.help) { process.stdout.write(BIN + " logout — remove " + credsPath() + "\n"); await flushExit(0); }
-    await cmdLogout();
+    if (parsed.help) { process.stdout.write(BIN + " logout — remove " + credsPath() + "\n  --local   remove the local session without unlocking OS storage or revoking tokens\n"); await flushExit(0); }
+    await cmdLogout(parsed);
   }
   if (resourceCmd === "whoami") {
     if (parsed.help) {
@@ -2374,7 +2486,7 @@ async function main(): Promise<void> {
   // Mirrors opReservedFlags() in the generator: API parameters never use these
   // names (colliding ones are emitted as --<kind>-<name>), so an unknown flag
   // check can be exact.
-  const RESERVED_FLAGS = new Set(["data", "all", "select", "base-url", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
+  const RESERVED_FLAGS = new Set(["data", "credentials", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
   for (const spec of op.params) {
     if (spec.kind === "path") continue;
     const raw = parsed.flags.get(spec.flag);
@@ -2429,7 +2541,7 @@ async function main(): Promise<void> {
 
   // The spec says this operation needs a credential and none resolved:
   // say so now, locally, instead of sending a request to learn it.
-  if (op.auth === "required" && (AUTH_SCALARS.length > 0 || BASIC || OAUTH_TOKEN_URL) && credentialSource(parsed.flags) === null) {
+  if (op.auth === "required" && (AUTH_SCALARS.length > 0 || BASIC || HAS_OAUTH_LOGIN) && credentialSource(parsed.flags) === null) {
     failWith({
       status: "action_required",
       code: "NO_AUTH",
@@ -2461,7 +2573,7 @@ async function main(): Promise<void> {
     if (answer !== "y" && answer !== "yes") failWith({ status: "action_required", code: "CONFIRMATION_REQUIRED", message: "Cancelled.", nextSteps: ["Run again with --force to skip the prompt: " + rerun] });
   }
 
-  const client = await makeClient(parsed.flags);
+  const client = await makeClient(parsed.flags, op);
   const selectValue = typeof parsed.flags.get("select") === "string" ? (parsed.flags.get("select") as string) : undefined;
   const args = buildArgs(op, values, dataBody, selectValue);
   const target = (client as unknown as Record<string, Record<string, (...a: unknown[]) => unknown>>)[op.resource]!;

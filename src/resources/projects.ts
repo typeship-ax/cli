@@ -7,6 +7,7 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
+  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
@@ -26,12 +27,12 @@ import type {
   DiagnosticRemediationRequest,
   DiagnosticReport,
   DiagnosticReportRead,
-  Generation,
   GenerationBatch,
   GenerationBatchRead,
   GenerationList,
   GenerationListRead,
-  GenerationRead,
+  GenerationSummary,
+  GenerationSummaryRead,
   Project,
   ProjectId,
   ProjectList,
@@ -60,6 +61,7 @@ export class ProjectsResource {
     return paginate<ProjectSummaryRead, ProjectsListError>(this._core, {
       method: "GET",
       path: "/projects",
+      security: [{"apiKey":[]}],
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
@@ -102,6 +104,7 @@ export class ProjectsResource {
     return this._core.request<ProjectRead, ProjectsCreateError>({
       method: "POST",
       path: "/projects",
+      security: [{"apiKey":[]}],
       headers: {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
@@ -124,6 +127,8 @@ export class ProjectsResource {
 
   /**
    * Retrieve a project
+   *
+   * Returns Project-owned fields only. List Targets separately for Target and Delivery data.
    * `GET /projects/{project_id}`
    */
   async retrieve(
@@ -133,6 +138,7 @@ export class ProjectsResource {
     return this._core.request<ProjectRead, ProjectsRetrieveError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -156,6 +162,7 @@ export class ProjectsResource {
     return this._core.request<DeletedProjectRead, ProjectsDeleteError>({
       method: "DELETE",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -180,6 +187,7 @@ export class ProjectsResource {
     return this._core.request<ProjectRead, ProjectsUpdateError>({
       method: "PATCH",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
+      security: [{"apiKey":[]}],
       body,
       errors: {
         "400": BadRequestError,
@@ -187,8 +195,10 @@ export class ProjectsResource {
         "402": PaymentRequiredError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "502": BadGatewayError,
       },
       schemaKey: "projects.update",
       options,
@@ -211,6 +221,7 @@ export class ProjectsResource {
     return this._core.request<DiagnosticReportRead, ProjectsRetrieveDiagnosticsError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -229,22 +240,31 @@ export class ProjectsResource {
    * Fetches the complete configured source, records a new immutable revision only when content
    * changed, and returns its Diagnostics. This does not generate targets or consume a metered
    * generation.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/diagnostics`
    */
   async refreshDiagnostics(
     projectId: ProjectId,
+    params?: ProjectsRefreshDiagnosticsParams,
     options?: RequestOptions,
   ): Promise<ApiResult<DiagnosticReportRead, ProjectsRefreshDiagnosticsError>> {
     return this._core.request<DiagnosticReportRead, ProjectsRefreshDiagnosticsError>({
       method: "POST",
       path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.refreshDiagnostics",
       options,
     });
@@ -256,25 +276,34 @@ export class ProjectsResource {
    * Applies only deterministic patches. Repository sources receive an updateable source pull
    * request; URL sources receive project overlays. Diagnostics that require API-owner intent return
    * 422 and include an authoring_brief in the Diagnostic instead.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/diagnostics/remediations`
    */
   async remediateDiagnostics(
     projectId: ProjectId,
     body: DiagnosticRemediationRequest,
+    params?: ProjectsRemediateDiagnosticsParams,
     options?: RequestOptions,
   ): Promise<ApiResult<DiagnosticRemediationRead, ProjectsRemediateDiagnosticsError>> {
     return this._core.request<DiagnosticRemediationRead, ProjectsRemediateDiagnosticsError>({
       method: "POST",
       path: `/projects/${encodeURIComponent(String(projectId))}/diagnostics/remediations`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       body,
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.remediateDiagnostics",
       options,
     });
@@ -295,6 +324,7 @@ export class ProjectsResource {
     return this._core.request<RepositoryIntegrationHealthRead, ProjectsRetrieveIntegrationHealthError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}/integration-health`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -317,10 +347,11 @@ export class ProjectsResource {
     projectId: ProjectId,
     params?: ProjectsListGenerationsParams,
     options?: RequestOptions,
-  ): PagePromise<GenerationRead, ProjectsListGenerationsError> {
-    return paginate<GenerationRead, ProjectsListGenerationsError>(this._core, {
+  ): PagePromise<GenerationSummaryRead, ProjectsListGenerationsError> {
+    return paginate<GenerationSummaryRead, ProjectsListGenerationsError>(this._core, {
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}/generations`,
+      security: [{"apiKey":[]}],
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
@@ -356,24 +387,33 @@ export class ProjectsResource {
    * commit, branch, or pull request is created and that generation reports
    * `pr_status: no_changes`. This is the same pipeline automatic
    * regeneration runs after a source change.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/generations`
    */
   async generate(
     projectId: ProjectId,
+    params?: ProjectsGenerateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<GenerationBatchRead, ProjectsGenerateError>> {
     return this._core.request<GenerationBatchRead, ProjectsGenerateError>({
       method: "POST",
       path: `/projects/${encodeURIComponent(String(projectId))}/generations`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
       errors: {
         "401": UnauthorizedError,
         "402": PaymentRequiredError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
       },
+      idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.generate",
       options,
     });
@@ -402,9 +442,10 @@ export type ProjectsListError =
 
 export interface ProjectsCreateParams {
   /**
-   * Uniquely identifies this creation attempt. Retrying the same request with the same key returns
-   * the original response instead of creating another project. Reusing a key with different
-   * parameters returns 409.
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -450,8 +491,10 @@ export type ProjectsUpdateError =
   | PaymentRequiredError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | BadGatewayError
   | UnexpectedApiError
   | TransportError
   | ValidationError;
@@ -466,16 +509,37 @@ export type ProjectsRetrieveDiagnosticsError =
   | TransportError
   | ValidationError;
 
+export interface ProjectsRefreshDiagnosticsParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
 /** Every error `refreshDiagnostics` can produce, as a discriminated union. */
 export type ProjectsRefreshDiagnosticsError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError
   | TransportError
   | ValidationError;
+
+export interface ProjectsRemediateDiagnosticsParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
 
 /** Every error `remediateDiagnostics` can produce, as a discriminated union. */
 export type ProjectsRemediateDiagnosticsError =
@@ -483,6 +547,7 @@ export type ProjectsRemediateDiagnosticsError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
   | UnexpectedApiError
@@ -522,12 +587,23 @@ export type ProjectsListGenerationsError =
   | TransportError
   | ValidationError;
 
+export interface ProjectsGenerateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
 /** Every error `generate` can produce, as a discriminated union. */
 export type ProjectsGenerateError =
   | UnauthorizedError
   | PaymentRequiredError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError

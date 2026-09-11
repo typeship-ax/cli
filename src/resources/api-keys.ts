@@ -37,6 +37,7 @@ export class ApiKeysResource {
     return paginate<ApiKeyRead, ApiKeysListError>(this._core, {
       method: "GET",
       path: "/api_keys",
+      security: [{"apiKey":[]}],
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
@@ -76,6 +77,7 @@ export class ApiKeysResource {
     return this._core.request<ApiKeyResponseRead, ApiKeysRevokeError>({
       method: "DELETE",
       path: `/api_keys/${encodeURIComponent(String(apiKeyId))}`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,

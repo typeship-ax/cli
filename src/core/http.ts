@@ -236,6 +236,7 @@ export class TransportError extends Error {
 type ErrorCtor = new (body: any, response: ResponseMeta) => ApiError<number, unknown>;
 
 export interface CoreRequest {
+  security?: Record<string, string[]>[];
   method: string;
   path: string;
   query?: Record<string, unknown>;
@@ -268,7 +269,39 @@ export interface RetryPolicy {
   retryNonIdempotent?: boolean;
 }
 
+export interface SecurityCredential {
+  headers?: Record<string, AuthValue>;
+  query?: Record<string, AuthValue>;
+}
+
+/** Resolve one complete alternative in spec order. Missing or incompatible
+ * combinations contribute no partial credentials. Anonymous operations send
+ * no generated credentials; explicit headers/hooks remain application owned. */
+function selectSecurity(requirements: Record<string, string[]>[], credentials: Record<string, SecurityCredential>): SecurityCredential {
+  for (const requirement of requirements) {
+    const names = Object.keys(requirement);
+    if (!names.length || names.some((name) => !Object.hasOwn(credentials, name))) continue;
+    const selected: SecurityCredential = { headers: Object.create(null), query: Object.create(null) };
+    const destinations = new Set<string>();
+    let conflict = false;
+    for (const name of names) {
+      for (const location of ["headers", "query"] as const) {
+        for (const [wire, value] of Object.entries(credentials[name]![location] ?? {})) {
+          const destination = location + ":" + (location === "headers" ? wire.toLowerCase() : wire);
+          if (destinations.has(destination)) conflict = true;
+          destinations.add(destination);
+          selected[location]![wire] = value;
+        }
+      }
+    }
+    if (!conflict) return selected;
+  }
+  return {};
+}
+
 export interface CoreConfig {
+  /** Named credentials are selected using each operation's requirements. */
+  credentials?: Record<string, SecurityCredential>;
   baseUrl: string;
   headers: Record<string, AuthValue>;
   /** Auth carried as query parameters (apiKey-in-query schemes). */
@@ -376,8 +409,14 @@ export class HttpCore {
     const policy: RetryPolicy = { ...this.config.retry, ...req.retry };
     const maxRetries = req.options?.maxRetries ?? policy.maxRetries ?? this.config.maxRetries;
     const timeoutMs = req.options?.timeoutMs ?? this.config.timeoutMs;
-    const retryAllowed = req.idempotent === true || req.method === "GET" || policy.retryNonIdempotent === true;
-    const retryableStatuses = policy.statuses ? new Set(policy.statuses) : RETRYABLE_STATUSES;
+    const retryAllowed =
+      req.idempotent === true ||
+      req.method === "GET" ||
+      req.idempotencyKey !== undefined ||
+      policy.retryNonIdempotent === true;
+    const retryableStatuses = policy.statuses
+      ? new Set(policy.statuses)
+      : RETRYABLE_STATUSES;
 
     // One key per logical call, reused on every retry — that's the point
     // of idempotency keys.
@@ -527,8 +566,9 @@ export class HttpCore {
     attempt: number,
     autoIdempotencyKey?: string,
   ): Promise<Response> {
+    const selected = req.security && this.config.credentials ? selectSecurity(req.security, this.config.credentials) : {};
     const headers: Record<string, string> = {};
-    for (const [k, v] of Object.entries(this.config.headers)) {
+    for (const [k, v] of Object.entries({ ...this.config.headers, ...selected.headers })) {
       headers[k] = await resolveAuthValue(v);
     }
     if (req.idempotencyKey && autoIdempotencyKey) {
@@ -544,7 +584,7 @@ export class HttpCore {
 
     const context: RequestContext = {
       method: req.method,
-      url: await this.buildUrl(req),
+      url: await this.buildUrl(req, selected.query),
       headers,
       attempt,
     };
@@ -632,7 +672,7 @@ export class HttpCore {
     }
   }
 
-  private async buildUrl(req: CoreRequest): Promise<string> {
+  private async buildUrl(req: CoreRequest, authQuery?: Record<string, AuthValue>): Promise<string> {
     const base = this.config.baseUrl.replace(/\/+$/, "");
     const url = new URL(base + req.path);
     for (const [k, v] of Object.entries(req.query ?? {})) {
@@ -644,7 +684,7 @@ export class HttpCore {
         appendDeep(url.searchParams, k, v);
       }
     }
-    for (const [k, v] of Object.entries(this.config.query)) {
+    for (const [k, v] of Object.entries({ ...this.config.query, ...authQuery })) {
       url.searchParams.append(k, await resolveAuthValue(v));
     }
     return url.toString();

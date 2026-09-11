@@ -37,6 +37,16 @@ export class ForbiddenError extends ApiError<403, ErrorModelRead> {
 }
 
 /**
+ * The key identifies changed intent.
+ * Raised for HTTP 409 responses.
+ */
+export class ConflictError extends ApiError<409, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The key identifies changed intent.", 409, body, response);
+  }
+}
+
+/**
  * Spec exceeds the 10MB limit.
  * Raised for HTTP 413 responses.
  */
@@ -57,12 +67,13 @@ export class UnprocessableEntityError extends ApiError<422, ErrorModelRead> {
 }
 
 /**
- * Too many requests. Wait for Retry-After before retrying.
+ * Too many requests, or an identical write is still in progress. Wait for Retry-After before
+ * retrying.
  * Raised for HTTP 429 responses.
  */
 export class RateLimitedError extends ApiError<429, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("Too many requests. Wait for Retry-After before retrying.", 429, body, response);
+    super("Too many requests, or an identical write is still in progress. Wait for Retry-After before retrying.", 429, body, response);
   }
 }
 
@@ -87,22 +98,12 @@ export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
 }
 
 /**
- * The Idempotency-Key was already used with different request parameters.
- * Raised for HTTP 409 responses.
- */
-export class ConflictError extends ApiError<409, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Idempotency-Key was already used with different request parameters.", 409, body, response);
-  }
-}
-
-/**
- * The original idempotent request is temporarily unavailable.
+ * Project setup failed unexpectedly; the key reservation is released.
  * Raised for HTTP 500 responses.
  */
 export class InternalServerError extends ApiError<500, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The original idempotent request is temporarily unavailable.", 500, body, response);
+    super("Project setup failed unexpectedly; the key reservation is released.", 500, body, response);
   }
 }
 
@@ -113,5 +114,15 @@ export class InternalServerError extends ApiError<500, ErrorModelRead> {
 export class NotFoundError extends ApiError<404, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("No such resource in this account.", 404, body, response);
+  }
+}
+
+/**
+ * The Project was saved, but an obsolete release pull request could not be retired.
+ * Raised for HTTP 502 responses.
+ */
+export class BadGatewayError extends ApiError<502, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The Project was saved, but an obsolete release pull request could not be retired.", 502, body, response);
   }
 }

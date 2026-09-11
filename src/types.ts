@@ -930,7 +930,7 @@ export interface TargetFields {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfig | null;
+  config?: TargetConfig | null;
   deliveries?: DeliveryInput[];
 }
 
@@ -951,7 +951,7 @@ export interface TargetFieldsRead {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfigRead | null;
+  config?: TargetConfigRead | null;
   deliveries?: DeliveryInputRead[];
 }
 
@@ -969,7 +969,7 @@ export interface InitialTargetFields {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfig | null;
+  config?: TargetConfig | null;
   deliveries?: DeliveryInput[];
 }
 
@@ -988,7 +988,7 @@ export interface InitialTargetFieldsRead {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfigRead | null;
+  config?: TargetConfigRead | null;
   deliveries?: DeliveryInputRead[];
 }
 
@@ -1002,7 +1002,7 @@ export interface TargetUpdateRequest {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfig | null;
+  config?: TargetConfig | null;
   deliveries?: DeliveryInput[];
 }
 
@@ -1017,7 +1017,7 @@ export interface TargetUpdateRequestRead {
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
    */
-  config?: ProjectConfigRead | null;
+  config?: TargetConfigRead | null;
   deliveries?: DeliveryInputRead[];
 }
 
@@ -1041,7 +1041,8 @@ export interface Target {
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
    */
-  config: ProjectConfig | null;
+  config: TargetConfig | null;
+  /** At most one repository and one hosted MCP Delivery. */
   deliveries: Delivery[];
   /** Format: date-time */
   created_at: string;
@@ -1071,7 +1072,8 @@ export interface TargetRead {
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
    */
-  config: ProjectConfigRead | null;
+  config: TargetConfigRead | null;
+  /** At most one repository and one hosted MCP Delivery. */
   deliveries: DeliveryRead[];
   /** Format: date-time */
   created_at: string;
@@ -1350,18 +1352,15 @@ export interface DefinitionUpdateRequestRead {
   diagnostic_policy?: DiagnosticPolicyRead;
 }
 
+/**
+ * Project-owned identity, Definition reference, generation controls, and shared configuration.
+ * Targets and Deliveries are available only through their canonical Target endpoints.
+ */
 export interface Project {
   id: ProjectId;
   object: "project";
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: Target[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: Delivery[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1393,13 +1392,6 @@ export interface Project {
 export interface ProjectWrite {
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: Target[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: Delivery[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1426,13 +1418,6 @@ export interface ProjectRead {
   object: "project" | (string & {});
   name: string;
   definition_id: DefinitionId;
-  /** All configured Targets, including disabled Targets and their saved Deliveries. */
-  targets: TargetRead[];
-  /**
-   * Flattened convenience view derived from the same Target bundles. Every Delivery retains
-   * target_id so ownership is explicit.
-   */
-  deliveries: DeliveryRead[];
   /**
    * Regenerate when the Definition changes: on every push to the default branch for a repository
    * source, every 30 minutes for a URL source. Off by default: the first generation is always one
@@ -1461,8 +1446,8 @@ export interface ProjectRead {
 }
 
 /**
- * Lean Project identity returned by collection endpoints. Retrieve the Project or list its Targets
- * for the complete aggregate.
+ * Lean Project identity returned by collection endpoints. Retrieve the Project for shared
+ * configuration and list its Targets for the complete canonical child collection.
  */
 export interface ProjectSummary {
   id: ProjectId;
@@ -1580,30 +1565,151 @@ export interface AccountRead {
   request_id: RequestId;
 }
 
+/**
+ * Authorization-server metadata used by generated OAuth flows. Secrets and runtime credentials are
+ * never accepted here.
+ */
+export interface OAuthServer {
+  /**
+   * Exact authorization-server issuer, including any tenant path.
+   * Format: uri
+   */
+  issuer?: string | null;
+  /**
+   * Exact metadata URL when it cannot be derived from the issuer.
+   * Format: uri
+   */
+  discovery_url?: string | null;
+  /**
+   * Authorization endpoint override.
+   * Format: uri
+   */
+  authorization_url?: string | null;
+  /**
+   * Token endpoint override.
+   * Format: uri
+   */
+  token_url?: string | null;
+  /**
+   * Device-authorization endpoint override.
+   * Format: uri
+   */
+  device_authorization_url?: string | null;
+  /** Default scopes requested during login. */
+  scopes?: string[] | null;
+  /** Default audience included in authorization and token requests. */
+  audience?: string | null;
+  /**
+   * Protected API resource included in authorization and token requests.
+   * Format: uri
+   */
+  resource?: string | null;
+}
+
+/**
+ * OAuth application available to generated products. Public clients support interactive login;
+ * confidential clients support runtime-supplied machine credentials. Client secrets are never
+ * stored.
+ */
+export interface OAuthApplication {
+  /** OAuth client identifier. */
+  client_id: string;
+  /** Interactive login method. Browser login uses Authorization Code with PKCE. */
+  login_method?: "browser" | "device" | null;
+  /** How a runtime-supplied client secret is sent for machine grants. */
+  client_auth_method?: "post" | "basic" | null;
+  /**
+   * Loopback callback URL for browser login.
+   * Format: uri
+   */
+  redirect_uri?: string | null;
+  /** Provider parameter used to request an organization during browser login. */
+  organization_parameter?: "organization" | "organization_id" | null;
+}
+
+/** Response shape for OAuthApplication. */
+export interface OAuthApplicationRead {
+  /** OAuth client identifier. */
+  client_id: string;
+  /** Interactive login method. Browser login uses Authorization Code with PKCE. */
+  login_method?: ("browser" | "device" | null) | (string & {}) | null;
+  /** How a runtime-supplied client secret is sent for machine grants. */
+  client_auth_method?: ("post" | "basic" | null) | (string & {}) | null;
+  /**
+   * Loopback callback URL for browser login.
+   * Format: uri
+   */
+  redirect_uri?: string | null;
+  /** Provider parameter used to request an organization during browser login. */
+  organization_parameter?: ("organization" | "organization_id" | null) | (string & {}) | null;
+}
+
+/**
+ * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
+ * when omitted. Requests must include at least one of subject_field, account_field, or
+ * organization_field.
+ */
+export interface IdentityVerification {
+  /** resource.method of a safe identity read with no required arguments. */
+  operation?: string;
+  /** JSON Pointer to the stable caller ID in the identity response. */
+  subject_field?: string;
+  /** JSON Pointer to the customer account ID. */
+  account_field?: string;
+  /** JSON Pointer to the customer organization ID. */
+  organization_field?: string;
+}
+
+/** OAuth application and request-value overrides for one named API environment. */
+export interface AuthenticationEnvironment {
+  oauth_application?: string | null;
+  scopes?: string[] | null;
+  audience?: string | null;
+  /** Format: uri */
+  resource?: string | null;
+}
+
+/**
+ * Public authentication defaults for generated clients and tools. Stored Projects own the OAuth
+ * server, application catalog, and identity policy; stateless generation accepts the same shape for
+ * one run. Runtime credentials and client secrets are never accepted.
+ */
+export interface AuthenticationConfig {
+  oauth_server?: OAuthServer | null;
+  /** OAuth applications keyed by a stable name. */
+  oauth_applications?: Record<string, OAuthApplication> | null;
+  /** Default OAuth application used by generated products. */
+  oauth_application?: string | null;
+  identity_verification?: IdentityVerification | null;
+  /**
+   * Base URL of a custom browser-approval backend implementing the start, status, and revoke
+   * contract. Used only when OAuth is not configured.
+   * Format: uri
+   */
+  approval_url?: string | null;
+  /** Authentication selections keyed by generated API environment name. */
+  environments?: Record<string, AuthenticationEnvironment> | null;
+}
+
+export interface TargetAuthenticationEnvironment {
+  oauth_application?: string | null;
+}
+
+/**
+ * Selects a Project OAuth application for one Target. OAuth server metadata, applications, and
+ * identity policy remain Project-owned.
+ */
+export interface TargetAuthenticationConfig {
+  /** Project OAuth application to use. Omit to inherit the Project default. */
+  oauth_application?: string | null;
+  /** Project OAuth application selections keyed by API environment. */
+  environments?: Record<string, TargetAuthenticationEnvironment> | null;
+}
+
 /** How the generated CLI behaves. Part of Config. */
 export interface CliBehavior {
   /** Command users run, independent of how the CLI is distributed. */
   command_name?: string | null;
-  /**
-   * resource.method of a zero-argument GET that the generated CLI's whoami command calls. Overrides
-   * auto-detection; a value that matches nothing is reported as a generation warning.
-   */
-  whoami_operation?: string | null;
-  /**
-   * OAuth client id baked into the generated CLI for device-flow login. Without it, login prompts
-   * for a pasted credential.
-   */
-  oauth_client_id?: string | null;
-  /**
-   * Scopes requested during device-flow login. Include offline_access if the authorization server
-   * gates refresh tokens behind it.
-   */
-  oauth_scopes?: string[];
-  /**
-   * Audience sent with the device-authorization request, for authorization servers that require one
-   * to issue API-valid access tokens.
-   */
-  oauth_audience?: string | null;
   /**
    * Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated
    * code phones nobody unless this is enabled.
@@ -1615,11 +1721,6 @@ export interface CliBehavior {
    */
   support_url?: string | null;
   /**
-   * Base URL of the browser-approval endpoint pair used by CLI login. The CLI keeps the verifier
-   * and receives the credential directly; no key is pasted through a conversation.
-   */
-  auth_url?: string | null;
-  /**
    * Hosted MCP endpoint installed by the generated CLI instead of launching the package's local
    * stdio server.
    */
@@ -1628,10 +1729,34 @@ export interface CliBehavior {
   skills_repo?: string | null;
 }
 
-/** How the generated MCP server and the hosted endpoint behave. Part of Config. */
+/** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */
 export interface McpBehavior {
   /** Stable official MCP registry name, independent of the server runtime. */
   registry_name?: string | null;
+  /**
+   * Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting
+   * application resolves upstream API credentials separately at runtime. This setting does not
+   * apply to the Typeship-hosted endpoint.
+   */
+  access?: {
+    /**
+     * Exact issuer allowed to sign MCP connection tokens.
+     * Format: uri
+     */
+    issuer: string;
+    /**
+     * Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.
+     * Format: uri
+     */
+    resource: string;
+    /**
+     * Public signing-key endpoint. Omit to discover it from the issuer.
+     * Format: uri
+     */
+    jwks_url?: string;
+    /** Minimum scopes required to connect to the self-hosted MCP server. */
+    scopes?: string[];
+  };
   /**
    * MCP tool shape. meta collapses per-operation tools into search_docs, read_docs, and execute so
    * large APIs don't flood an agent's context window. Auto considers the serialized tool schemas,
@@ -1651,12 +1776,50 @@ export interface McpBehavior {
    * match no operation are reported as generation warnings.
    */
   tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
 }
 
 /** Response shape for McpBehavior. */
 export interface McpBehaviorRead {
   /** Stable official MCP registry name, independent of the server runtime. */
   registry_name?: string | null;
+  /**
+   * Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting
+   * application resolves upstream API credentials separately at runtime. This setting does not
+   * apply to the Typeship-hosted endpoint.
+   */
+  access?: {
+    /**
+     * Exact issuer allowed to sign MCP connection tokens.
+     * Format: uri
+     */
+    issuer: string;
+    /**
+     * Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.
+     * Format: uri
+     */
+    resource: string;
+    /**
+     * Public signing-key endpoint. Omit to discover it from the issuer.
+     * Format: uri
+     */
+    jwks_url?: string;
+    /** Minimum scopes required to connect to the self-hosted MCP server. */
+    scopes?: string[];
+  };
   /**
    * MCP tool shape. meta collapses per-operation tools into search_docs, read_docs, and execute so
    * large APIs don't flood an agent's context window. Auto considers the serialized tool schemas,
@@ -1676,6 +1839,30 @@ export interface McpBehaviorRead {
    * match no operation are reported as generation warnings.
    */
   tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false | (string & {})
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
+}
+
+/** Generated README behavior. Part of Config. */
+export interface ReadmeBehavior {
+  /**
+   * operationId or "METHOD /path" to feature as the README's first API call. It must be present in
+   * the generated package and callable with no required input beyond path placeholders. Missing or
+   * unsuitable choices produce a warning and use the automatic example.
+   */
+  quickstart_operation?: string | null;
 }
 
 /**
@@ -1700,7 +1887,7 @@ export interface PackageBehavior {
 
 /**
  * Everything Typeship needs beyond the Definition, in one object: generation customization
- * (globals, retries, pagination) and how the generated tooling behaves (cli, mcp, package,
+ * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
  * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
  * itself. Stateless generation also accepts GraphQL settings here; stored projects keep those
  * settings on their Definition.
@@ -1719,8 +1906,10 @@ export interface Config {
    */
   pagination?: Record<string, PaginationRule | boolean>;
   graphql?: GraphqlSettings;
+  auth?: AuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehavior;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1750,8 +1939,10 @@ export interface ConfigRead {
    */
   pagination?: Record<string, PaginationRuleRead | boolean>;
   graphql?: GraphqlSettingsRead;
+  auth?: AuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehaviorRead;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1769,8 +1960,8 @@ export interface ConfigRead {
 /**
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
- * while cli, mcp, and package merge by field. GraphQL-only source settings live on the Project's
- * Definition and are rejected in both stored config scopes.
+ * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
+ * the Project's Definition and are rejected in both stored config scopes.
  */
 export interface ProjectConfig {
   /**
@@ -1785,8 +1976,10 @@ export interface ProjectConfig {
    * reported as generation warnings.
    */
   pagination?: Record<string, PaginationRule | boolean>;
+  auth?: AuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehavior;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1815,8 +2008,10 @@ export interface ProjectConfigRead {
    * reported as generation warnings.
    */
   pagination?: Record<string, PaginationRuleRead | boolean>;
+  auth?: AuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehaviorRead;
+  readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
@@ -1828,6 +2023,42 @@ export interface ProjectConfigRead {
    * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
    * Format: uri
    */
+  docs_index_url?: string | null;
+}
+
+/**
+ * Target-specific generation and delivery overrides. Authentication may only select a Project-owned
+ * OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned.
+ * Self-hosted MCP access may be overridden for a Target-specific deployment.
+ */
+export interface TargetConfig {
+  globals?: string[];
+  retries?: RetryTuning;
+  pagination?: Record<string, PaginationRule | boolean>;
+  auth?: TargetAuthenticationConfig;
+  cli?: CliBehavior;
+  mcp?: McpBehavior;
+  readme?: ReadmeBehavior;
+  package?: PackageBehavior;
+  /** Format: uri */
+  docs_url?: string | null;
+  /** Format: uri */
+  docs_index_url?: string | null;
+}
+
+/** Response shape for TargetConfig. */
+export interface TargetConfigRead {
+  globals?: string[];
+  retries?: RetryTuning;
+  pagination?: Record<string, PaginationRuleRead | boolean>;
+  auth?: TargetAuthenticationConfig;
+  cli?: CliBehavior;
+  mcp?: McpBehaviorRead;
+  readme?: ReadmeBehavior;
+  package?: PackageBehavior;
+  /** Format: uri */
+  docs_url?: string | null;
+  /** Format: uri */
   docs_index_url?: string | null;
 }
 
@@ -1964,6 +2195,38 @@ export interface FileStub {
   bytes: number;
 }
 
+export const GenerationStatus = {
+  SUCCEEDED: "succeeded",
+  FAILED: "failed",
+} as const;
+export type GenerationStatus = (typeof GenerationStatus)[keyof typeof GenerationStatus];
+
+export const GenerationTrigger = {
+  MANUAL: "manual",
+  WEBHOOK: "webhook",
+  POLL: "poll",
+  PREVIEW: "preview",
+} as const;
+export type GenerationTrigger = (typeof GenerationTrigger)[keyof typeof GenerationTrigger];
+
+export interface GenerationProvenance {
+  /** Pinned generator contract edition. */
+  generator_edition: string;
+  /** Exact engine build identifier used for replay and support. */
+  engine_build: string;
+  /**
+   * Immutable effective Target configuration used by this run; source credentials are never
+   * included.
+   */
+  resolved_config: Record<string, unknown> | null;
+  config_hash: string | null;
+  /** Resolved generator and entitlement plan used to select the emitted public surface. */
+  surface_plan: Record<string, unknown> | null;
+  surface_plan_hash: string | null;
+  entitlement_cap: number | null;
+  package_version: string | null;
+}
+
 export interface Generation {
   id: GenerationId;
   object: "generation";
@@ -1975,29 +2238,13 @@ export interface Generation {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: "succeeded" | "failed";
-  trigger: "manual" | "webhook" | "poll" | "preview";
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
@@ -2020,29 +2267,13 @@ export interface GenerationWrite {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: "succeeded" | "failed";
-  trigger: "manual" | "webhook" | "poll" | "preview";
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
@@ -2066,29 +2297,13 @@ export interface GenerationRead {
   files_index?: FileStub[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
-  status: ("succeeded" | "failed") | (string & {});
-  trigger: ("manual" | "webhook" | "poll" | "preview") | (string & {});
+  status: GenerationStatus | (string & {});
+  trigger: GenerationTrigger | (string & {});
   /** Persisted Target identity. Null only for stateless generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
-  provenance: {
-    /** Pinned generator contract edition. */
-    generator_edition: string;
-    /** Exact engine build identifier used for replay and support. */
-    engine_build: string;
-    /**
-     * Immutable effective Target configuration used by this run; source credentials are never
-     * included.
-     */
-    resolved_config: Record<string, unknown> | null;
-    config_hash: string | null;
-    /** Resolved generator and entitlement plan used to select the emitted public surface. */
-    surface_plan: Record<string, unknown> | null;
-    surface_plan_hash: string | null;
-    entitlement_cap: number | null;
-    package_version: string | null;
-  };
+  provenance: GenerationProvenance;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
@@ -2098,6 +2313,71 @@ export interface GenerationRead {
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
+}
+
+/**
+ * Generation metadata returned by collection endpoints. Generated file contents and file indexes
+ * are available only from retrieve and create operations.
+ */
+export interface GenerationSummary {
+  id: GenerationId;
+  object: "generation";
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind;
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMeta | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
+}
+
+/** Request shape for GenerationSummary. */
+export interface GenerationSummaryWrite {
+  id: GenerationId;
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus;
+  trigger: GenerationTrigger;
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind;
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMeta | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
+}
+
+/** Response shape for GenerationSummary. */
+export interface GenerationSummaryRead {
+  id: GenerationId;
+  object: "generation" | (string & {});
+  project_id: ProjectId;
+  definition_revision_id: DefinitionRevisionId | null;
+  status: GenerationStatus | (string & {});
+  trigger: GenerationTrigger | (string & {});
+  /** Persisted Target identity. Null only for stateless generation. */
+  target_id: TargetId | null;
+  /** Resolved generator implementation; provenance rather than resource identity. */
+  generator: GeneratorKind | (string & {});
+  provenance: GenerationProvenance;
+  /** Null only for a failed or legacy generation that produced no metadata. */
+  meta: GenerationMetaRead | null;
+  warnings: string[];
+  error: string | null;
+  /** Format: date-time */
+  created_at: string;
 }
 
 export type GenerationResponse = Generation & ResponseMetadata;
@@ -2124,20 +2404,24 @@ export interface GenerationFailureRead {
   error: string;
 }
 
+/**
+ * Metadata for each Target generation attempted by a Project run. Retrieve one Generation
+ * separately for generated files.
+ */
 export interface GenerationBatch {
-  data: Array<Generation | GenerationFailure>;
+  data: Array<GenerationSummary | GenerationFailure>;
   request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
-  data: Array<GenerationWrite | GenerationFailure>;
+  data: Array<GenerationSummaryWrite | GenerationFailure>;
   request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
-  data: Array<GenerationRead | GenerationFailureRead>;
+  data: Array<GenerationSummaryRead | GenerationFailureRead>;
   request_id: RequestId;
 }
 
@@ -2306,7 +2590,7 @@ export interface ProjectListRead {
 
 export interface GenerationList {
   object: ListObject;
-  data: Generation[];
+  data: GenerationSummary[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -2317,7 +2601,7 @@ export interface GenerationList {
 /** Request shape for GenerationList. */
 export interface GenerationListWrite {
   object: ListObject;
-  data: GenerationWrite[];
+  data: GenerationSummaryWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -2328,7 +2612,7 @@ export interface GenerationListWrite {
 /** Response shape for GenerationList. */
 export interface GenerationListRead {
   object: ListObject;
-  data: GenerationRead[];
+  data: GenerationSummaryRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -2433,6 +2717,7 @@ export const ErrorCode = {
   FETCH_ERROR: "fetch_error",
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
   EDITION_UNAVAILABLE: "edition_unavailable",
+  TARGET_BUSY: "target_busy",
   DELIVERY_CONFLICT: "delivery_conflict",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
   PLAN_LIMIT_REACHED: "plan_limit_reached",

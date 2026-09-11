@@ -1,5 +1,342 @@
 # Changelog
 
+## 0.9.0 (2026-09-11) (30 breaking)
+
+### Changed
+- `generate.run()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.config.auth added: AuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum value added: "target\_busy"
+- `projects.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.targets\[\].config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.targets\[\].config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.targets\[\].config.auth added: TargetAuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.targets\[\].config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.config.auth added: AuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: AuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.deliveries removed \(was Delivery\[\]\)
+  - **breaking** `return-type-changed`: response.targets removed \(was Target\[\]\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "target\_busy"
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: AuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.deliveries removed \(was Delivery\[\]\)
+  - **breaking** `return-type-changed`: response.targets removed \(was Target\[\]\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.config.auth added: AuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: AuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.deliveries removed \(was Delivery\[\]\)
+  - **breaking** `return-type-changed`: response.targets removed \(was Target\[\]\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 502: BadGatewayError
+- `projects.retrieveDiagnostics()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.refreshDiagnostics()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.remediateDiagnostics()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response.data\[\].files removed \(was GeneratedFile\[\]\)
+  - **breaking** `return-type-changed`: response.data\[\].files\_index removed \(was FileStub\[\]\)
+  - **breaking** `return-type-changed`: response.data\[\].files\_omitted removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance type changed: \{ /\*\* Pinned generator contract edition. \*/ generator\_edi... -&gt; GenerationProvenance
+  - **breaking** `return-type-changed`: response.data\[\].request\_id removed \(was RequestId\)
+  - **breaking** `return-type-changed`: response.data\[\].status type changed: \("succeeded" \| "failed"\) \| \(string &amp; \{\}\) -&gt; GenerationStatus \| \(string &amp; \{\}\)
+  - **breaking** `return-type-changed`: response.data\[\].trigger type changed: \("manual" \| "webhook" \| "poll" \| "preview"\) \| \(string &amp; \{\}\) -&gt; GenerationTrigger \| \(string &amp; \{\}\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `projects.generate()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `return-type-changed`: response.data\[\].files removed \(was GeneratedFile\[\]\)
+  - **breaking** `return-type-changed`: response.data\[\].files\_index removed \(was FileStub\[\]\)
+  - **breaking** `return-type-changed`: response.data\[\].files\_omitted removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance type changed: \{ /\*\* Pinned generator contract edition. \*/ generator\_edi... -&gt; GenerationProvenance
+  - **breaking** `return-type-changed`: response.data\[\].request\_id removed \(was RequestId\)
+  - **breaking** `return-type-changed`: response.data\[\].status type changed: \("succeeded" \| "failed"\) \| \(string &amp; \{\}\) -&gt; GenerationStatus \| \(string &amp; \{\}\)
+  - **breaking** `return-type-changed`: response.data\[\].trigger type changed: \("manual" \| "webhook" \| "poll" \| "preview"\) \| \(string &amp; \{\}\) -&gt; GenerationTrigger \| \(string &amp; \{\}\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "target\_busy"
+- `definitions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `definitions.update()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-added`: 409: ConflictError
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.list()`
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.data\[\].config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.data\[\].config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.data\[\].config.auth added: TargetAuthenticationConfig \(optional\)
+  - `return-type-changed`: response.data\[\].config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.create()`
+  - `param-added`: request parameter.Idempotency-Key added: string \(optional\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.config.auth added: TargetAuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: TargetAuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: TargetAuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.update()`
+  - **breaking** `body-field-type-changed`: request body.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `body-field-type-changed`: request body.config.cli.whoami\_operation removed \(was string \| null\)
+  - `body-field-type-changed`: request body.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `body-field-type-changed`: request body.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `body-field-type-changed`: request body.config.auth added: TargetAuthenticationConfig \(optional\)
+  - `body-field-type-changed`: request body.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.auth\_url removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_audience removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_client\_id removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.cli.oauth\_scopes removed \(was string\[\]\)
+  - **breaking** `return-type-changed`: response.config.cli.whoami\_operation removed \(was string \| null\)
+  - `return-type-changed`: response.config.mcp.access added: \{   /\*\*    \* Exact issuer allowed to sign MCP connection tokens.    \* Format: uri    \*/   issuer: string;   /\*\*    \* Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.    \* Format: uri    \*/   resource: string;   /\*\*    \* Public signing-key endpoint. Omit to discover it from the issuer.    \* Format: uri    \*/   jwks\_url?: string;   /\*\* Minimum scopes required to connect to the self-hosted MCP server. \*/   scopes?: string\[\]; \} \(optional\)
+  - `return-type-changed`: response.config.mcp.reference\_resolvers added: Record&lt;string, Record&lt;string, false \| \(string &amp; \{\}\)   \| \{       /\*\* OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. \*/       via: string;       /\*\* Item fields compared exactly and case-insensitively, such as name, slug, key, or email. \*/       match: string\[\];       /\*\* Item field substituted into the requested argument. Defaults to id. \*/       id?: string;     \}&gt;&gt; \(optional\)
+  - `return-type-changed`: response.config.auth added: TargetAuthenticationConfig \(optional\)
+  - `return-type-changed`: response.config.readme added: ReadmeBehavior \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.listReleases()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `targets.retrieveRelease()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response.provenance type changed: \{ /\*\* Pinned generator contract edition. \*/ generator\_edi... -&gt; GenerationProvenance
+  - **breaking** `return-type-changed`: response.status type changed: \("succeeded" \| "failed"\) \| \(string &amp; \{\}\) -&gt; GenerationStatus \| \(string &amp; \{\}\)
+  - **breaking** `return-type-changed`: response.trigger type changed: \("manual" \| "webhook" \| "poll" \| "preview"\) \| \(string &amp; \{\}\) -&gt; GenerationTrigger \| \(string &amp; \{\}\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `definitionRevisions.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `definitionRevisions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `account.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `apiKeys.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+- `apiKeys.revoke()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "target\_busy"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "target\_busy"
+
 ## 0.8.0 (2026-09-02) (4 breaking)
 
 ### Changed

@@ -29,6 +29,7 @@ export class GenerationsResource {
     return this._core.request<GenerationResponseRead, GenerationsRetrieveError>({
       method: "GET",
       path: `/generations/${encodeURIComponent(String(generationId))}`,
+      security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
         "403": ForbiddenError,
@@ -56,6 +57,7 @@ export class GenerationsResource {
     return this._core.request<string, GenerationsRetrieveFileError>({
       method: "GET",
       path: `/generations/${encodeURIComponent(String(generationId))}/file`,
+      security: [{"apiKey":[]}],
       query: {
         path: params.path,
       },

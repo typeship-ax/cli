@@ -25,6 +25,7 @@ export class AccountResource {
     return this._core.request<AccountRead, AccountRetrieveError>({
       method: "GET",
       path: "/me",
+      security: [{"apiKey":[]}],
       errors: { "401": UnauthorizedError, "403": ForbiddenError, "429": RateLimitedError },
       idempotent: true,
       schemaKey: "account.retrieve",

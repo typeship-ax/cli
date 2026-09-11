@@ -34,6 +34,8 @@ export type DeliveryId = string;
 
 export type TargetReleaseId = string;
 
+export type PublicationId = string;
+
 /**
  * Generator implementation selected by a Target. This is configuration, not identity; several
  * Targets may use the same generator.
@@ -592,6 +594,15 @@ export interface Diagnostic {
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
+  /**
+   * Whether the finding is provable from the Definition, a conservative review suggestion, or a
+   * documented Typeship implementation limitation.
+   */
+  evidence_basis: "contract" | "heuristic" | "implementation";
+  /** Whether remediation requires intent that the Definition cannot prove. */
+  owner_decision_required: boolean;
+  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFix;
@@ -618,6 +629,15 @@ export interface DiagnosticRead {
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
+  /**
+   * Whether the finding is provable from the Definition, a conservative review suggestion, or a
+   * documented Typeship implementation limitation.
+   */
+  evidence_basis: ("contract" | "heuristic" | "implementation") | (string & {});
+  /** Whether remediation requires intent that the Definition cannot prove. */
+  owner_decision_required: boolean;
+  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFixRead;
@@ -702,6 +722,24 @@ export interface DiagnosticEvaluationRead {
   suppressed_occurrences: number;
 }
 
+/** Current-revision suppression usage for one stable Diagnostic rule. */
+export interface DiagnosticSuppressionSignal {
+  rule_id: string;
+  /** Current occurrences of this rule that are not suppressed. */
+  active_occurrences: number;
+  suppressed_occurrences: number;
+}
+
+/**
+ * Current-revision signals for tuning Diagnostics policy. These counts do not claim that a
+ * suppression is a false positive or that runtime behavior has been verified.
+ */
+export interface DiagnosticQualitySignals {
+  suppressed_by_rule: DiagnosticSuppressionSignal[];
+  /** Reviewed exceptions whose rule or exact path no longer matches this revision. */
+  stale_suppressions: DiagnosticSuppression[];
+}
+
 /** Compact rule and location reference; full guidance appears once in diagnostics. */
 export interface DiagnosticReference {
   rule_id: string;
@@ -752,6 +790,7 @@ export interface DiagnosticReport {
   diagnostics: Diagnostic[];
   policy: DiagnosticPolicy;
   evaluation: DiagnosticEvaluation;
+  quality_signals: DiagnosticQualitySignals;
   delta: DiagnosticDelta;
   request_id: RequestId;
 }
@@ -774,6 +813,7 @@ export interface DiagnosticReportRead {
   diagnostics: DiagnosticRead[];
   policy: DiagnosticPolicyRead;
   evaluation: DiagnosticEvaluationRead;
+  quality_signals: DiagnosticQualitySignals;
   delta: DiagnosticDeltaRead;
   request_id: RequestId;
 }
@@ -816,6 +856,11 @@ export interface RepositoryDeliveryInput {
   package_name?: string | null;
   /** Explicit Go module path where applicable. */
   module_path?: string | null;
+  /**
+   * Commit repository-owned registry automation and report publication after the Draft merges.
+   * Default: false
+   */
+  publish_on_merge?: boolean;
 }
 
 /** Response shape for RepositoryDeliveryInput. */
@@ -827,6 +872,11 @@ export interface RepositoryDeliveryInputRead {
   package_name?: string | null;
   /** Explicit Go module path where applicable. */
   module_path?: string | null;
+  /**
+   * Commit repository-owned registry automation and report publication after the Draft merges.
+   * Default: false
+   */
+  publish_on_merge?: boolean;
 }
 
 export interface HostedMcpDeliveryInput {
@@ -855,6 +905,7 @@ export interface RepositoryDelivery {
   directory: string | null;
   package_name: string | null;
   module_path: string | null;
+  publish_on_merge: boolean;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -872,6 +923,7 @@ export interface RepositoryDeliveryRead {
   directory: string | null;
   package_name: string | null;
   module_path: string | null;
+  publish_on_merge: boolean;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1035,8 +1087,17 @@ export interface Target {
     mode: "reviewed_semver";
     pre1_breaking: "minor";
   };
-  current_version: string;
+  /**
+   * Deprecated projection of the newest immutable Target Release; null until a release becomes
+   * Current.
+   * @deprecated
+   */
+  current_version: string | null;
   proposed_version: string | null;
+  proposed_version_source: "console" | "api" | "github" | null;
+  proposed_version_actor: string | null;
+  /** Optimistic concurrency revision for Draft selections. */
+  release_revision: number;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
@@ -1066,8 +1127,17 @@ export interface TargetRead {
     mode: "reviewed_semver" | (string & {});
     pre1_breaking: "minor" | (string & {});
   };
-  current_version: string;
+  /**
+   * Deprecated projection of the newest immutable Target Release; null until a release becomes
+   * Current.
+   * @deprecated
+   */
+  current_version: string | null;
   proposed_version: string | null;
+  proposed_version_source: ("console" | "api" | "github" | null) | (string & {}) | null;
+  proposed_version_actor: string | null;
+  /** Optimistic concurrency revision for Draft selections. */
+  release_revision: number;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
@@ -1108,7 +1178,9 @@ export interface TargetRelease {
   id: TargetReleaseId;
   object: "target_release";
   target_id: TargetId;
-  generation_id: GenerationId;
+  /** Null only for a verified release imported during package adoption. */
+  generation_id: GenerationId | null;
+  origin: "typeship" | "imported";
   /** Immutable package version released from this Target. */
   version: string;
   channel: "stable" | "prerelease";
@@ -1118,6 +1190,16 @@ export interface TargetRelease {
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
+  import_provenance: {
+    tag: string | null;
+    /** Format: uri */
+    registry_url: string | null;
+    artifact_digest: string | null;
+    /** Format: date-time */
+    imported_at: string | null;
+  }
+    | null;
+  publications: Publication[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
@@ -1128,7 +1210,9 @@ export interface TargetReleaseRead {
   id: TargetReleaseId;
   object: "target_release" | (string & {});
   target_id: TargetId;
-  generation_id: GenerationId;
+  /** Null only for a verified release imported during package adoption. */
+  generation_id: GenerationId | null;
+  origin: ("typeship" | "imported") | (string & {});
   /** Immutable package version released from this Target. */
   version: string;
   channel: ("stable" | "prerelease") | (string & {});
@@ -1138,6 +1222,16 @@ export interface TargetReleaseRead {
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
+  import_provenance: {
+    tag: string | null;
+    /** Format: uri */
+    registry_url: string | null;
+    artifact_digest: string | null;
+    /** Format: date-time */
+    imported_at: string | null;
+  }
+    | null;
+  publications: PublicationRead[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
@@ -1163,6 +1257,131 @@ export interface TargetReleaseListRead {
   has_more: boolean;
   next_cursor: string | null;
   request_id: RequestId;
+}
+
+export interface Publication {
+  id: PublicationId;
+  object: "publication";
+  target_release_id: TargetReleaseId;
+  destination: "github" | "npm" | "pypi" | "go" | "mcp";
+  state: "pending" | "publishing" | "published" | "failed";
+  attempt: number;
+  /** Format: uri */
+  run_url: string | null;
+  /** Format: uri */
+  registry_url: string | null;
+  artifact_digest: string | null;
+  error: string | null;
+  /** Format: date-time */
+  started_at: string | null;
+  /** Format: date-time */
+  finished_at: string | null;
+  /** Format: date-time */
+  updated_at: string;
+}
+
+/** Response shape for Publication. */
+export interface PublicationRead {
+  id: PublicationId;
+  object: "publication" | (string & {});
+  target_release_id: TargetReleaseId;
+  destination: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
+  state: ("pending" | "publishing" | "published" | "failed") | (string & {});
+  attempt: number;
+  /** Format: uri */
+  run_url: string | null;
+  /** Format: uri */
+  registry_url: string | null;
+  artifact_digest: string | null;
+  error: string | null;
+  /** Format: date-time */
+  started_at: string | null;
+  /** Format: date-time */
+  finished_at: string | null;
+  /** Format: date-time */
+  updated_at: string;
+}
+
+export type TargetDraftSelection = {
+  mode: "automatic";
+}
+  | {
+      mode: "exact";
+      version: string;
+      source: "console" | "api" | "github" | null;
+      actor: string | null;
+    };
+
+/** Response shape for TargetDraftSelection. */
+export type TargetDraftSelectionRead = {
+  mode: "automatic" | (string & {});
+}
+  | {
+      mode: "exact" | (string & {});
+      version: string;
+      source: ("console" | "api" | "github" | null) | (string & {}) | null;
+      actor: string | null;
+    };
+
+export interface TargetDraft {
+  object: "target_draft";
+  target_id: TargetId;
+  revision: number;
+  current_version: string | null;
+  version: string | null;
+  selection: TargetDraftSelection;
+  readiness: Record<string, unknown> | null;
+  changes: {
+    /** Cumulative changelog against Current. */
+    changelog?: string | null;
+    breaking_count?: number | null;
+    previous_version?: string | null;
+  }
+    | null;
+  head_revision: string | null;
+  /** Format: uri */
+  pull_request_url: string | null;
+  request_id?: RequestId;
+}
+
+/** Response shape for TargetDraft. */
+export interface TargetDraftRead {
+  object: "target_draft" | (string & {});
+  target_id: TargetId;
+  revision: number;
+  current_version: string | null;
+  version: string | null;
+  selection: TargetDraftSelectionRead;
+  readiness: Record<string, unknown> | null;
+  changes: {
+    /** Cumulative changelog against Current. */
+    changelog?: string | null;
+    breaking_count?: number | null;
+    previous_version?: string | null;
+  }
+    | null;
+  head_revision: string | null;
+  /** Format: uri */
+  pull_request_url: string | null;
+  request_id?: RequestId;
+}
+
+export type TargetDraftResponse = TargetDraft & ResponseMetadata;
+
+/** Response shape for TargetDraftResponse. */
+export type TargetDraftResponseRead = TargetDraftRead & ResponseMetadata;
+
+export interface TargetDraftUpdate {
+  /** Exact SemVer, or null to return to automatic selection. */
+  version: string | null;
+  expected_revision?: number;
+}
+
+export interface TargetAdoption {
+  /** Exact already-published package version to make Current. */
+  version: string;
+  /** Immutable repository tag containing the matching package source. */
+  tag: string;
 }
 
 export interface RepositoryHealthIssue {
@@ -2718,6 +2937,19 @@ export const ErrorCode = {
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
   EDITION_UNAVAILABLE: "edition_unavailable",
   TARGET_BUSY: "target_busy",
+  INVALID_VERSION: "invalid_version",
+  STALE_RELEASE_REVISION: "stale_release_revision",
+  VERSION_OCCUPIED: "version_occupied",
+  VERSION_TOO_LOW: "version_too_low",
+  RELEASE_ANALYSIS_STALE: "release_analysis_stale",
+  TARGET_ALREADY_RELEASED: "target_already_released",
+  ADOPTION_UNVERIFIED: "adoption_unverified",
+  PUBLICATION_DISABLED: "publication_disabled",
+  PUBLICATION_NOT_RETRYABLE: "publication_not_retryable",
+  PUBLICATION_RECOVERY_UNAVAILABLE: "publication_recovery_unavailable",
+  PUBLICATION_DISPATCH_FAILED: "publication_dispatch_failed",
+  REPOSITORY_DISCONNECTED: "repository_disconnected",
+  REGENERATION_FAILED: "regeneration_failed",
   DELIVERY_CONFLICT: "delivery_conflict",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
   PLAN_LIMIT_REACHED: "plan_limit_reached",

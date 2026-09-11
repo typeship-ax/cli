@@ -8,6 +8,7 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
+  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
@@ -21,6 +22,10 @@ import type {
   DeletedTargetRead,
   ProjectId,
   Target,
+  TargetAdoption,
+  TargetDraftResponse,
+  TargetDraftResponseRead,
+  TargetDraftUpdate,
   TargetFields,
   TargetId,
   TargetList,
@@ -237,6 +242,103 @@ export class TargetsResource {
   }
 
   /**
+   * Retrieve a Target's rolling Draft release
+   *
+   * Returns Current, the cumulative Draft version and readiness, its exact head, and the optimistic
+   * release revision.
+   * `GET /targets/{target_id}/draft`
+   */
+  async retrieveDraft(
+    targetId: TargetId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetDraftResponseRead, TargetsRetrieveDraftError>> {
+    return this._core.request<TargetDraftResponseRead, TargetsRetrieveDraftError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveDraft",
+      options,
+    });
+  }
+
+  /**
+   * Select an exact Draft version or return to automatic versioning
+   *
+   * Validates the selection against the cumulative required bump and regenerates the same rolling
+   * Draft pull request.
+   * `PATCH /targets/{target_id}/draft`
+   */
+  async updateDraft(
+    targetId: TargetId,
+    body: TargetDraftUpdate,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetDraftResponseRead, TargetsUpdateDraftError>> {
+    return this._core.request<TargetDraftResponseRead, TargetsUpdateDraftError>({
+      method: "PATCH",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+      },
+      schemaKey: "targets.updateDraft",
+      options,
+    });
+  }
+
+  /**
+   * Adopt a verified existing package as Current
+   *
+   * Verifies the repository tag, package metadata, and registry artifact; records an Imported
+   * Current release; then opens the first Typeship Draft at the next major version because no
+   * trusted generated baseline exists yet.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
+   * `POST /targets/{target_id}/adopt`
+   */
+  async adoptRelease(
+    targetId: TargetId,
+    body: TargetAdoption,
+    params?: TargetsAdoptReleaseParams,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetReleaseResponseRead, TargetsAdoptReleaseError>> {
+    return this._core.request<TargetReleaseResponseRead, TargetsAdoptReleaseError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/adopt`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+      },
+      idempotencyKey: "Idempotency-Key",
+      schemaKey: "targets.adoptRelease",
+      options,
+    });
+  }
+
+  /**
    * Retrieve an immutable Target release
    * `GET /target_releases/{target_release_id}`
    */
@@ -256,6 +358,41 @@ export class TargetsResource {
       },
       idempotent: true,
       schemaKey: "targets.retrieveRelease",
+      options,
+    });
+  }
+
+  /**
+   * Retry publication of an exact Target release
+   *
+   * Dispatches the repository-owned republish workflow for this immutable version and accepted
+   * commit. It never selects the latest Draft or release.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
+   * `POST /target_releases/{target_release_id}/republish`
+   */
+  async republishRelease(
+    targetReleaseId: TargetReleaseId,
+    params?: TargetsRepublishReleaseParams,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetReleaseResponseRead, TargetsRepublishReleaseError>> {
+    return this._core.request<TargetReleaseResponseRead, TargetsRepublishReleaseError>({
+      method: "POST",
+      path: `/target_releases/${encodeURIComponent(String(targetReleaseId))}/republish`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "502": BadGatewayError,
+      },
+      idempotencyKey: "Idempotency-Key",
+      schemaKey: "targets.republishRelease",
       options,
     });
   }
@@ -366,12 +503,84 @@ export type TargetsListReleasesError =
   | TransportError
   | ValidationError;
 
+/** Every error `retrieveDraft` can produce, as a discriminated union. */
+export type TargetsRetrieveDraftError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `updateDraft` can produce, as a discriminated union. */
+export type TargetsUpdateDraftError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface TargetsAdoptReleaseParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Every error `adoptRelease` can produce, as a discriminated union. */
+export type TargetsAdoptReleaseError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
 /** Every error `retrieveRelease` can produce, as a discriminated union. */
 export type TargetsRetrieveReleaseError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface TargetsRepublishReleaseParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
+   * operation; account-less generation uses a hashed network identity. Retrying the same method,
+   * path, query, and JSON body replays the original response. Reusing the key with changed intent
+   * returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Every error `republishRelease` can produce, as a discriminated union. */
+export type TargetsRepublishReleaseError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

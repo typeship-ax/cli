@@ -21,8 +21,11 @@ import type {
   DeletedTarget,
   DeletedTargetRead,
   ProjectId,
+  ResetTargetCustomizations,
   Target,
   TargetAdoption,
+  TargetCustomizationsResponse,
+  TargetCustomizationsResponseRead,
   TargetDraftResponse,
   TargetDraftResponseRead,
   TargetDraftUpdate,
@@ -300,6 +303,65 @@ export class TargetsResource {
   }
 
   /**
+   * Inspect preserved custom code for a Target Draft
+   *
+   * Returns the exact immutable three-way input identities, customer changes, conflicts, reused
+   * resolutions, combined-package hashes, and checks. File contents are not returned.
+   * `GET /targets/{target_id}/customizations`
+   */
+  async retrieveCustomizations(
+    targetId: TargetId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>> {
+    return this._core.request<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/customizations`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveCustomizations",
+      options,
+    });
+  }
+
+  /**
+   * Resolve or reset custom code on the rolling Draft
+   *
+   * Resets selected or all custom paths, selects either exact side of conflicts, and reruns the
+   * three-way integration on the same protected Draft. The expected head prevents applying a stale
+   * choice.
+   * `POST /targets/{target_id}/customizations/reset`
+   */
+  async resetCustomizations(
+    targetId: TargetId,
+    body: ResetTargetCustomizations,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>> {
+    return this._core.request<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/customizations/reset`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "502": BadGatewayError,
+      },
+      schemaKey: "targets.resetCustomizations",
+      options,
+    });
+  }
+
+  /**
    * Adopt a verified existing package as Current
    *
    * Verifies the repository tag, package metadata, and registry artifact; records an Imported
@@ -523,6 +585,31 @@ export type TargetsUpdateDraftError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrieveCustomizations` can produce, as a discriminated union. */
+export type TargetsRetrieveCustomizationsError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `resetCustomizations` can produce, as a discriminated union. */
+export type TargetsResetCustomizationsError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

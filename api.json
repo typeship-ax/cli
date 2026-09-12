@@ -795,15 +795,6 @@
         "properties": {
           "files": {
             "items": {
-              "properties": {
-                "path": {
-                  "description": "Repo-relative path inside the generated package.",
-                  "type": "string"
-                },
-                "content": {
-                  "type": "string"
-                }
-              },
               "type": "object"
             },
             "type": "array"
@@ -852,17 +843,6 @@
               "generators": {
                 "description": "Generator implementations present in this artifact.",
                 "uniqueItems": true,
-                "items": {
-                  "enum": [
-                    "typescript-sdk",
-                    "python-sdk",
-                    "go-sdk",
-                    "cli",
-                    "mcp"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
                 "type": "array"
               },
               "resource_count": {
@@ -883,9 +863,6 @@
               },
               "omitted_operations": {
                 "description": "METHOD/path identities of operations omitted by the generation cap.",
-                "items": {
-                  "type": "string"
-                },
                 "type": "array"
               },
               "pr_url": {
@@ -959,6 +936,7 @@
                 "enum": [
                   "success",
                   "failure",
+                  "pending",
                   "error"
                 ],
                 "description": "The destination pull request's combined readiness decision for the exact bot-generated head.",
@@ -972,6 +950,48 @@
                 "description": "The package version the destination had before this regeneration.",
                 "type": "string"
               },
+              "integration_attempt_id": {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "customer_change_count": {
+                "description": "Files changed by the customer relative to the accepted combined baseline.",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "integration_state": {
+                "enum": [
+                  "conflicted",
+                  "checking",
+                  "checks_failed",
+                  "ready",
+                  "accepted",
+                  "outdated"
+                ],
+                "type": "string"
+              },
+              "reused_resolution_count": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "published_compatibility": {
+                "enum": [
+                  "compatible",
+                  "breaking",
+                  "unknown",
+                  "not_applicable"
+                ],
+                "description": "Separate compatibility result against the last published artifact.",
+                "type": "string"
+              },
+              "published_version": {
+                "description": "Version of the last published artifact used by published_compatibility.",
+                "type": "string"
+              },
               "file_count": {
                 "type": "integer"
               },
@@ -980,51 +1000,6 @@
               },
               "diagnostics": {
                 "description": "Deterministic Diagnostic summary for the exact Definition Revision consumed.",
-                "properties": {
-                  "format": {
-                    "enum": [
-                      "openapi",
-                      "graphql"
-                    ],
-                    "type": "string"
-                  },
-                  "summary": {
-                    "description": "Counts distinguish decisions from the number of affected schema locations.",
-                    "properties": {
-                      "diagnostics": {
-                        "description": "Number of grouped rule diagnostics.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "occurrences": {
-                        "description": "Total affected locations across all diagnostics.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "errors": {
-                        "description": "Grouped correctness errors.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "warnings": {
-                        "description": "Grouped material risks.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "suggestions": {
-                        "description": "Grouped improvements.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "auto_fixable": {
-                        "description": "Diagnostics with exact reviewable Definition patches.",
-                        "minimum": 0,
-                        "type": "integer"
-                      }
-                    },
-                    "type": "object"
-                  }
-                },
                 "type": "object"
               }
             },
@@ -1074,15 +1049,6 @@
                 "type": "null"
               },
               {
-                "properties": {
-                  "url": {
-                    "type": "string"
-                  },
-                  "expires_at": {
-                    "format": "date-time",
-                    "type": "string"
-                  }
-                },
                 "type": "object"
               }
             ]
@@ -1619,6 +1585,47 @@
                     "string",
                     "null"
                   ]
+                },
+                "checks": {
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "properties": {
+                    "generated": {
+                      "default": [
+                        "build",
+                        "package",
+                        "public_entrypoint"
+                      ],
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "build",
+                          "package",
+                          "public_entrypoint"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "repository_required": {
+                      "maxItems": 50,
+                      "uniqueItems": true,
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "customer": {
+                      "maxItems": 20,
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "type": "object"
                 },
                 "config": {
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
@@ -5731,6 +5738,46 @@
                   "minimum": 0,
                   "type": "integer"
                 },
+                "checks": {
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "properties": {
+                    "generated": {
+                      "default": [
+                        "build",
+                        "package",
+                        "public_entrypoint"
+                      ],
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "build",
+                          "package",
+                          "public_entrypoint"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "repository_required": {
+                      "maxItems": 50,
+                      "uniqueItems": true,
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "customer": {
+                      "maxItems": 20,
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                },
                 "config": {
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and never appear here.",
                   "anyOf": [
@@ -5911,6 +5958,13 @@
           "required": false
         },
         {
+          "name": "checks",
+          "flag": "--checks",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -6016,6 +6070,64 @@
               "string",
               "null"
             ]
+          },
+          "checks": {
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "properties": {
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "type": "string"
+                    },
+                    "command": {
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command"
+                  ],
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "additionalProperties": false,
+            "type": "object"
           },
           "config": {
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
@@ -6514,6 +6626,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -6770,6 +6922,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -6998,6 +7190,13 @@
           "required": false
         },
         {
+          "name": "checks",
+          "flag": "--checks",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -7062,6 +7261,64 @@
               "string",
               "null"
             ]
+          },
+          "checks": {
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "properties": {
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "type": "string"
+                    },
+                    "command": {
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command"
+                  ],
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "additionalProperties": false,
+            "type": "object"
           },
           "config": {
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
@@ -7557,6 +7814,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -7834,6 +8131,156 @@
                   "description": "Immutable provider-native revision that was merged or published.",
                   "type": "string"
                 },
+                "source_digest": {
+                  "description": "Digest of the exact accepted source tree used for publication.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "previous_generation_id": {
+                  "anyOf": [
+                    {
+                      "description": "Unique identifier for a generation.",
+                      "examples": [
+                        "gen_7h2p5d9c3m8w1k6q"
+                      ],
+                      "pattern": "^gen_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next_generation_id": {
+                  "anyOf": [
+                    {
+                      "description": "Unique identifier for a generation.",
+                      "examples": [
+                        "gen_7h2p5d9c3m8w1k6q"
+                      ],
+                      "pattern": "^gen_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "generated_output_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "accepted_combined_snapshot_id": {
+                  "anyOf": [
+                    {
+                      "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                      "examples": [
+                        "snap_6m1q8v4k2p9d7h3c"
+                      ],
+                      "pattern": "^snap_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "customer_diff_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "final_package_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "checks": {
+                  "items": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "enum": [
+                          "typeship",
+                          "customer",
+                          "repository",
+                          "compatibility"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "enum": [
+                          "pending",
+                          "passed",
+                          "failed",
+                          "not_assessed"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "format": "uri",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "observed_at": {
+                        "format": "date-time",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "accepted_risks": {
+                  "items": {
+                    "properties": {
+                      "comparison": {
+                        "enum": [
+                          "current",
+                          "published"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "approved_by": {
+                        "type": "string"
+                      },
+                      "approved_revision": {
+                        "type": "string"
+                      },
+                      "approved_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
                 "import_provenance": {
                   "properties": {
                     "tag": {
@@ -7904,7 +8351,8 @@
                           "pending",
                           "publishing",
                           "published",
-                          "failed"
+                          "failed",
+                          "disabled"
                         ],
                         "type": "string"
                       },
@@ -8387,6 +8835,1134 @@
       }
     },
     {
+      "operation": "targets.retrieveCustomizations",
+      "signature": "typeship targets retrieve-customizations <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve-customizations"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve-customizations tgt_5m8q2v7k1p9d4h6c",
+      "method": "GET",
+      "path": "/targets/{target_id}/customizations",
+      "summary": "Inspect preserved custom code for a Target Draft",
+      "description": "Returns the exact immutable three-way input identities, customer changes, conflicts, reused resolutions, combined-package hashes, and checks. File contents are not returned.",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "object": {
+            "const": "target_customizations",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "conflicted",
+              "checking",
+              "checks_failed",
+              "ready",
+              "accepted",
+              "outdated"
+            ],
+            "type": "string"
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_available": {
+            "description": "False for an adopted package until its first explicit integration is accepted.",
+            "type": "boolean"
+          },
+          "input": {
+            "properties": {
+              "current_release_id": {
+                "anyOf": [
+                  {
+                    "examples": [
+                      "rel_7m2q8v4k1p9d5h6c"
+                    ],
+                    "pattern": "^rel_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generation_id": {
+                "anyOf": [
+                  {
+                    "description": "Unique identifier for a generation.",
+                    "examples": [
+                      "gen_7h2p5d9c3m8w1k6q"
+                    ],
+                    "pattern": "^gen_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generated_snapshot_id": {
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_combined_snapshot_id": {
+                "description": "Exact accepted combined code used to calculate customer changes.",
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "current_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "current_revision": {
+                "type": "string"
+              },
+              "next_generation_id": {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "next_generated_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "default_revision": {
+                "type": "string"
+              },
+              "draft_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "output": {
+            "properties": {
+              "combined_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "generated_hash": {
+                "type": "string"
+              },
+              "customer_diff_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "final_package_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publication_required": {
+                "description": "False when the exact combined change only affects tests or check infrastructure and must not create a versioned release.",
+                "type": "boolean"
+              },
+              "candidate_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "changes": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "added",
+                    "edited",
+                    "deleted",
+                    "mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "previous": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "missing_baseline",
+                    "file_ownership",
+                    "customer_deleted_generator_changed",
+                    "generator_deleted_customer_changed",
+                    "overlapping_text",
+                    "binary_changed",
+                    "file_mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "previous": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "current": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "next": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflict_stage": {
+            "enum": [
+              "default_sync",
+              "generation",
+              null
+            ],
+            "description": "Identifies whether conflicts arose while reconciling the rolling Draft with the default branch or while applying the next Generation.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reused_resolutions": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "choice": {
+                  "enum": [
+                    "current",
+                    "generated",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "pull_request_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "head_revision": {
+            "description": "Exact rolling Draft head to send as expected_head_revision when resolving this attempt.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "target_id": "tgt_5m8q2v7k1p9d4h6c"
+      }
+    },
+    {
+      "operation": "targets.resetCustomizations",
+      "signature": "typeship targets reset-customizations <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "reset-customizations"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets reset-customizations tgt_5m8q2v7k1p9d4h6c --data '{\"paths\":[\"openapi.yaml\"],\"expected_head_revision\":\"0123456789abcdef0123456789abcdef01234567\"}'",
+      "method": "POST",
+      "path": "/targets/{target_id}/customizations/reset",
+      "summary": "Resolve or reset custom code on the rolling Draft",
+      "description": "Resets selected or all custom paths, selects either exact side of conflicts, and reruns the three-way integration on the same protected Draft. The expected head prevents applying a stale choice.",
+      "safety": "write",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "body": {
+            "description": "Resolve an explicit bounded conflict batch, or reset or adopt all current customizations in one call.",
+            "anyOf": [
+              {
+                "properties": {
+                  "choice": {
+                    "enum": [
+                      "generated",
+                      "current"
+                    ],
+                    "description": "For conflicts, select the incoming side (default branch during default sync, next Generation during generation) or explicitly keep the current side. Non-conflict paths reset to the next Generation.",
+                    "default": "generated",
+                    "type": "string"
+                  },
+                  "paths": {
+                    "description": "Current customization or conflict paths to resolve. The generated choice removes a path absent from the incoming side; current choice is valid only for conflicts.",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "uniqueItems": true,
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "expected_head_revision": {
+                    "description": "Exact Draft head returned by the preceding inspection.",
+                    "examples": [
+                      "0123456789abcdef0123456789abcdef01234567"
+                    ],
+                    "pattern": "^[0-9a-fA-F]{40}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "paths",
+                  "expected_head_revision"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "choice": {
+                    "enum": [
+                      "generated",
+                      "current"
+                    ],
+                    "description": "Generated resets every customization to the incoming side. Current keeps the current side of every conflict and leaves non-conflicting customizations unchanged.",
+                    "default": "generated",
+                    "type": "string"
+                  },
+                  "reset_all": {
+                    "const": true,
+                    "description": "Apply the selected side to every current conflict and, for generated, reset every non-conflicting customization without the explicit-path batch limit.",
+                    "type": "boolean"
+                  },
+                  "expected_head_revision": {
+                    "description": "Exact Draft head returned by the preceding inspection.",
+                    "examples": [
+                      "0123456789abcdef0123456789abcdef01234567"
+                    ],
+                    "pattern": "^[0-9a-fA-F]{40}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reset_all",
+                  "expected_head_revision"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_id",
+          "body"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "object": {
+            "const": "target_customizations",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "conflicted",
+              "checking",
+              "checks_failed",
+              "ready",
+              "accepted",
+              "outdated"
+            ],
+            "type": "string"
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_available": {
+            "description": "False for an adopted package until its first explicit integration is accepted.",
+            "type": "boolean"
+          },
+          "input": {
+            "properties": {
+              "current_release_id": {
+                "anyOf": [
+                  {
+                    "examples": [
+                      "rel_7m2q8v4k1p9d5h6c"
+                    ],
+                    "pattern": "^rel_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generation_id": {
+                "anyOf": [
+                  {
+                    "description": "Unique identifier for a generation.",
+                    "examples": [
+                      "gen_7h2p5d9c3m8w1k6q"
+                    ],
+                    "pattern": "^gen_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generated_snapshot_id": {
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_combined_snapshot_id": {
+                "description": "Exact accepted combined code used to calculate customer changes.",
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "current_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "current_revision": {
+                "type": "string"
+              },
+              "next_generation_id": {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "next_generated_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "default_revision": {
+                "type": "string"
+              },
+              "draft_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "output": {
+            "properties": {
+              "combined_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "generated_hash": {
+                "type": "string"
+              },
+              "customer_diff_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "final_package_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publication_required": {
+                "description": "False when the exact combined change only affects tests or check infrastructure and must not create a versioned release.",
+                "type": "boolean"
+              },
+              "candidate_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "changes": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "added",
+                    "edited",
+                    "deleted",
+                    "mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "previous": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "missing_baseline",
+                    "file_ownership",
+                    "customer_deleted_generator_changed",
+                    "generator_deleted_customer_changed",
+                    "overlapping_text",
+                    "binary_changed",
+                    "file_mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "previous": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "current": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "next": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflict_stage": {
+            "enum": [
+              "default_sync",
+              "generation",
+              null
+            ],
+            "description": "Identifies whether conflicts arose while reconciling the rolling Draft with the default branch or while applying the next Generation.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reused_resolutions": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "choice": {
+                  "enum": [
+                    "current",
+                    "generated",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "pull_request_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "head_revision": {
+            "description": "Exact rolling Draft head to send as expected_head_revision when resolving this attempt.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "target_id": "tgt_5m8q2v7k1p9d4h6c",
+        "body": {
+          "paths": [
+            "openapi.yaml"
+          ],
+          "expected_head_revision": "0123456789abcdef0123456789abcdef01234567"
+        }
+      }
+    },
+    {
       "operation": "targets.adoptRelease",
       "signature": "typeship targets adopt-release <target_id> [flags]",
       "command": [
@@ -8577,6 +10153,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -8647,7 +10373,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },
@@ -8874,6 +10601,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -8944,7 +10821,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },
@@ -9184,6 +11062,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -9254,7 +11282,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },

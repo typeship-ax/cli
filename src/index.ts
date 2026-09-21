@@ -22,8 +22,8 @@ import { AccountResource } from "./resources/account.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.10.0";
-const USER_AGENT = "@typeship-ax/cli/0.10.0 (typeship)";
+export const VERSION = "0.11.0";
+const USER_AGENT = "@typeship-ax/cli/0.11.0 (typeship)";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -79,10 +79,10 @@ export interface ClientOptions {
 }
 
 /**
- * typeship — v0.10.0
+ * typeship — v0.11.0
  *
  * Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
- * selected SDK, CLI, and MCP Target current.
+ * selected CLI, MCP, and SDK Target current.
  *
  * Every operation but one requires a bearer credential: an organization
  * API key from the console, or an OAuth access token carrying the operation's

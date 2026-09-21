@@ -21,8 +21,11 @@ import type {
   DeletedTarget,
   DeletedTargetRead,
   ProjectId,
+  ResetTargetCustomizations,
   Target,
   TargetAdoption,
+  TargetCustomizationsResponse,
+  TargetCustomizationsResponseRead,
   TargetDraftResponse,
   TargetDraftResponseRead,
   TargetDraftUpdate,
@@ -87,8 +90,8 @@ export class TargetsResource {
   /**
    * Create an independently configured Target
    *
-   * Several Targets may use the same generator with distinct configuration, Deliveries, and release
-   * streams.
+   * Creates a Target with its own configuration, Deliveries, and release history. Multiple Targets
+   * can use the same generator.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/targets`
@@ -149,8 +152,8 @@ export class TargetsResource {
   /**
    * Delete an unused Target
    *
-   * Targets with Generation or release history, or an active release candidate, must be disabled
-   * instead.
+   * Deletes a Target with no Generation history, release history, or active Draft. Disable a Target
+   * instead if it has any of these.
    * `DELETE /targets/{target_id}`
    */
   async delete(
@@ -244,8 +247,8 @@ export class TargetsResource {
   /**
    * Retrieve a Target's rolling Draft release
    *
-   * Returns Current, the cumulative Draft version and readiness, its exact head, and the optimistic
-   * release revision.
+   * Returns Current's version, the proposed Draft version, readiness, and commit. Pass `revision`
+   * as `expected_revision` when updating the Draft to avoid changing a newer candidate.
    * `GET /targets/{target_id}/draft`
    */
   async retrieveDraft(
@@ -271,7 +274,7 @@ export class TargetsResource {
   /**
    * Select an exact Draft version or return to automatic versioning
    *
-   * Validates the selection against the cumulative required bump and regenerates the same rolling
+   * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
    * `PATCH /targets/{target_id}/draft`
    */
@@ -300,11 +303,71 @@ export class TargetsResource {
   }
 
   /**
+   * Inspect preserved custom code for a Target Draft
+   *
+   * Returns preserved changes, conflicts, reused resolutions, and check results for the Draft.
+   * Includes the input and package identifiers needed to compare attempts. Does not include file
+   * contents.
+   * `GET /targets/{target_id}/customizations`
+   */
+  async retrieveCustomizations(
+    targetId: TargetId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>> {
+    return this._core.request<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/customizations`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveCustomizations",
+      options,
+    });
+  }
+
+  /**
+   * Resolve or reset custom code on the rolling Draft
+   *
+   * Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns
+   * integration and checks on the same Draft. Supply the expected head revision to prevent a stale
+   * choice from changing a newer Draft.
+   * `POST /targets/{target_id}/customizations/reset`
+   */
+  async resetCustomizations(
+    targetId: TargetId,
+    body: ResetTargetCustomizations,
+    options?: RequestOptions,
+  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>> {
+    return this._core.request<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/customizations/reset`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "502": BadGatewayError,
+      },
+      schemaKey: "targets.resetCustomizations",
+      options,
+    });
+  }
+
+  /**
    * Adopt a verified existing package as Current
    *
-   * Verifies the repository tag, package metadata, and registry artifact; records an Imported
-   * Current release; then opens the first Typeship Draft at the next major version because no
-   * trusted generated baseline exists yet.
+   * Checks the repository tag, package metadata, and registry artifact, then records the package as
+   * an Imported Current release. Opens the first Typeship Draft at the next major version; review
+   * it to establish the baseline for preserving existing code.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /targets/{target_id}/adopt`
@@ -365,8 +428,8 @@ export class TargetsResource {
   /**
    * Retry publication of an exact Target release
    *
-   * Dispatches the repository-owned republish workflow for this immutable version and accepted
-   * commit. It never selects the latest Draft or release.
+   * Retries publication of the specified release through its repository workflow. Uses that
+   * release's version and accepted commit, even if a newer Draft or release exists.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /target_releases/{target_release_id}/republish`
@@ -523,6 +586,31 @@ export type TargetsUpdateDraftError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrieveCustomizations` can produce, as a discriminated union. */
+export type TargetsRetrieveCustomizationsError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `resetCustomizations` can produce, as a discriminated union. */
+export type TargetsResetCustomizationsError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

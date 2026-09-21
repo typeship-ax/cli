@@ -58,11 +58,11 @@
           "required": false
         }
       ],
-      "example_command": "typeship generate run --definition '{\"url\":\"https://example.com\"}' --target '{\"generator\":\"typescript-sdk\"}'",
+      "example_command": "typeship generate run --definition '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"generator\":\"cli\"}'",
       "method": "POST",
       "path": "/generate",
       "summary": "Generate one Target from a Definition",
-      "description": "Stateless generation: nothing is stored. Returns the full generated\npackage as files. Works without an API key: anonymous calls generate\nthe first 25 operations, rate limited per IP address, and the\nresponse's `limits` object says what was held back and where to lift\nit; anonymous calls from a Definition URL also carry `claim.url`, a link\nthat turns the run into a project once a person signs in. With a key, the free plan generates the first 25 operations and\npaid plans generate the complete Definition. A present but invalid key is a\n401, not a downgrade to anonymous.",
+      "description": "Returns one generated package without saving a Project or retaining source files or generated files.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
       "safety": "write",
       "auth": "optional",
       "security": [
@@ -121,7 +121,10 @@
                 "additionalProperties": false,
                 "type": "object"
               }
-            ]
+            ],
+            "example": {
+              "url": "https://typeship.dev/examples/petstore/openapi.yaml"
+            }
           },
           "target": {
             "description": "Stateless generator descriptor; no persisted Target is created.",
@@ -142,7 +145,10 @@
               "generator"
             ],
             "additionalProperties": false,
-            "type": "object"
+            "type": "object",
+            "example": {
+              "generator": "cli"
+            }
           },
           "package_name": {
             "description": "npm package or Python distribution override. Valid only for the TypeScript and Python SDK targets.",
@@ -588,6 +594,13 @@
                     "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                     "type": "boolean"
                   },
+                  "changelog_url": {
+                    "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "support_url": {
                     "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
                     "type": [
@@ -795,15 +808,6 @@
         "properties": {
           "files": {
             "items": {
-              "properties": {
-                "path": {
-                  "description": "Repo-relative path inside the generated package.",
-                  "type": "string"
-                },
-                "content": {
-                  "type": "string"
-                }
-              },
               "type": "object"
             },
             "type": "array"
@@ -852,17 +856,6 @@
               "generators": {
                 "description": "Generator implementations present in this artifact.",
                 "uniqueItems": true,
-                "items": {
-                  "enum": [
-                    "typescript-sdk",
-                    "python-sdk",
-                    "go-sdk",
-                    "cli",
-                    "mcp"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
                 "type": "array"
               },
               "resource_count": {
@@ -883,9 +876,6 @@
               },
               "omitted_operations": {
                 "description": "METHOD/path identities of operations omitted by the generation cap.",
-                "items": {
-                  "type": "string"
-                },
                 "type": "array"
               },
               "pr_url": {
@@ -959,6 +949,7 @@
                 "enum": [
                   "success",
                   "failure",
+                  "pending",
                   "error"
                 ],
                 "description": "The destination pull request's combined readiness decision for the exact bot-generated head.",
@@ -972,6 +963,48 @@
                 "description": "The package version the destination had before this regeneration.",
                 "type": "string"
               },
+              "integration_attempt_id": {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "customer_change_count": {
+                "description": "Files changed by the customer relative to the accepted combined baseline.",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "integration_state": {
+                "enum": [
+                  "conflicted",
+                  "checking",
+                  "checks_failed",
+                  "ready",
+                  "accepted",
+                  "outdated"
+                ],
+                "type": "string"
+              },
+              "reused_resolution_count": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "published_compatibility": {
+                "enum": [
+                  "compatible",
+                  "breaking",
+                  "unknown",
+                  "not_applicable"
+                ],
+                "description": "Separate compatibility result against the last published artifact.",
+                "type": "string"
+              },
+              "published_version": {
+                "description": "Version of the last published artifact used by published_compatibility.",
+                "type": "string"
+              },
               "file_count": {
                 "type": "integer"
               },
@@ -980,51 +1013,6 @@
               },
               "diagnostics": {
                 "description": "Deterministic Diagnostic summary for the exact Definition Revision consumed.",
-                "properties": {
-                  "format": {
-                    "enum": [
-                      "openapi",
-                      "graphql"
-                    ],
-                    "type": "string"
-                  },
-                  "summary": {
-                    "description": "Counts distinguish decisions from the number of affected schema locations.",
-                    "properties": {
-                      "diagnostics": {
-                        "description": "Number of grouped rule diagnostics.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "occurrences": {
-                        "description": "Total affected locations across all diagnostics.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "errors": {
-                        "description": "Grouped correctness errors.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "warnings": {
-                        "description": "Grouped material risks.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "suggestions": {
-                        "description": "Grouped improvements.",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "auto_fixable": {
-                        "description": "Diagnostics with exact reviewable Definition patches.",
-                        "minimum": 0,
-                        "type": "integer"
-                      }
-                    },
-                    "type": "object"
-                  }
-                },
                 "type": "object"
               }
             },
@@ -1074,15 +1062,6 @@
                 "type": "null"
               },
               {
-                "properties": {
-                  "url": {
-                    "type": "string"
-                  },
-                  "expires_at": {
-                    "format": "date-time",
-                    "type": "string"
-                  }
-                },
                 "type": "object"
               }
             ]
@@ -1100,10 +1079,10 @@
       },
       "example_arguments": {
         "definition": {
-          "url": "https://example.com"
+          "url": "https://typeship.dev/examples/petstore/openapi.yaml"
         },
         "target": {
-          "generator": "typescript-sdk"
+          "generator": "cli"
         }
       }
     },
@@ -1287,7 +1266,7 @@
       "method": "POST",
       "path": "/projects",
       "summary": "Create a project",
-      "description": "Stores a URL- or GitHub-sourced project. Free includes one stored project, every selected target, and the first 25 operations, while keeping manual and automatic regeneration, history, destination pull requests, and preview checks. Stateless POST /generate does not consume this slot. Pro adds projects and generates every operation in the Definition.",
+      "description": "Creates a Project from a URL or GitHub Definition.\n\nFree includes one saved Project, all selected Targets, and the first 25 operations per Target, with regeneration, history, delivery pull requests, and previews. Pro supports additional Projects and all operations. Stateless generation does not use a Project slot.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -1620,6 +1599,47 @@
                     "null"
                   ]
                 },
+                "checks": {
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "properties": {
+                    "generated": {
+                      "default": [
+                        "build",
+                        "package",
+                        "public_entrypoint"
+                      ],
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "build",
+                          "package",
+                          "public_entrypoint"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "repository_required": {
+                      "maxItems": 50,
+                      "uniqueItems": true,
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "customer": {
+                      "maxItems": 20,
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "type": "object"
+                },
                 "config": {
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
                   "anyOf": [
@@ -1866,6 +1886,13 @@
                       "update_notice": {
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
+                      },
+                      "changelog_url": {
+                        "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
@@ -2214,7 +2241,7 @@
       "method": "GET",
       "path": "/projects/{project_id}",
       "summary": "Retrieve a project",
-      "description": "Returns Project-owned fields only. List Targets separately for Target and Delivery data.",
+      "description": "Returns the Project's settings and Definition ID. List its Targets separately to retrieve Target configuration and Deliveries.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -2671,6 +2698,13 @@
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
                       },
+                      "changelog_url": {
+                        "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
                         "type": [
@@ -3004,7 +3038,7 @@
       "method": "GET",
       "path": "/projects/{project_id}/diagnostics",
       "summary": "Analyze a project's latest Definition Revision",
-      "description": "Runs deterministic OpenAPI or GraphQL authorship checks against the latest observed immutable Definition Revision after applying the Definition's existing patches. Diagnostics group every affected location under a stable rule. Exact patches are included only when Typeship can derive the change without inventing API behavior.",
+      "description": "Checks the latest Definition Revision after applying its saved patches. Each finding groups affected locations under a stable rule ID. A suggested patch is included only when the Definition provides enough information to determine the correction.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -3150,7 +3184,7 @@
                   "type": "string"
                 },
                 "impact": {
-                  "description": "Why consumers of generated SDK, CLI, or MCP surfaces care.",
+                  "description": "Why consumers of generated CLI, MCP, or SDK surfaces care.",
                   "type": "string"
                 },
                 "surfaces": {
@@ -3172,7 +3206,7 @@
                   "type": "boolean"
                 },
                 "surface_impact": {
-                  "description": "Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it.",
+                  "description": "Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it.",
                   "type": "string"
                 },
                 "locations": {
@@ -3346,7 +3380,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/diagnostics",
       "summary": "Refresh a project's Diagnostics from its configured source",
-      "description": "Fetches the complete configured source, records a new immutable revision only when content changed, and returns its Diagnostics. This does not generate targets or consume a metered generation.",
+      "description": "Fetches the configured source and returns updated Diagnostics. Creates a Definition Revision only when the content changes. Does not generate Targets or use a metered generation.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -3499,7 +3533,7 @@
                   "type": "string"
                 },
                 "impact": {
-                  "description": "Why consumers of generated SDK, CLI, or MCP surfaces care.",
+                  "description": "Why consumers of generated CLI, MCP, or SDK surfaces care.",
                   "type": "string"
                 },
                 "surfaces": {
@@ -3521,7 +3555,7 @@
                   "type": "boolean"
                 },
                 "surface_impact": {
-                  "description": "Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it.",
+                  "description": "Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it.",
                   "type": "string"
                 },
                 "locations": {
@@ -3702,7 +3736,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/diagnostics/remediations",
       "summary": "Apply exact, reviewed diagnostic remediations",
-      "description": "Applies only deterministic patches. Repository sources receive an updateable source pull request; URL sources receive project overlays. Diagnostics that require API-owner intent return 422 and include an authoring_brief in the Diagnostic instead.",
+      "description": "Applies reviewed patches from Diagnostics. For a repository source, opens or updates a source pull request. For a URL source, saves Definition patches.\n\nFindings that need an API-owner decision return `422`. Read the finding's `authoring_brief` and update the source instead.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -3809,7 +3843,7 @@
       "method": "GET",
       "path": "/projects/{project_id}/integration-health",
       "summary": "Diagnose a project's repository integrations",
-      "description": "Returns provider-neutral, machine-actionable source and destination access, Definition readability, source-approval label setup, required status names, and the latest durable webhook delivery. The Console renders this same result.",
+      "description": "Checks repository access, Definition readability, source-approval labels, and required checks. Includes the latest webhook delivery so you can investigate missing updates.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -4343,7 +4377,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/generations",
       "summary": "Generate targets and open pull requests",
-      "description": "Resolves the project's URL or GitHub source, generates every\nconfigured delivery package, stores each result in the project's history,\nand attempts to open a pull request in every configured destination.\nWhen the complete generated tree already matches a destination, no\ncommit, branch, or pull request is created and that generation reports\n`pr_status: no_changes`. This is the same pipeline automatic\nregeneration runs after a source change.",
+      "description": "Generates each active Target from the Project's source, saves the results, and attempts delivery to each configured destination.\n\nIf the package already matches a destination and no Draft is open, returns `pr_status: no_changes` without creating a commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -4962,7 +4996,7 @@
       "method": "PATCH",
       "path": "/definitions/{definition_id}",
       "summary": "Update and resolve a Definition",
-      "description": "Resolves the complete document graph and records a new immutable revision before saving.",
+      "description": "Resolves the source documents and records a new Definition Revision before saving the update.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5731,6 +5765,46 @@
                   "minimum": 0,
                   "type": "integer"
                 },
+                "checks": {
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "properties": {
+                    "generated": {
+                      "default": [
+                        "build",
+                        "package",
+                        "public_entrypoint"
+                      ],
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "build",
+                          "package",
+                          "public_entrypoint"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "repository_required": {
+                      "maxItems": 50,
+                      "uniqueItems": true,
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "customer": {
+                      "maxItems": 20,
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                },
                 "config": {
                   "description": "Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and never appear here.",
                   "anyOf": [
@@ -5911,6 +5985,13 @@
           "required": false
         },
         {
+          "name": "checks",
+          "flag": "--checks",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -5936,7 +6017,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/targets",
       "summary": "Create an independently configured Target",
-      "description": "Several Targets may use the same generator with distinct configuration, Deliveries, and release streams.",
+      "description": "Creates a Target with its own configuration, Deliveries, and release history. Multiple Targets can use the same generator.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -6016,6 +6097,64 @@
               "string",
               "null"
             ]
+          },
+          "checks": {
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "properties": {
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "type": "string"
+                    },
+                    "command": {
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command"
+                  ],
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "additionalProperties": false,
+            "type": "object"
           },
           "config": {
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
@@ -6124,6 +6263,13 @@
                       "update_notice": {
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
+                      },
+                      "changelog_url": {
+                        "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
@@ -6514,6 +6660,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -6770,6 +6956,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -6888,7 +7114,7 @@
       "method": "DELETE",
       "path": "/targets/{target_id}",
       "summary": "Delete an unused Target",
-      "description": "Targets with Generation or release history, or an active release candidate, must be disabled instead.",
+      "description": "Deletes a Target with no Generation history, release history, or active Draft. Disable a Target instead if it has any of these.",
       "safety": "destructive",
       "auth": "required",
       "security": [
@@ -6998,6 +7224,13 @@
           "required": false
         },
         {
+          "name": "checks",
+          "flag": "--checks",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -7062,6 +7295,64 @@
               "string",
               "null"
             ]
+          },
+          "checks": {
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "properties": {
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "type": "string"
+                    },
+                    "command": {
+                      "minLength": 1,
+                      "maxLength": 2000,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command"
+                  ],
+                  "additionalProperties": false,
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "additionalProperties": false,
+            "type": "object"
           },
           "config": {
             "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
@@ -7170,6 +7461,13 @@
                       "update_notice": {
                         "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
                         "type": "boolean"
+                      },
+                      "changelog_url": {
+                        "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "support_url": {
                         "description": "Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled title and environment details.",
@@ -7557,6 +7855,46 @@
             "minimum": 0,
             "type": "integer"
           },
+          "checks": {
+            "description": "Required checks run against the complete combined package.",
+            "properties": {
+              "generated": {
+                "default": [
+                  "build",
+                  "package",
+                  "public_entrypoint"
+                ],
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "build",
+                    "package",
+                    "public_entrypoint"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "repository_required": {
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "customer": {
+                "maxItems": 20,
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
           "config": {
             "description": "Target-specific overrides merged over Project.config.",
             "anyOf": [
@@ -7834,6 +8172,156 @@
                   "description": "Immutable provider-native revision that was merged or published.",
                   "type": "string"
                 },
+                "source_digest": {
+                  "description": "Digest of the exact accepted source tree used for publication.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "previous_generation_id": {
+                  "anyOf": [
+                    {
+                      "description": "Unique identifier for a generation.",
+                      "examples": [
+                        "gen_7h2p5d9c3m8w1k6q"
+                      ],
+                      "pattern": "^gen_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next_generation_id": {
+                  "anyOf": [
+                    {
+                      "description": "Unique identifier for a generation.",
+                      "examples": [
+                        "gen_7h2p5d9c3m8w1k6q"
+                      ],
+                      "pattern": "^gen_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "generated_output_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "accepted_combined_snapshot_id": {
+                  "anyOf": [
+                    {
+                      "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                      "examples": [
+                        "snap_6m1q8v4k2p9d7h3c"
+                      ],
+                      "pattern": "^snap_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "customer_diff_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "final_package_hash": {
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "checks": {
+                  "items": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "source": {
+                        "enum": [
+                          "typeship",
+                          "customer",
+                          "repository",
+                          "compatibility"
+                        ],
+                        "type": "string"
+                      },
+                      "state": {
+                        "enum": [
+                          "pending",
+                          "passed",
+                          "failed",
+                          "not_assessed"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "format": "uri",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "observed_at": {
+                        "format": "date-time",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "accepted_risks": {
+                  "items": {
+                    "properties": {
+                      "comparison": {
+                        "enum": [
+                          "current",
+                          "published"
+                        ],
+                        "type": "string"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "approved_by": {
+                        "type": "string"
+                      },
+                      "approved_revision": {
+                        "type": "string"
+                      },
+                      "approved_at": {
+                        "format": "date-time",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
                 "import_provenance": {
                   "properties": {
                     "tag": {
@@ -7904,7 +8392,8 @@
                           "pending",
                           "publishing",
                           "published",
-                          "failed"
+                          "failed",
+                          "disabled"
                         ],
                         "type": "string"
                       },
@@ -8018,7 +8507,7 @@
       "method": "GET",
       "path": "/targets/{target_id}/draft",
       "summary": "Retrieve a Target's rolling Draft release",
-      "description": "Returns Current, the cumulative Draft version and readiness, its exact head, and the optimistic release revision.",
+      "description": "Returns Current's version, the proposed Draft version, readiness, and commit. Pass `revision` as `expected_revision` when updating the Draft to avoid changing a newer candidate.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -8213,7 +8702,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}/draft",
       "summary": "Select an exact Draft version or return to automatic versioning",
-      "description": "Validates the selection against the cumulative required bump and regenerates the same rolling Draft pull request.",
+      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -8387,6 +8876,1134 @@
       }
     },
     {
+      "operation": "targets.retrieveCustomizations",
+      "signature": "typeship targets retrieve-customizations <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve-customizations"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve-customizations tgt_5m8q2v7k1p9d4h6c",
+      "method": "GET",
+      "path": "/targets/{target_id}/customizations",
+      "summary": "Inspect preserved custom code for a Target Draft",
+      "description": "Returns preserved changes, conflicts, reused resolutions, and check results for the Draft. Includes the input and package identifiers needed to compare attempts. Does not include file contents.",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "object": {
+            "const": "target_customizations",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "conflicted",
+              "checking",
+              "checks_failed",
+              "ready",
+              "accepted",
+              "outdated"
+            ],
+            "type": "string"
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_available": {
+            "description": "False for an adopted package until its first explicit integration is accepted.",
+            "type": "boolean"
+          },
+          "input": {
+            "properties": {
+              "current_release_id": {
+                "anyOf": [
+                  {
+                    "examples": [
+                      "rel_7m2q8v4k1p9d5h6c"
+                    ],
+                    "pattern": "^rel_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generation_id": {
+                "anyOf": [
+                  {
+                    "description": "Unique identifier for a generation.",
+                    "examples": [
+                      "gen_7h2p5d9c3m8w1k6q"
+                    ],
+                    "pattern": "^gen_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generated_snapshot_id": {
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_combined_snapshot_id": {
+                "description": "Exact accepted combined code used to calculate customer changes.",
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "current_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "current_revision": {
+                "type": "string"
+              },
+              "next_generation_id": {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "next_generated_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "default_revision": {
+                "type": "string"
+              },
+              "draft_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "output": {
+            "properties": {
+              "combined_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "generated_hash": {
+                "type": "string"
+              },
+              "customer_diff_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "final_package_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publication_required": {
+                "description": "False when the exact combined change only affects tests or check infrastructure and must not create a versioned release.",
+                "type": "boolean"
+              },
+              "candidate_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "changes": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "added",
+                    "edited",
+                    "deleted",
+                    "mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "previous": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "missing_baseline",
+                    "file_ownership",
+                    "customer_deleted_generator_changed",
+                    "generator_deleted_customer_changed",
+                    "overlapping_text",
+                    "binary_changed",
+                    "file_mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "previous": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "current": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "next": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflict_stage": {
+            "enum": [
+              "default_sync",
+              "generation",
+              null
+            ],
+            "description": "Identifies whether conflicts arose while reconciling the rolling Draft with the default branch or while applying the next Generation.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reused_resolutions": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "choice": {
+                  "enum": [
+                    "current",
+                    "generated",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "pull_request_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "head_revision": {
+            "description": "Exact rolling Draft head to send as expected_head_revision when resolving this attempt.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "target_id": "tgt_5m8q2v7k1p9d4h6c"
+      }
+    },
+    {
+      "operation": "targets.resetCustomizations",
+      "signature": "typeship targets reset-customizations <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "reset-customizations"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets reset-customizations tgt_5m8q2v7k1p9d4h6c --data '{\"paths\":[\"openapi.yaml\"],\"expected_head_revision\":\"0123456789abcdef0123456789abcdef01234567\"}'",
+      "method": "POST",
+      "path": "/targets/{target_id}/customizations/reset",
+      "summary": "Resolve or reset custom code on the rolling Draft",
+      "description": "Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns integration and checks on the same Draft. Supply the expected head revision to prevent a stale choice from changing a newer Draft.",
+      "safety": "write",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "body": {
+            "description": "Resolve an explicit bounded conflict batch, or reset or adopt all current customizations in one call.",
+            "anyOf": [
+              {
+                "properties": {
+                  "choice": {
+                    "enum": [
+                      "generated",
+                      "current"
+                    ],
+                    "description": "For conflicts, select the incoming side (default branch during default sync, next Generation during generation) or explicitly keep the current side. Non-conflict paths reset to the next Generation.",
+                    "default": "generated",
+                    "type": "string"
+                  },
+                  "paths": {
+                    "description": "Current customization or conflict paths to resolve. The generated choice removes a path absent from the incoming side; current choice is valid only for conflicts.",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "uniqueItems": true,
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "expected_head_revision": {
+                    "description": "Exact Draft head returned by the preceding inspection.",
+                    "examples": [
+                      "0123456789abcdef0123456789abcdef01234567"
+                    ],
+                    "pattern": "^[0-9a-fA-F]{40}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "paths",
+                  "expected_head_revision"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "choice": {
+                    "enum": [
+                      "generated",
+                      "current"
+                    ],
+                    "description": "Generated resets every customization to the incoming side. Current keeps the current side of every conflict and leaves non-conflicting customizations unchanged.",
+                    "default": "generated",
+                    "type": "string"
+                  },
+                  "reset_all": {
+                    "const": true,
+                    "description": "Apply the selected side to every current conflict and, for generated, reset every non-conflicting customization without the explicit-path batch limit.",
+                    "type": "boolean"
+                  },
+                  "expected_head_revision": {
+                    "description": "Exact Draft head returned by the preceding inspection.",
+                    "examples": [
+                      "0123456789abcdef0123456789abcdef01234567"
+                    ],
+                    "pattern": "^[0-9a-fA-F]{40}$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reset_all",
+                  "expected_head_revision"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "target_id",
+          "body"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "object": {
+            "const": "target_customizations",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_generated",
+              "conflicted",
+              "checking",
+              "checks_failed",
+              "ready",
+              "accepted",
+              "outdated"
+            ],
+            "type": "string"
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "description": "Immutable identity for one exact three-way Target integration.",
+                "examples": [
+                  "int_8m2q5v1k9p4d7h3c"
+                ],
+                "pattern": "^int_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseline_available": {
+            "description": "False for an adopted package until its first explicit integration is accepted.",
+            "type": "boolean"
+          },
+          "input": {
+            "properties": {
+              "current_release_id": {
+                "anyOf": [
+                  {
+                    "examples": [
+                      "rel_7m2q8v4k1p9d5h6c"
+                    ],
+                    "pattern": "^rel_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generation_id": {
+                "anyOf": [
+                  {
+                    "description": "Unique identifier for a generation.",
+                    "examples": [
+                      "gen_7h2p5d9c3m8w1k6q"
+                    ],
+                    "pattern": "^gen_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_generated_snapshot_id": {
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "previous_combined_snapshot_id": {
+                "description": "Exact accepted combined code used to calculate customer changes.",
+                "anyOf": [
+                  {
+                    "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                    "examples": [
+                      "snap_6m1q8v4k2p9d7h3c"
+                    ],
+                    "pattern": "^snap_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "current_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "current_revision": {
+                "type": "string"
+              },
+              "next_generation_id": {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "next_generated_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "default_revision": {
+                "type": "string"
+              },
+              "draft_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "output": {
+            "properties": {
+              "combined_snapshot_id": {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              "generated_hash": {
+                "type": "string"
+              },
+              "customer_diff_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "final_package_hash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publication_required": {
+                "description": "False when the exact combined change only affects tests or check infrastructure and must not create a versioned release.",
+                "type": "boolean"
+              },
+              "candidate_revision": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "changes": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "added",
+                    "edited",
+                    "deleted",
+                    "mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "previous": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next": {
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflicts": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "missing_baseline",
+                    "file_ownership",
+                    "customer_deleted_generator_changed",
+                    "generator_deleted_customer_changed",
+                    "overlapping_text",
+                    "binary_changed",
+                    "file_mode_changed"
+                  ],
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "previous": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "current": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                "next": {
+                  "properties": {
+                    "present": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "enum": [
+                        "100644",
+                        "100755",
+                        "120000",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "hash": {
+                      "pattern": "^sha256:[0-9a-f]{64}$",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "conflict_stage": {
+            "enum": [
+              "default_sync",
+              "generation",
+              null
+            ],
+            "description": "Identifies whether conflicts arose while reconciling the rolling Draft with the default branch or while applying the next Generation.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reused_resolutions": {
+            "items": {
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "fingerprint": {
+                  "examples": [
+                    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  ],
+                  "pattern": "^sha256:[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "choice": {
+                  "enum": [
+                    "current",
+                    "generated",
+                    "resolved"
+                  ],
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "pull_request_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "head_revision": {
+            "description": "Exact rolling Draft head to send as expected_head_revision when resolving this attempt.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "target_id": "tgt_5m8q2v7k1p9d4h6c",
+        "body": {
+          "paths": [
+            "openapi.yaml"
+          ],
+          "expected_head_revision": "0123456789abcdef0123456789abcdef01234567"
+        }
+      }
+    },
+    {
       "operation": "targets.adoptRelease",
       "signature": "typeship targets adopt-release <target_id> [flags]",
       "command": [
@@ -8428,7 +10045,7 @@
       "method": "POST",
       "path": "/targets/{target_id}/adopt",
       "summary": "Adopt a verified existing package as Current",
-      "description": "Verifies the repository tag, package metadata, and registry artifact; records an Imported Current release; then opens the first Typeship Draft at the next major version because no trusted generated baseline exists yet.",
+      "description": "Checks the repository tag, package metadata, and registry artifact, then records the package as an Imported Current release. Opens the first Typeship Draft at the next major version; review it to establish the baseline for preserving existing code.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -8577,6 +10194,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -8647,7 +10414,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },
@@ -8874,6 +10642,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -8944,7 +10862,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },
@@ -9048,7 +10967,7 @@
       "method": "POST",
       "path": "/target_releases/{target_release_id}/republish",
       "summary": "Retry publication of an exact Target release",
-      "description": "Dispatches the repository-owned republish workflow for this immutable version and accepted commit. It never selects the latest Draft or release.",
+      "description": "Retries publication of the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -9184,6 +11103,156 @@
             "description": "Immutable provider-native revision that was merged or published.",
             "type": "string"
           },
+          "source_digest": {
+            "description": "Digest of the exact accepted source tree used for publication.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_generation_id": {
+            "anyOf": [
+              {
+                "description": "Unique identifier for a generation.",
+                "examples": [
+                  "gen_7h2p5d9c3m8w1k6q"
+                ],
+                "pattern": "^gen_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_output_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted_combined_snapshot_id": {
+            "anyOf": [
+              {
+                "description": "Immutable exact-path, mode, and byte snapshot of Target code.",
+                "examples": [
+                  "snap_6m1q8v4k2p9d7h3c"
+                ],
+                "pattern": "^snap_[a-z0-9]{16}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_diff_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "final_package_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checks": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "source": {
+                  "enum": [
+                    "typeship",
+                    "customer",
+                    "repository",
+                    "compatibility"
+                  ],
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "pending",
+                    "passed",
+                    "failed",
+                    "not_assessed"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string"
+                },
+                "url": {
+                  "format": "uri",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observed_at": {
+                  "format": "date-time",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "accepted_risks": {
+            "items": {
+              "properties": {
+                "comparison": {
+                  "enum": [
+                    "current",
+                    "published"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "approved_by": {
+                  "type": "string"
+                },
+                "approved_revision": {
+                  "type": "string"
+                },
+                "approved_at": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
           "import_provenance": {
             "properties": {
               "tag": {
@@ -9254,7 +11323,8 @@
                     "pending",
                     "publishing",
                     "published",
-                    "failed"
+                    "failed",
+                    "disabled"
                   ],
                   "type": "string"
                 },
@@ -9351,7 +11421,7 @@
       "method": "GET",
       "path": "/generations/{generation_id}",
       "summary": "Retrieve a generation",
-      "description": "Includes the generated files when the generation succeeded.",
+      "description": "Returns the Generation result. Successful results include files, or a file index when the package is too large to inline.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -9597,7 +11667,7 @@
       "method": "GET",
       "path": "/generations/{generation_id}/file",
       "summary": "Fetch one file from a generation",
-      "description": "Raw file content, for generations whose target was too large to inline (files_omitted true). The generation's files_index lists valid paths.",
+      "description": "Returns one file's raw content. Use a path from `files_index` when the Generation reports `files_omitted: true`.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -9667,7 +11737,7 @@
       "method": "GET",
       "path": "/definitions/{definition_id}/revisions",
       "summary": "List Definition Revisions",
-      "description": "Immutable snapshots of the complete resolved document graph this Definition observed, newest first. Content is available from the revision and document endpoints and is never embedded in a list response.",
+      "description": "Lists the Definition's revisions, newest first. Source content is not included; retrieve the revision content or individual documents separately.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -9873,7 +11943,7 @@
       "method": "GET",
       "path": "/definition_revisions/{definition_revision_id}",
       "summary": "Retrieve a Definition Revision",
-      "description": "Metadata for one immutable resolved document graph. Fetch its canonical content or individual source documents from the content endpoints.",
+      "description": "Returns metadata for a saved Definition Revision. Retrieve its resolved content or individual source documents separately.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -10083,7 +12153,7 @@
       "method": "GET",
       "path": "/definition_revisions/{definition_revision_id}/content",
       "summary": "Retrieve a Definition Revision's canonical content",
-      "description": "Returns the exact canonical resolved content identified by the revision's graph digest, suitable for saving or piping into a diff.",
+      "description": "Returns the saved, resolved content for this revision. Save it locally or compare it with another revision.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -10191,7 +12261,7 @@
       "method": "GET",
       "path": "/me",
       "summary": "The account behind the presented credentials",
-      "description": "Returns the account that owns the presented API key. This is also the\nidentity endpoint the generated typeship CLI's `whoami` calls.",
+      "description": "Returns the account associated with your credential. The Typeship CLI uses this endpoint for `whoami`.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -10275,7 +12345,7 @@
       "method": "GET",
       "path": "/api_keys",
       "summary": "List API keys",
-      "description": "Keys are never returned in full — only their identity and last four. Creation stays in the console deliberately: a leaked key that can mint more keys is a leaked account.",
+      "description": "Lists key metadata and the last four characters of each key. Full keys are not returned. Create keys in the Console.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -10386,7 +12456,7 @@
       "method": "DELETE",
       "path": "/api_keys/{api_key_id}",
       "summary": "Revoke an API key",
-      "description": "Idempotent: revoking an already-revoked key returns the same body, so a rotation script that re-runs does not have to special-case having already succeeded. An OAuth member may revoke a key they created; an organization admin may revoke any key. Organization API keys retain account-wide authority.",
+      "description": "Revokes a key. Repeating the request returns the same result.\n\nWith OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their account.",
       "safety": "destructive",
       "auth": "required",
       "security": [

@@ -149,7 +149,16 @@ export async function customBrowserApproval(config: { authUrl: string; name: str
       await pause(Math.min(intervalMs, Math.max(0, deadline - Date.now())), flow.signal);
       flow.check();
       if (Date.now() >= deadline) throw new LoginPollingError("expired");
-      const result = await oauthJsonRequest(url + "/status", post({ session: start.session, code_verifier: verifier }), Math.min(15_000, deadline - Date.now()));
+      let result: Awaited<ReturnType<typeof oauthJsonRequest>>;
+      try {
+        result = await oauthJsonRequest(url + "/status", post({ session: start.session, code_verifier: verifier }), Math.min(15_000, deadline - Date.now()));
+      } catch (error) {
+        flow.check();
+        if (error instanceof OAuthResponseError && error.code === "timed_out" && Date.now() >= deadline) {
+          throw new LoginPollingError("expired");
+        }
+        throw error;
+      }
       flow.check();
       if (Date.now() >= deadline) throw new LoginPollingError("expired");
       if (result.status !== 200) throw new LoginPollingError("request_failed");

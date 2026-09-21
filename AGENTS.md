@@ -1,6 +1,6 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.10.0).
+This package contains the generated CLI for **typeship** (API v1.0.0, package v0.11.0).
 
 Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
 selected SDK, CLI, and MCP Target current.

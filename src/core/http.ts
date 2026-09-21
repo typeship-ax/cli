@@ -110,13 +110,15 @@ export interface Violation { path: string; message: string }
  * ApiResult, like every other failure. */
 export class ValidationError extends Error {
   readonly direction: "request" | "response";
+  readonly target: "body" | "parameters";
   readonly violations: Violation[];
-  constructor(direction: "request" | "response", violations: Violation[]) {
+  constructor(direction: "request" | "response", violations: Violation[], target: "body" | "parameters" = "body") {
     const shown = violations.slice(0, 3).map((v) => v.path + " " + v.message).join("; ");
-    super(direction + " body failed schema validation: " + shown
+    super(direction + " " + target + " failed schema validation: " + shown
       + (violations.length > 3 ? " (+" + (violations.length - 3) + " more)" : ""));
     this.name = "ValidationError";
     this.direction = direction;
+    this.target = target;
     this.violations = violations;
   }
 }

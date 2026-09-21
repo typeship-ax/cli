@@ -21,6 +21,8 @@ import { homedir, hostname } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
+import { validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
+import { SCHEMAS, DEFS } from "./schemas.js";
 import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
   MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, collectionProperty, detectHarness, envelope,
@@ -40,7 +42,7 @@ const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.10.0";
+const VERSION = "0.11.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -50,7 +52,7 @@ const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
 const PKG_NAME = "@typeship-ax/cli";
 const UPDATE_NOTICE = false;
-const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected SDK, CLI, and MCP Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n";
+const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
 const DOCS_INDEX_URL_DEFAULT: string | null = null;
 const RELAY: { mintUrl: string; project: string } | null = null;
@@ -1803,6 +1805,8 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
 
 
 
+
+
 /** The command that fetches the next page: same positionals, the next page's query flags. */
 function nextCommandFor(op: OpSpec, pathValues: string[], next: Record<string, unknown>): string {
   const parts = [BIN, op.command[0], op.command[1], ...pathValues.map(shellQuote)];
@@ -1944,7 +1948,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.10.0");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.11.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -1968,7 +1972,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
   }
   lines.push("");
-  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check bodies)" +
+  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
   lines.push(...labeled(paintOut("bold", "Global flags:") + " ", flagsText, width, 14).map((l, i) => (i === 0 ? l : l)));
   lines.push(...labeled("Credential env vars: ", [
@@ -1981,6 +1985,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   lines.push(...labeled("Agents: ", BIN + " agent-guide | " + BIN + " help --json | --mode agent | -y/--yes/--force | --out <dir>  (JSON errors: {status, issues[{code}], next_steps})", width, 8));
   lines.push(...labeled("Docs: ", BIN + " docs [<resource> <command> | search <term> | read <page> | --web]", width, 6));
   if (RELAY) lines.push("Webhooks: " + BIN + " webhooks listen --forward-to <url>  (local event forwarding)");
+
   if (SUPPORT_URL) lines.push("Feedback: " + BIN + " feedback  (opens the provider's issue tracker)");
   if (MCP_EXCLUDED_OPS > 0 && HAS_MCP) {
     lines.push("");
@@ -2021,7 +2026,7 @@ function commandExtras(op: OpSpec): [string, string][] {
   if (op.paginated) extras.push(["--all", "stream every item from every page (NDJSON)"]);
   const collectionField = collectionProperty(op.outputSchema);
   extras.push(["--fields <a,b.c>", "keep only these fields of the result" + (op.paginated ? " (per item)" : collectionField ? " (per item in " + collectionField + ")" : "")]);
-  if (bundleProperty(op.outputSchema) !== null) extras.push(["--out <dir>", "write the response's files ({path, content}) into a directory"]);
+  if ((op.fileBundleProperty ?? bundleProperty(op.outputSchema)) !== null) extras.push(["--out <dir>", "write the response's files ({path, content}) into a directory"]);
   if (op.safety === "destructive") extras.push(["--force, -y", "destructive: required without a terminal, skips the prompt with one"]);
   return extras;
 }
@@ -2207,8 +2212,59 @@ function coerce(spec: ParamSpec, raw: string | boolean, repeated?: string[]): un
   return coerceScalar(spec.flag, spec.type === "json" ? "json" : spec.type === "number" ? "number" : "string", spec.enum, text);
 }
 
+/** Use validation schemas, not the shortened agent-facing schemas: every union
+ * branch and referenced definition must remain valid input. */
+function validateParameters(op: OpSpec, values: Record<string, unknown>, flags: Map<string, string | boolean>): void {
+  if (flags.get("validate") !== true) return;
+  const schemas = SCHEMAS[op.resource + "." + op.method]?.params;
+  if (!schemas) return;
+  const violations: Violation[] = [];
+  for (const parameter of op.params) {
+    if (parameter.kind === "body") continue;
+    let value = values[parameter.name];
+    if (value === undefined && parameter.global) {
+      const global = GLOBALS.find((entry) => entry.name === parameter.name);
+      const raw = global ? process.env["TYPESHIP_" + global.envSuffix] : undefined;
+      if (raw !== undefined) value = coerce(parameter, raw);
+    }
+    if (value === undefined) continue;
+    if (parameter.kind === "path") value = coerce(parameter, String(value));
+    const key = parameter.kind + "." + parameter.name;
+    validateAgainstSchema(value, schemas[key], key, violations, DEFS);
+  }
+  if (violations.length) failApi(new ValidationError("request", violations, "parameters"), false);
+}
+
 /** Whether the last client built carried any credential; failApi tells NO_AUTH from AUTH_INVALID with it. */
 let LAST_CLIENT_HAD_CREDENTIAL = false;
+
+/** Check the same complete alternatives the request runtime can select, after
+ * per-scheme flag, environment, profile, and OAuth resolution. */
+function requireOperationCredentials(op: OpSpec, options: ClientOptions & Record<string, unknown>): void {
+  if (op.auth !== "required") return;
+  const supplied = (value: unknown): boolean => typeof value === "function" || (typeof value === "string" && value.length > 0)
+    || (value !== null && typeof value === "object" && "username" in value && "password" in value && typeof value.username === "string" && value.username.length > 0 && typeof value.password === "string" && value.password.length > 0);
+  const named = Object.fromEntries(Object.entries(options.credentials ?? {}).filter(([, value]) => supplied(value))) as NamedCredentials;
+  const available = namedCredentialAvailability(NAMED_SCHEMES, new Set(Object.keys(options).filter((key) => supplied(options[key]))), named);
+  if (op.credentialOptions?.some((alternative) => alternative.length > 0 && alternative.every((option) => available.has(option)))) return;
+  const alternatives = (op.credentialOptions ?? []).filter((alternative) => alternative.length > 0 && alternative.every((option) => option.startsWith("credentials.")));
+  const missing = alternatives.map((alternative) => alternative.filter((option) => !available.has(option)).map((option) => option.slice("credentials.".length)));
+  const names = new Set(missing.flat());
+  const relevant = AUTH_SCALARS.filter((scalar) => [...names].some((name) => NAMED_SCHEMES[name]?.options.includes(scalar.option)));
+  const needsBasic = [...names].some((name) => NAMED_SCHEMES[name]?.options.includes("basicAuth"));
+  failWith({
+    status: "action_required",
+    code: "NO_AUTH",
+    message: op.command.join(" ") + " needs one complete credential alternative (" + wireOf(op) + "). " + (missing.length
+      ? "Missing security schemes: " + missing.map((names) => names.join(" + ")).join(" OR ") + "."
+      : "The declared security requirements have no supported, compatible alternative in this CLI."),
+    nextSteps: alternatives.length ? [
+      ...relevant.map((a) => "Set " + a.env + " in the environment, pass --" + a.flag + " <value>, or run '" + BIN + " login'."),
+      ...(needsBasic && BASIC ? ["Set " + BASIC.envUser + " and " + BASIC.envPass + ", or pass --username and --password."] : []),
+      "Supply all schemes in one alternative through " + "TYPESHIP_CREDENTIALS" + " or --credentials @<JSON-file>: " + alternatives.map((alternative) => alternative.map((option) => option.slice("credentials.".length)).join(" + ")).join(" OR ") + ".",
+    ] : ["Check the operation's security schemes in the API definition and regenerate with a supported, compatible alternative."],
+  });
+}
 
 function validateCredentialsInput(flags: Map<string, string | boolean>): void {
   const input = flags.get("credentials");
@@ -2317,6 +2373,7 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
     if (value !== undefined) options[g.option] = value;
   }
   LAST_CLIENT_HAD_CREDENTIAL = Object.keys(options.credentials ?? {}).length > 0 || AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
+  requireOperationCredentials(op, options);
   // Who is calling: the CLI, under which agent harness, and whether an
   // agent is driving. "agent" means a harness was detected or the caller
   // said so (--mode agent / env); a bare non-TTY run (CI, a pipeline) is
@@ -2413,6 +2470,7 @@ async function main(): Promise<void> {
   if (resourceCmd === "auth") { await cmdAuth(parsed); }
   if (resourceCmd === "doctor") { await cmdDoctor(parsed); }
   if (resourceCmd === "upgrade") { await cmdUpgrade(parsed); }
+
 
 
   if (resourceCmd === "docs") { await cmdDocs(parsed); }
@@ -2532,28 +2590,15 @@ async function main(): Promise<void> {
   }
 
   // --out <dir> materializes a file-shaped response (see cli-agent.ts bundleProperty).
-  const bundleField = bundleProperty(op.outputSchema);
+  const bundleField = op.fileBundleProperty ?? bundleProperty(op.outputSchema);
   const collectionField = collectionProperty(op.outputSchema);
   const outDir = typeof parsed.flags.get("out") === "string" ? (parsed.flags.get("out") as string) : undefined;
   if (outDir !== undefined && bundleField === null) {
     fail(2, "--out applies to commands whose response carries files ({path, content}); " + op.command.join(" ") + " does not.");
   }
 
-  // The spec says this operation needs a credential and none resolved:
-  // say so now, locally, instead of sending a request to learn it.
-  if (op.auth === "required" && (AUTH_SCALARS.length > 0 || BASIC || HAS_OAUTH_LOGIN) && credentialSource(parsed.flags) === null) {
-    failWith({
-      status: "action_required",
-      code: "NO_AUTH",
-      message: op.command.join(" ") + " needs a credential (" + wireOf(op) + " is authenticated) and none was found.",
-      nextSteps: [
-        ...AUTH_SCALARS.map((a) => "Set " + a.env + " in the environment, pass --" + a.flag + " <value>, or run '" + BIN + " login'."),
-        ...(BASIC ? ["Set " + BASIC.envUser + " and " + BASIC.envPass + ", or pass --username and --password."] : []),
-        ...(AUTH_SCALARS.length === 0 && !BASIC ? ["Run '" + BIN + " login'."] : []),
-        "'" + BIN + " auth check' shows what the CLI would send.",
-      ],
-    });
-  }
+  validateParameters(op, values, parsed.flags);
+  const client = await makeClient(parsed.flags, op);
 
   // Destructive commands need --force. A person gets asked; an agent gets
   // an action_required envelope with the exact command to run, so nothing
@@ -2573,7 +2618,6 @@ async function main(): Promise<void> {
     if (answer !== "y" && answer !== "yes") failWith({ status: "action_required", code: "CONFIRMATION_REQUIRED", message: "Cancelled.", nextSteps: ["Run again with --force to skip the prompt: " + rerun] });
   }
 
-  const client = await makeClient(parsed.flags, op);
   const selectValue = typeof parsed.flags.get("select") === "string" ? (parsed.flags.get("select") as string) : undefined;
   const args = buildArgs(op, values, dataBody, selectValue);
   const target = (client as unknown as Record<string, Record<string, (...a: unknown[]) => unknown>>)[op.resource]!;

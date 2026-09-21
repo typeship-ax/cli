@@ -1,5 +1,641 @@
 # Changelog
 
+## 0.11.0 (2026-09-21) (34 breaking)
+
+### Added
+- `targets.retrieveCustomizations()`: GET `/targets/{target_id}/customizations`
+- `targets.resetCustomizations()`: POST `/targets/{target_id}/customizations/reset`
+
+### Changed
+- `generate.run()`
+  - `body-field-type-changed`: request body.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.files\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(optional\)
+  - **breaking** `return-type-changed`: response.meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.meta.reused\_resolution\_count added: number \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.create()`
+  - `body-field-type-changed`: request body.targets\[\].config.cli.changelog\_url added: string \| null \(optional\)
+  - `body-field-type-changed`: request body.targets\[\].checks added: TargetChecks \(optional\)
+  - `body-field-type-changed`: request body.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieve()`
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.update()`
+  - `body-field-type-changed`: request body.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieveDiagnostics()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.refreshDiagnostics()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.remediateDiagnostics()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieveIntegrationHealth()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response.data\[\].meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.data\[\].meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.data\[\].meta.reused\_resolution\_count added: number \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response.data\[\].meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.data\[\].meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.data\[\].meta.reused\_resolution\_count added: number \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitions.update()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.list()`
+  - `return-type-changed`: response.data\[\].config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.data\[\].checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.create()`
+  - `body-field-added`: request body.checks added: TargetChecks \(optional\)
+  - `body-field-type-changed`: request body.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieve()`
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.delete()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.update()`
+  - `body-field-added`: request body.checks added: TargetChecks \(optional\)
+  - `body-field-type-changed`: request body.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.config.cli.changelog\_url added: string \| null \(optional\)
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.data\[\].accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.data\[\].accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.data\[\].checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.data\[\].customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.data\[\].previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.data\[\].source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieveDraft()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.updateDraft()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `generations.retrieve()`
+  - `return-type-changed`: response.files\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.files\_index\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(required\)
+  - **breaking** `return-type-changed`: response.meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.meta.reused\_resolution\_count added: number \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `generations.retrieveFile()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.list()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieve()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieveContent()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `account.retrieve()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `apiKeys.list()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `apiKeys.revoke()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+
+## 0.11.0 (2026-09-12) (34 breaking)
+
+### Added
+- `targets.retrieveCustomizations()`: GET `/targets/{target_id}/customizations`
+- `targets.resetCustomizations()`: POST `/targets/{target_id}/customizations/reset`
+
+### Changed
+- `generate.run()`
+  - `return-type-changed`: response.files\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(optional\)
+  - **breaking** `return-type-changed`: response.meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.meta.reused\_resolution\_count added: number \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.create()`
+  - `body-field-type-changed`: request body.targets\[\].checks added: TargetChecks \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.update()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieveDiagnostics()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.refreshDiagnostics()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.remediateDiagnostics()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response.data\[\].meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.data\[\].meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.data\[\].meta.reused\_resolution\_count added: number \(optional\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response.data\[\].meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.data\[\].meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.data\[\].meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.data\[\].meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.data\[\].meta.reused\_resolution\_count added: number \(optional\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitions.update()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.list()`
+  - `return-type-changed`: response.data\[\].checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.create()`
+  - `body-field-added`: request body.checks added: TargetChecks \(optional\)
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieve()`
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.update()`
+  - `body-field-added`: request body.checks added: TargetChecks \(optional\)
+  - `return-type-changed`: response.checks added: TargetChecks \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.data\[\].accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.data\[\].accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.data\[\].checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.data\[\].customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.data\[\].previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.data\[\].source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieveDraft()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.updateDraft()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response.publications\[\].state enum value added: "disabled"
+  - `return-type-changed`: response.accepted\_combined\_snapshot\_id added: CodeSnapshotId \| null \(required\)
+  - `return-type-changed`: response.accepted\_risks added: AcceptedCompatibilityRisk\[\] \(required\)
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - `return-type-changed`: response.customer\_diff\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.final\_package\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.generated\_output\_hash added: string \| null \(required\)
+  - `return-type-changed`: response.next\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.previous\_generation\_id added: GenerationId \| null \(required\)
+  - `return-type-changed`: response.source\_digest added: string \| null \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `generations.retrieve()`
+  - `return-type-changed`: response.files\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.files\_index\[\].mode added: \("100644" \| "100755"\) \| \(string &amp; \{\}\) \(required\)
+  - **breaking** `return-type-changed`: response.meta.release\_readiness enum value added: "pending"
+  - `return-type-changed`: response.meta.customer\_change\_count added: number \(optional\)
+  - `return-type-changed`: response.meta.integration\_attempt\_id added: IntegrationAttemptId \(optional\)
+  - `return-type-changed`: response.meta.integration\_state added: \("conflicted"   \| "checking"   \| "checks\_failed"   \| "ready"   \| "accepted"   \| "outdated"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_compatibility added: \("compatible" \| "breaking" \| "unknown" \| "not\_applicable"\) \| \(string &amp; \{\}\) \(optional\)
+  - `return-type-changed`: response.meta.published\_version added: string \(optional\)
+  - `return-type-changed`: response.meta.reused\_resolution\_count added: number \(optional\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `account.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `apiKeys.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+- `apiKeys.revoke()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "no\_changes", "no\_draft", "stale\_draft"
+
 ## 0.10.0 (2026-09-11) (30 breaking)
 
 ### Added

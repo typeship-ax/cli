@@ -30,6 +30,12 @@ export type ListObject = "list";
 /** Stable identifier for one configured generated product. */
 export type TargetId = string;
 
+/** Immutable identity for one exact three-way Target integration. */
+export type IntegrationAttemptId = string;
+
+/** Immutable exact-path, mode, and byte snapshot of Target code. */
+export type CodeSnapshotId = string;
+
 export type DeliveryId = string;
 
 export type TargetReleaseId = string;
@@ -127,6 +133,23 @@ export interface GeneratedFile {
   /** Repo-relative path inside the generated package. */
   path: string;
   content: string;
+  /**
+   * Exact Git file mode. Omitted stateless outputs are regular files.
+   * Default: "100644"
+   */
+  mode?: "100644" | "100755";
+}
+
+/** Response shape for GeneratedFile. */
+export interface GeneratedFileRead {
+  /** Repo-relative path inside the generated package. */
+  path: string;
+  content: string;
+  /**
+   * Exact Git file mode. Omitted stateless outputs are regular files.
+   * Default: "100644"
+   */
+  mode?: ("100644" | "100755") | (string & {});
 }
 
 export interface GenerationMeta {
@@ -200,11 +223,25 @@ export interface GenerationMeta {
    * The destination pull request's combined readiness decision for the exact bot-generated head.
    * Compatibility and version correctness remain separate fields above.
    */
-  release_readiness?: "success" | "failure" | "error";
+  release_readiness?: "success" | "failure" | "pending" | "error";
   /** The release-readiness decision in one line, as the commit status describes it. */
   release_readiness_note?: string;
   /** The package version the destination had before this regeneration. */
   previous_version?: string;
+  integration_attempt_id?: IntegrationAttemptId;
+  /** Files changed by the customer relative to the accepted combined baseline. */
+  customer_change_count?: number;
+  integration_state?: "conflicted"
+    | "checking"
+    | "checks_failed"
+    | "ready"
+    | "accepted"
+    | "outdated";
+  reused_resolution_count?: number;
+  /** Separate compatibility result against the last published artifact. */
+  published_compatibility?: "compatible" | "breaking" | "unknown" | "not_applicable";
+  /** Version of the last published artifact used by published_compatibility. */
+  published_version?: string;
   file_count?: number;
   total_lines?: number;
   /** Deterministic Diagnostic summary for the exact Definition Revision consumed. */
@@ -286,11 +323,25 @@ export interface GenerationMetaRead {
    * The destination pull request's combined readiness decision for the exact bot-generated head.
    * Compatibility and version correctness remain separate fields above.
    */
-  release_readiness?: ("success" | "failure" | "error") | (string & {});
+  release_readiness?: ("success" | "failure" | "pending" | "error") | (string & {});
   /** The release-readiness decision in one line, as the commit status describes it. */
   release_readiness_note?: string;
   /** The package version the destination had before this regeneration. */
   previous_version?: string;
+  integration_attempt_id?: IntegrationAttemptId;
+  /** Files changed by the customer relative to the accepted combined baseline. */
+  customer_change_count?: number;
+  integration_state?: ("conflicted"
+    | "checking"
+    | "checks_failed"
+    | "ready"
+    | "accepted"
+    | "outdated") | (string & {});
+  reused_resolution_count?: number;
+  /** Separate compatibility result against the last published artifact. */
+  published_compatibility?: ("compatible" | "breaking" | "unknown" | "not_applicable") | (string & {});
+  /** Version of the last published artifact used by published_compatibility. */
+  published_version?: string;
   file_count?: number;
   total_lines?: number;
   /** Deterministic Diagnostic summary for the exact Definition Revision consumed. */
@@ -321,7 +372,7 @@ export interface GenerationResult {
 
 /** Response shape for GenerationResult. */
 export interface GenerationResultRead {
-  files: GeneratedFile[];
+  files: GeneratedFileRead[];
   warnings: string[];
   meta: GenerationMetaRead;
   limits?: GenerationLimitsRead;
@@ -590,7 +641,7 @@ export interface Diagnostic {
   title: string;
   /** What the API author should change. */
   description: string;
-  /** Why consumers of generated SDK, CLI, or MCP surfaces care. */
+  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
@@ -601,7 +652,7 @@ export interface Diagnostic {
   evidence_basis: "contract" | "heuristic" | "implementation";
   /** Whether remediation requires intent that the Definition cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
   surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
@@ -625,7 +676,7 @@ export interface DiagnosticRead {
   title: string;
   /** What the API author should change. */
   description: string;
-  /** Why consumers of generated SDK, CLI, or MCP surfaces care. */
+  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
@@ -636,7 +687,7 @@ export interface DiagnosticRead {
   evidence_basis: ("contract" | "heuristic" | "implementation") | (string & {});
   /** Whether remediation requires intent that the Definition cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
   surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
@@ -966,6 +1017,31 @@ export type DeliveryRead = RepositoryDeliveryRead
   | HostedMcpDeliveryRead
   | Record<string, unknown> & { kind?: string };
 
+/**
+ * Required checks run against the complete combined package. Generated checks and customer commands
+ * share one reproducible workflow; repository_required names existing repository checks.
+ */
+export interface TargetChecks {
+  /** Default: ["build","package","public_entrypoint"] */
+  generated?: Array<"build" | "package" | "public_entrypoint">;
+  repository_required?: string[];
+  customer?: Array<{
+    name: string;
+    command: string;
+  }>;
+}
+
+/** Response shape for TargetChecks. */
+export interface TargetChecksRead {
+  /** Default: ["build","package","public_entrypoint"] */
+  generated?: Array<("build" | "package" | "public_entrypoint") | (string & {})>;
+  repository_required?: string[];
+  customer?: Array<{
+    name: string;
+    command: string;
+  }>;
+}
+
 export interface TargetFields {
   name: string;
   definition_id: DefinitionId;
@@ -978,6 +1054,7 @@ export interface TargetFields {
   release_channel?: "stable" | "prerelease";
   /** Optional larger or prerelease SemVer for the next reviewed release. */
   proposed_version?: string | null;
+  checks?: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -999,6 +1076,7 @@ export interface TargetFieldsRead {
   release_channel?: ("stable" | "prerelease") | (string & {});
   /** Optional larger or prerelease SemVer for the next reviewed release. */
   proposed_version?: string | null;
+  checks?: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -1017,6 +1095,7 @@ export interface InitialTargetFields {
   /** Default: "stable" */
   release_channel?: "stable" | "prerelease";
   proposed_version?: string | null;
+  checks?: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -1036,6 +1115,7 @@ export interface InitialTargetFieldsRead {
   /** Default: "stable" */
   release_channel?: ("stable" | "prerelease") | (string & {});
   proposed_version?: string | null;
+  checks?: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -1050,6 +1130,7 @@ export interface TargetUpdateRequest {
   edition?: string;
   release_channel?: "stable" | "prerelease";
   proposed_version?: string | null;
+  checks?: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -1065,6 +1146,7 @@ export interface TargetUpdateRequestRead {
   edition?: string;
   release_channel?: ("stable" | "prerelease") | (string & {});
   proposed_version?: string | null;
+  checks?: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
    * belong to the Definition.
@@ -1098,6 +1180,7 @@ export interface Target {
   proposed_version_actor: string | null;
   /** Optimistic concurrency revision for Draft selections. */
   release_revision: number;
+  checks: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
@@ -1138,6 +1221,7 @@ export interface TargetRead {
   proposed_version_actor: string | null;
   /** Optimistic concurrency revision for Draft selections. */
   release_revision: number;
+  checks: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
@@ -1190,6 +1274,16 @@ export interface TargetRelease {
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
+  /** Digest of the exact accepted source tree used for publication. */
+  source_digest: string | null;
+  previous_generation_id: GenerationId | null;
+  next_generation_id: GenerationId | null;
+  generated_output_hash: string | null;
+  accepted_combined_snapshot_id: CodeSnapshotId | null;
+  customer_diff_hash: string | null;
+  final_package_hash: string | null;
+  checks: PackageCheck[];
+  accepted_risks: AcceptedCompatibilityRisk[];
   import_provenance: {
     tag: string | null;
     /** Format: uri */
@@ -1222,6 +1316,16 @@ export interface TargetReleaseRead {
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
+  /** Digest of the exact accepted source tree used for publication. */
+  source_digest: string | null;
+  previous_generation_id: GenerationId | null;
+  next_generation_id: GenerationId | null;
+  generated_output_hash: string | null;
+  accepted_combined_snapshot_id: CodeSnapshotId | null;
+  customer_diff_hash: string | null;
+  final_package_hash: string | null;
+  checks: PackageCheckRead[];
+  accepted_risks: AcceptedCompatibilityRiskRead[];
   import_provenance: {
     tag: string | null;
     /** Format: uri */
@@ -1264,7 +1368,7 @@ export interface Publication {
   object: "publication";
   target_release_id: TargetReleaseId;
   destination: "github" | "npm" | "pypi" | "go" | "mcp";
-  state: "pending" | "publishing" | "published" | "failed";
+  state: "pending" | "publishing" | "published" | "failed" | "disabled";
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1286,7 +1390,7 @@ export interface PublicationRead {
   object: "publication" | (string & {});
   target_release_id: TargetReleaseId;
   destination: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
-  state: ("pending" | "publishing" | "published" | "failed") | (string & {});
+  state: ("pending" | "publishing" | "published" | "failed" | "disabled") | (string & {});
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1376,6 +1480,327 @@ export interface TargetDraftUpdate {
   version: string | null;
   expected_revision?: number;
 }
+
+export interface CodeFileSummary {
+  mode: "100644" | "100755" | "120000";
+  hash: string;
+}
+
+/** Response shape for CodeFileSummary. */
+export interface CodeFileSummaryRead {
+  mode: ("100644" | "100755" | "120000") | (string & {});
+  hash: string;
+}
+
+export interface CustomizationChange {
+  path: string;
+  kind: "added" | "edited" | "deleted" | "mode_changed";
+  previous: CodeFileSummary | null;
+  current: CodeFileSummary | null;
+  next: CodeFileSummary | null;
+}
+
+/** Response shape for CustomizationChange. */
+export interface CustomizationChangeRead {
+  path: string;
+  kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
+  previous: CodeFileSummaryRead | null;
+  current: CodeFileSummaryRead | null;
+  next: CodeFileSummaryRead | null;
+}
+
+export interface MergeSideSummary {
+  present: boolean;
+  mode: "100644" | "100755" | "120000" | null;
+  hash: string | null;
+}
+
+/** Response shape for MergeSideSummary. */
+export interface MergeSideSummaryRead {
+  present: boolean;
+  mode: ("100644" | "100755" | "120000" | null) | (string & {}) | null;
+  hash: string | null;
+}
+
+export interface TargetMergeConflict {
+  path: string;
+  kind: "missing_baseline"
+    | "file_ownership"
+    | "customer_deleted_generator_changed"
+    | "generator_deleted_customer_changed"
+    | "overlapping_text"
+    | "binary_changed"
+    | "file_mode_changed";
+  fingerprint: string;
+  previous: MergeSideSummary;
+  current: MergeSideSummary;
+  next: MergeSideSummary;
+}
+
+/** Response shape for TargetMergeConflict. */
+export interface TargetMergeConflictRead {
+  path: string;
+  kind: ("missing_baseline"
+    | "file_ownership"
+    | "customer_deleted_generator_changed"
+    | "generator_deleted_customer_changed"
+    | "overlapping_text"
+    | "binary_changed"
+    | "file_mode_changed") | (string & {});
+  fingerprint: string;
+  previous: MergeSideSummaryRead;
+  current: MergeSideSummaryRead;
+  next: MergeSideSummaryRead;
+}
+
+export interface PackageCheck {
+  name: string;
+  source: "typeship" | "customer" | "repository" | "compatibility";
+  required: boolean;
+  state: "pending" | "passed" | "failed" | "not_assessed";
+  reason: string;
+  revision: string;
+  /** Format: uri */
+  url: string | null;
+  /** Format: date-time */
+  observed_at: string | null;
+}
+
+/** Response shape for PackageCheck. */
+export interface PackageCheckRead {
+  name: string;
+  source: ("typeship" | "customer" | "repository" | "compatibility") | (string & {});
+  required: boolean;
+  state: ("pending" | "passed" | "failed" | "not_assessed") | (string & {});
+  reason: string;
+  revision: string;
+  /** Format: uri */
+  url: string | null;
+  /** Format: date-time */
+  observed_at: string | null;
+}
+
+export interface AcceptedCompatibilityRisk {
+  comparison: "current" | "published";
+  reason: string;
+  approved_by: string;
+  approved_revision: string;
+  /** Format: date-time */
+  approved_at: string;
+}
+
+/** Response shape for AcceptedCompatibilityRisk. */
+export interface AcceptedCompatibilityRiskRead {
+  comparison: ("current" | "published") | (string & {});
+  reason: string;
+  approved_by: string;
+  approved_revision: string;
+  /** Format: date-time */
+  approved_at: string;
+}
+
+export interface TargetCustomizations {
+  object: "target_customizations";
+  target_id: TargetId;
+  status: "not_generated"
+    | "conflicted"
+    | "checking"
+    | "checks_failed"
+    | "ready"
+    | "accepted"
+    | "outdated";
+  attempt_id: IntegrationAttemptId | null;
+  /** False for an adopted package until its first explicit integration is accepted. */
+  baseline_available: boolean;
+  input: {
+    current_release_id: TargetReleaseId | null;
+    previous_generation_id: GenerationId | null;
+    previous_generated_snapshot_id: CodeSnapshotId | null;
+    /** Exact accepted combined code used to calculate customer changes. */
+    previous_combined_snapshot_id: CodeSnapshotId | null;
+    current_snapshot_id: CodeSnapshotId;
+    current_revision: string;
+    next_generation_id: GenerationId;
+    next_generated_snapshot_id: CodeSnapshotId;
+    default_revision: string;
+    draft_revision: string | null;
+  }
+    | null;
+  output: {
+    combined_snapshot_id: CodeSnapshotId;
+    generated_hash: string;
+    customer_diff_hash: string | null;
+    final_package_hash: string | null;
+    /**
+     * False when the exact combined change only affects tests or check infrastructure and must not
+     * create a versioned release.
+     */
+    publication_required: boolean;
+    candidate_revision: string | null;
+  }
+    | null;
+  changes: CustomizationChange[];
+  conflicts: TargetMergeConflict[];
+  /**
+   * Identifies whether conflicts arose while reconciling the rolling Draft with the default branch
+   * or while applying the next Generation.
+   */
+  conflict_stage: "default_sync" | "generation" | null;
+  reused_resolutions: Array<{
+    path: string;
+    fingerprint: string;
+    choice: "current" | "generated" | "resolved";
+    approved_revision: string;
+    approved_by: string;
+    /** Format: date-time */
+    approved_at: string;
+  }>;
+  checks: PackageCheck[];
+  /** Format: uri */
+  pull_request_url: string | null;
+  /** Exact rolling Draft head to send as expected_head_revision when resolving this attempt. */
+  head_revision: string | null;
+  request_id?: RequestId;
+}
+
+/** Response shape for TargetCustomizations. */
+export interface TargetCustomizationsRead {
+  object: "target_customizations" | (string & {});
+  target_id: TargetId;
+  status: ("not_generated"
+    | "conflicted"
+    | "checking"
+    | "checks_failed"
+    | "ready"
+    | "accepted"
+    | "outdated") | (string & {});
+  attempt_id: IntegrationAttemptId | null;
+  /** False for an adopted package until its first explicit integration is accepted. */
+  baseline_available: boolean;
+  input: {
+    current_release_id: TargetReleaseId | null;
+    previous_generation_id: GenerationId | null;
+    previous_generated_snapshot_id: CodeSnapshotId | null;
+    /** Exact accepted combined code used to calculate customer changes. */
+    previous_combined_snapshot_id: CodeSnapshotId | null;
+    current_snapshot_id: CodeSnapshotId;
+    current_revision: string;
+    next_generation_id: GenerationId;
+    next_generated_snapshot_id: CodeSnapshotId;
+    default_revision: string;
+    draft_revision: string | null;
+  }
+    | null;
+  output: {
+    combined_snapshot_id: CodeSnapshotId;
+    generated_hash: string;
+    customer_diff_hash: string | null;
+    final_package_hash: string | null;
+    /**
+     * False when the exact combined change only affects tests or check infrastructure and must not
+     * create a versioned release.
+     */
+    publication_required: boolean;
+    candidate_revision: string | null;
+  }
+    | null;
+  changes: CustomizationChangeRead[];
+  conflicts: TargetMergeConflictRead[];
+  /**
+   * Identifies whether conflicts arose while reconciling the rolling Draft with the default branch
+   * or while applying the next Generation.
+   */
+  conflict_stage: ("default_sync" | "generation" | null) | (string & {}) | null;
+  reused_resolutions: Array<{
+    path: string;
+    fingerprint: string;
+    choice: ("current" | "generated" | "resolved") | (string & {});
+    approved_revision: string;
+    approved_by: string;
+    /** Format: date-time */
+    approved_at: string;
+  }>;
+  checks: PackageCheckRead[];
+  /** Format: uri */
+  pull_request_url: string | null;
+  /** Exact rolling Draft head to send as expected_head_revision when resolving this attempt. */
+  head_revision: string | null;
+  request_id?: RequestId;
+}
+
+export type TargetCustomizationsResponse = TargetCustomizations & ResponseMetadata;
+
+/** Response shape for TargetCustomizationsResponse. */
+export type TargetCustomizationsResponseRead = TargetCustomizationsRead & ResponseMetadata;
+
+/**
+ * Resolve an explicit bounded conflict batch, or reset or adopt all current customizations in one
+ * call.
+ */
+export type ResetTargetCustomizations = {
+  /**
+   * For conflicts, select the incoming side (default branch during default sync, next Generation
+   * during generation) or explicitly keep the current side. Non-conflict paths reset to the next
+   * Generation.
+   * Default: "generated"
+   */
+  choice?: "generated" | "current";
+  /**
+   * Current customization or conflict paths to resolve. The generated choice removes a path absent
+   * from the incoming side; current choice is valid only for conflicts.
+   */
+  paths: string[];
+  /** Exact Draft head returned by the preceding inspection. */
+  expected_head_revision: string;
+}
+  | {
+      /**
+       * Generated resets every customization to the incoming side. Current keeps the current side of
+       * every conflict and leaves non-conflicting customizations unchanged.
+       * Default: "generated"
+       */
+      choice?: "generated" | "current";
+      /**
+       * Apply the selected side to every current conflict and, for generated, reset every
+       * non-conflicting customization without the explicit-path batch limit.
+       */
+      reset_all: true;
+      /** Exact Draft head returned by the preceding inspection. */
+      expected_head_revision: string;
+    };
+
+/** Response shape for ResetTargetCustomizations. */
+export type ResetTargetCustomizationsRead = {
+  /**
+   * For conflicts, select the incoming side (default branch during default sync, next Generation
+   * during generation) or explicitly keep the current side. Non-conflict paths reset to the next
+   * Generation.
+   * Default: "generated"
+   */
+  choice?: ("generated" | "current") | (string & {});
+  /**
+   * Current customization or conflict paths to resolve. The generated choice removes a path absent
+   * from the incoming side; current choice is valid only for conflicts.
+   */
+  paths: string[];
+  /** Exact Draft head returned by the preceding inspection. */
+  expected_head_revision: string;
+}
+  | {
+      /**
+       * Generated resets every customization to the incoming side. Current keeps the current side of
+       * every conflict and leaves non-conflicting customizations unchanged.
+       * Default: "generated"
+       */
+      choice?: ("generated" | "current") | (string & {});
+      /**
+       * Apply the selected side to every current conflict and, for generated, reset every
+       * non-conflicting customization without the explicit-path batch limit.
+       */
+      reset_all: true;
+      /** Exact Draft head returned by the preceding inspection. */
+      expected_head_revision: string;
+    };
 
 export interface TargetAdoption {
   /** Exact already-published package version to make Current. */
@@ -1935,6 +2360,12 @@ export interface CliBehavior {
    */
   update_notice?: boolean;
   /**
+   * Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8
+   * Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to
+   * disable, then regenerate.
+   */
+  changelog_url?: string | null;
+  /**
    * Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled
    * title and environment details.
    */
@@ -2412,6 +2843,14 @@ export interface PaginationRuleRead {
 export interface FileStub {
   path: string;
   bytes: number;
+  mode: "100644" | "100755";
+}
+
+/** Response shape for FileStub. */
+export interface FileStubRead {
+  path: string;
+  bytes: number;
+  mode: ("100644" | "100755") | (string & {});
 }
 
 export const GenerationStatus = {
@@ -2513,7 +2952,7 @@ export interface GenerationRead {
    * fetched one at a time via GET /generations/{generation_id}/file.
    */
   files_omitted?: boolean;
-  files_index?: FileStub[];
+  files_index?: FileStubRead[];
   project_id: ProjectId;
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus | (string & {});
@@ -2527,7 +2966,7 @@ export interface GenerationRead {
   meta: GenerationMetaRead | null;
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
-  files?: GeneratedFile[];
+  files?: GeneratedFileRead[];
   error: string | null;
   /** Format: date-time */
   created_at: string;
@@ -2937,6 +3376,9 @@ export const ErrorCode = {
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
   EDITION_UNAVAILABLE: "edition_unavailable",
   TARGET_BUSY: "target_busy",
+  NO_DRAFT: "no_draft",
+  STALE_DRAFT: "stale_draft",
+  NO_CHANGES: "no_changes",
   INVALID_VERSION: "invalid_version",
   STALE_RELEASE_REVISION: "stale_release_revision",
   VERSION_OCCUPIED: "version_occupied",

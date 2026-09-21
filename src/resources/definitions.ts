@@ -51,7 +51,7 @@ export class DefinitionsResource {
   /**
    * Update and resolve a Definition
    *
-   * Resolves the complete document graph and records a new immutable revision before saving.
+   * Resolves the source documents and records a new Definition Revision before saving the update.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `PATCH /definitions/{definition_id}`

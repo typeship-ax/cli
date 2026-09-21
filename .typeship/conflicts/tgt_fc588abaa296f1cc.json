@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "target_id": "tgt_fc588abaa296f1cc",
+  "attempt_id": "int_0vdc127hvyby6ixd",
+  "current_release_id": "rel_vu3yilbcb0mvcxa4",
+  "previous_generation_id": null,
+  "previous_generated_snapshot_id": null,
+  "previous_combined_snapshot_id": null,
+  "current_snapshot_id": "snap_d0057c9db7devdag",
+  "next_generation_id": "gen_yqkefi47j3wpxkwl",
+  "next_generated_snapshot_id": "snap_d24lxipz28bm0pg8",
+  "default_revision": "04bcdc23570d48575165364f3f9c6810bfae0e3d",
+  "draft_revision": "2edc23c7a88a23bf5f1dfa20b6ec3a75701a7af0",
+  "conflict_stage": "generation",
+  "conflicts": [
+    {
+      "path": ".github/workflows/typeship-tgt_fc588abaa296f1cc-checks.yml",
+      "kind": "missing_baseline",
+      "fingerprint": "sha256:0b130a3d79220954fc8b21989df8cecd3986f436183f39b2bf3415751ec645e9",
+      "previous": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      },
+      "current": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:68c7c56be383bebdb07f8886b74c414a046c7a45bcc77698ca52b29de5bb6d10"
+      },
+      "next": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      }
+    },
+    {
+      "path": ".typeship/run-package-checks.mjs",
+      "kind": "missing_baseline",
+      "fingerprint": "sha256:1b246f490b2e96b66d88ea88719d65bb1bd20dd6b48fe214cabadb5aa72ffb21",
+      "previous": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      },
+      "current": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:6cfede1aecddc9f5d773d464c2b1576c7306485938250bc07cc0d360debe1545"
+      },
+      "next": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      }
+    },
+    {
+      "path": ".typeship/targets/tgt_fc588abaa296f1cc-checks.json",
+      "kind": "missing_baseline",
+      "fingerprint": "sha256:a180b77bc7d8a9aa4fead12f8b7e308cfea44b07d0b17cb1be3c096427a306fb",
+      "previous": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      },
+      "current": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:a9f3614a25a726f4f27704598af52323b5c53ca00eab50498dbd491a51a5574a"
+      },
+      "next": {
+        "present": false,
+        "mode": null,
+        "hash": null
+      }
+    }
+  ]
+}

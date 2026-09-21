@@ -3,7 +3,7 @@
 This package contains the generated CLI for **typeship** (API v1.0.0, package v0.11.0).
 
 Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
-selected SDK, CLI, and MCP Target current.
+selected CLI, MCP, and SDK Target current.
 
 Every operation but one requires a bearer credential: an organization
 API key from the console, or an OAuth access token carrying the operation's
@@ -13,7 +13,8 @@ session is not a credential for this API. The exception is POST /generate,
 which works anonymously with the free plan's limits.
 
 ## Ground rules
-- Typeship owns the files it generates. Change the API definition, generation settings, or definition patches, then regenerate those files. Repository delivery preserves files outside its generated-file ownership manifest; preserving a file does not add it to the package's exports, build, or tests.
+- For a linked repository Delivery, commit package customizations to the rolling Draft. Typeship three-way merges those commits with the next unmodified Generation, preserves exact bytes and file modes, and stops for explicit review when both sides touch the same region or file ownership is ambiguous.
+- A preserved file participates in the combined package only when the package manifest, exports, build, and tests include it. Configure Target checks for every custom build or test requirement; do not assume a file is published merely because it survives regeneration.
 - Zero runtime dependencies; the program runs on Node.js 18+ and platform `fetch`.
 - `api.md` is the command and flag reference; `api.json` is the machine-readable operation, schema, safety, and example contract. Read them before guessing.
 - Start with the local build or installation instructions in `README.md`. Generation does not publish a registry package.

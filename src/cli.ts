@@ -1243,7 +1243,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
  * init: the one command that connects a machine (or a repo) to this API.
  * Stores a credential when given one, installs the skills repository, writes
  * MCP config for every agent client found, and upserts a marked block into
- * AGENTS.md (CLAUDE.md under Claude Code). Idempotent; --all takes the
+ * AGENTS.md (or an existing CLAUDE.md when AGENTS.md is absent). Idempotent; --all takes the
  * defaults without asking; every part reports and none of them fails init.
  */
 async function cmdInit(parsed: Parsed): Promise<void> {
@@ -1255,7 +1255,7 @@ async function cmdInit(parsed: Parsed): Promise<void> {
       "  --all                    do everything without prompting (implied under an agent)",
       "  --no-skills | --no-mcp | --no-agents-md   skip a part",
       "",
-      "Writes: " + credsPath() + " (credential), the skills directory of each agent on this machine" + (SKILLS_REPO ? " (npx skills add " + SKILLS_REPO + ")" : " (no skills repository configured)") + ", MCP config for detected clients, and a '" + BIN + "' block in ./AGENTS.md.",
+      "Writes: " + credsPath() + " (credential), the skills directory of each agent on this machine" + (SKILLS_REPO ? " (npx skills add " + SKILLS_REPO + ")" : " (no skills repository configured)") + ", MCP config for detected clients, and a '" + BIN + "' block in ./AGENTS.md (or an existing ./CLAUDE.md when AGENTS.md is absent).",
     ].join("\n") + "\n");
     await flushExit(0);
   }
@@ -1318,7 +1318,7 @@ async function cmdInit(parsed: Parsed): Promise<void> {
   if (parsed.flags.get("no-agents-md") === true) {
     report.agents_md = { status: "skipped" };
   } else {
-    const file = agentInstructionsFile(cwd, harness);
+    const file = agentInstructionsFile(cwd);
     const result = upsertAgentBlock(file, BIN + " agent-contract", agentBlock(agentContext(), commandSummaries()));
     report.agents_md = { status: result.updated ? "updated" : "written", file: result.file };
   }

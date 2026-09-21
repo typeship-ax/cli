@@ -82,7 +82,7 @@ export interface ClientOptions {
  * typeship — v0.11.0
  *
  * Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
- * selected SDK, CLI, and MCP Target current.
+ * selected CLI, MCP, and SDK Target current.
  *
  * Every operation but one requires a bearer credential: an organization
  * API key from the console, or an OAuth access token carrying the operation's

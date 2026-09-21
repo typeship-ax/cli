@@ -18,8 +18,8 @@ export class AccountResource {
   /**
    * The account behind the presented credentials
    *
-   * Returns the account that owns the presented API key. This is also the
-   * identity endpoint the generated typeship CLI's `whoami` calls.
+   * Returns the account associated with your credential. The Typeship CLI uses this endpoint for
+   * `whoami`.
    * `GET /me`
    */
   async retrieve(options?: RequestOptions): Promise<ApiResult<AccountRead, AccountRetrieveError>> {

@@ -89,10 +89,11 @@ export class ProjectsResource {
   /**
    * Create a project
    *
-   * Stores a URL- or GitHub-sourced project. Free includes one stored project, every selected
-   * target, and the first 25 operations, while keeping manual and automatic regeneration, history,
-   * destination pull requests, and preview checks. Stateless POST /generate does not consume this
-   * slot. Pro adds projects and generates every operation in the Definition.
+   * Creates a Project from a URL or GitHub Definition.
+   *
+   * Free includes one saved Project, all selected Targets, and the first 25 operations per Target,
+   * with regeneration, history, delivery pull requests, and previews. Pro supports additional
+   * Projects and all operations. Stateless generation does not use a Project slot.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects`
@@ -129,7 +130,8 @@ export class ProjectsResource {
   /**
    * Retrieve a project
    *
-   * Returns Project-owned fields only. List Targets separately for Target and Delivery data.
+   * Returns the Project's settings and Definition ID. List its Targets separately to retrieve
+   * Target configuration and Deliveries.
    * `GET /projects/{project_id}`
    */
   async retrieve(
@@ -209,10 +211,9 @@ export class ProjectsResource {
   /**
    * Analyze a project's latest Definition Revision
    *
-   * Runs deterministic OpenAPI or GraphQL authorship checks against the latest observed immutable
-   * Definition Revision after applying the Definition's existing patches. Diagnostics group every
-   * affected location under a stable rule. Exact patches are included only when Typeship can derive
-   * the change without inventing API behavior.
+   * Checks the latest Definition Revision after applying its saved patches. Each finding groups
+   * affected locations under a stable rule ID. A suggested patch is included only when the
+   * Definition provides enough information to determine the correction.
    * `GET /projects/{project_id}/diagnostics`
    */
   async retrieveDiagnostics(
@@ -238,9 +239,8 @@ export class ProjectsResource {
   /**
    * Refresh a project's Diagnostics from its configured source
    *
-   * Fetches the complete configured source, records a new immutable revision only when content
-   * changed, and returns its Diagnostics. This does not generate targets or consume a metered
-   * generation.
+   * Fetches the configured source and returns updated Diagnostics. Creates a Definition Revision
+   * only when the content changes. Does not generate Targets or use a metered generation.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/diagnostics`
@@ -274,9 +274,11 @@ export class ProjectsResource {
   /**
    * Apply exact, reviewed diagnostic remediations
    *
-   * Applies only deterministic patches. Repository sources receive an updateable source pull
-   * request; URL sources receive project overlays. Diagnostics that require API-owner intent return
-   * 422 and include an authoring_brief in the Diagnostic instead.
+   * Applies reviewed patches from Diagnostics. For a repository source, opens or updates a source
+   * pull request. For a URL source, saves Definition patches.
+   *
+   * Findings that need an API-owner decision return `422`. Read the finding's `authoring_brief` and
+   * update the source instead.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/diagnostics/remediations`
@@ -313,9 +315,8 @@ export class ProjectsResource {
   /**
    * Diagnose a project's repository integrations
    *
-   * Returns provider-neutral, machine-actionable source and destination access, Definition
-   * readability, source-approval label setup, required status names, and the latest durable webhook
-   * delivery. The Console renders this same result.
+   * Checks repository access, Definition readability, source-approval labels, and required checks.
+   * Includes the latest webhook delivery so you can investigate missing updates.
    * `GET /projects/{project_id}/integration-health`
    */
   async retrieveIntegrationHealth(
@@ -381,13 +382,12 @@ export class ProjectsResource {
   /**
    * Generate targets and open pull requests
    *
-   * Resolves the project's URL or GitHub source, generates every
-   * configured delivery package, stores each result in the project's history,
-   * and attempts to open a pull request in every configured destination.
-   * When the complete generated tree already matches a destination, no
-   * commit, branch, or pull request is created and that generation reports
-   * `pr_status: no_changes`. This is the same pipeline automatic
-   * regeneration runs after a source change.
+   * Generates each active Target from the Project's source, saves the results, and attempts
+   * delivery to each configured destination.
+   *
+   * If the package already matches a destination and no Draft is open, returns `pr_status:
+   * no_changes` without creating a commit, branch, or pull request. An existing Draft stays open.
+   * Automatic generation uses the same workflow.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/generations`

@@ -28,7 +28,7 @@ export type IssueCode =
   | "RATE_LIMITED"          // 429
   | "SERVER_ERROR"          // 5xx
   | "NETWORK_ERROR"         // no response: DNS, TLS, timeout, refused
-  | "VALIDATION_FAILED"     // --validate found the body does not match the schema
+  | "VALIDATION_FAILED"     // --validate found parameters or a body that do not match the schema
   | "TTY_REQUIRED"          // a prompt was needed and there is no terminal
   | "CONFIRMATION_REQUIRED" // a destructive command needs --force
   | "INVALID_USAGE"         // wrong flags or arguments
@@ -93,14 +93,19 @@ export function classifyApiError(
   error: unknown,
   context: { bin: string; hadCredential: boolean; docsUrl: string | null },
 ): EnvelopeInput {
-  const e = (error ?? {}) as { name?: string; message?: string; status?: number; body?: unknown; violations?: unknown; response?: { requestId?: string } };
+  const e = (error ?? {}) as { name?: string; message?: string; status?: number; body?: unknown; violations?: unknown; direction?: string; target?: string; response?: { requestId?: string } };
   // The message is the API's own words when it sent any, else the SDK's
   // (the spec's response description). The error class name rides in
   // detail, not in front of the message: "NotFoundError: No such account
   // (no such account)" said one thing three times.
   const base = e.message ? e.message : String(error);
   if (e.violations !== undefined) {
-    return { code: "VALIDATION_FAILED", message: base, detail: { ...(e.name ? { error: e.name } : {}), violations: e.violations }, nextSteps: ["Fix the fields named in detail.violations, or drop --validate to send the body as is."] };
+    const nextStep = e.direction === "response"
+      ? "The API response does not match its schema. Check detail.violations and the API specification."
+      : e.target === "parameters"
+        ? "Correct the parameter values named in detail.violations to match their constraints, then run the command again."
+        : "Correct the body fields named in detail.violations to match their constraints, then run the command again.";
+    return { code: "VALIDATION_FAILED", message: base, detail: { ...(e.name ? { error: e.name } : {}), violations: e.violations }, nextSteps: [nextStep] };
   }
   if (e.name === "TransportError" || (typeof e.status !== "number" && /fetch|ECONN|ENOTFOUND|timed out|TLS|abort/i.test(base))) {
     return {

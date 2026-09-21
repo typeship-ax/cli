@@ -8,7 +8,7 @@ import { startMock } from "./helper.mjs";
 test("account.retrieve GET /me", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"org_2x7k9m4q\",\"object\":\"account\",\"name\":\"example\",\"plan\":\"free\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
-    const client = new TypeshipClient({ baseUrl: mock.url, bearerToken: "test-token" });
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.account.retrieve();
     assert.equal(result.ok, true, JSON.stringify(result));
     const request = mock.requests[0];

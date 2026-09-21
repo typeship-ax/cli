@@ -90,8 +90,8 @@ export class TargetsResource {
   /**
    * Create an independently configured Target
    *
-   * Several Targets may use the same generator with distinct configuration, Deliveries, and release
-   * streams.
+   * Creates a Target with its own configuration, Deliveries, and release history. Multiple Targets
+   * can use the same generator.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects/{project_id}/targets`
@@ -152,8 +152,8 @@ export class TargetsResource {
   /**
    * Delete an unused Target
    *
-   * Targets with Generation or release history, or an active release candidate, must be disabled
-   * instead.
+   * Deletes a Target with no Generation history, release history, or active Draft. Disable a Target
+   * instead if it has any of these.
    * `DELETE /targets/{target_id}`
    */
   async delete(
@@ -247,8 +247,8 @@ export class TargetsResource {
   /**
    * Retrieve a Target's rolling Draft release
    *
-   * Returns Current, the cumulative Draft version and readiness, its exact head, and the optimistic
-   * release revision.
+   * Returns Current's version, the proposed Draft version, readiness, and commit. Pass `revision`
+   * as `expected_revision` when updating the Draft to avoid changing a newer candidate.
    * `GET /targets/{target_id}/draft`
    */
   async retrieveDraft(
@@ -274,7 +274,7 @@ export class TargetsResource {
   /**
    * Select an exact Draft version or return to automatic versioning
    *
-   * Validates the selection against the cumulative required bump and regenerates the same rolling
+   * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
    * `PATCH /targets/{target_id}/draft`
    */
@@ -305,8 +305,9 @@ export class TargetsResource {
   /**
    * Inspect preserved custom code for a Target Draft
    *
-   * Returns the exact immutable three-way input identities, customer changes, conflicts, reused
-   * resolutions, combined-package hashes, and checks. File contents are not returned.
+   * Returns preserved changes, conflicts, reused resolutions, and check results for the Draft.
+   * Includes the input and package identifiers needed to compare attempts. Does not include file
+   * contents.
    * `GET /targets/{target_id}/customizations`
    */
   async retrieveCustomizations(
@@ -332,9 +333,9 @@ export class TargetsResource {
   /**
    * Resolve or reset custom code on the rolling Draft
    *
-   * Resets selected or all custom paths, selects either exact side of conflicts, and reruns the
-   * three-way integration on the same protected Draft. The expected head prevents applying a stale
-   * choice.
+   * Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns
+   * integration and checks on the same Draft. Supply the expected head revision to prevent a stale
+   * choice from changing a newer Draft.
    * `POST /targets/{target_id}/customizations/reset`
    */
   async resetCustomizations(
@@ -364,9 +365,9 @@ export class TargetsResource {
   /**
    * Adopt a verified existing package as Current
    *
-   * Verifies the repository tag, package metadata, and registry artifact; records an Imported
-   * Current release; then opens the first Typeship Draft at the next major version because no
-   * trusted generated baseline exists yet.
+   * Checks the repository tag, package metadata, and registry artifact, then records the package as
+   * an Imported Current release. Opens the first Typeship Draft at the next major version; review
+   * it to establish the baseline for preserving existing code.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /targets/{target_id}/adopt`
@@ -427,8 +428,8 @@ export class TargetsResource {
   /**
    * Retry publication of an exact Target release
    *
-   * Dispatches the repository-owned republish workflow for this immutable version and accepted
-   * commit. It never selects the latest Draft or release.
+   * Retries publication of the specified release through its repository workflow. Uses that
+   * release's version and accepted commit, even if a newer Draft or release exists.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /target_releases/{target_release_id}/republish`

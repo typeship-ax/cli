@@ -641,7 +641,7 @@ export interface Diagnostic {
   title: string;
   /** What the API author should change. */
   description: string;
-  /** Why consumers of generated SDK, CLI, or MCP surfaces care. */
+  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
@@ -652,7 +652,7 @@ export interface Diagnostic {
   evidence_basis: "contract" | "heuristic" | "implementation";
   /** Whether remediation requires intent that the Definition cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
   surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
@@ -676,7 +676,7 @@ export interface DiagnosticRead {
   title: string;
   /** What the API author should change. */
   description: string;
-  /** Why consumers of generated SDK, CLI, or MCP surfaces care. */
+  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
   impact: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
@@ -687,7 +687,7 @@ export interface DiagnosticRead {
   evidence_basis: ("contract" | "heuristic" | "implementation") | (string & {});
   /** Whether remediation requires intent that the Definition cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated SDK, CLI, or MCP naming effect when Typeship can state it. */
+  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
   surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
@@ -2359,6 +2359,12 @@ export interface CliBehavior {
    * code phones nobody unless this is enabled.
    */
   update_notice?: boolean;
+  /**
+   * Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8
+   * Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to
+   * disable, then regenerate.
+   */
+  changelog_url?: string | null;
   /**
    * Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled
    * title and environment details.

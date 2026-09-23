@@ -1,0 +1,37 @@
+{
+  "schema": 2,
+  "target_id": "tgt_fc588abaa296f1cc",
+  "attempt_id": "int_e1160viqo96c0v5f",
+  "current_release_id": "rel_hxk0ms1r5cy7lcro",
+  "previous_generation_id": "gen_326cnagw4wxtuzb4",
+  "previous_generated_snapshot_id": "snap_jaxok90f8btzmbfw",
+  "previous_combined_snapshot_id": "snap_nr206cbi9t3d6m0n",
+  "current_snapshot_id": "snap_kgsr3ery585efudw",
+  "next_generation_id": "gen_mu2ygb9zd8b2gk09",
+  "next_generated_snapshot_id": "snap_uydssdxoqas8tgkl",
+  "default_revision": "50034c996637c978b9fa100817d6a1f4983a7dbe",
+  "draft_revision": "f5b88441008f26949458ed5611677e6bc427be14",
+  "conflict_stage": "generation",
+  "conflicts": [
+    {
+      "path": "src/cli.ts",
+      "kind": "overlapping_text",
+      "fingerprint": "sha256:72011b639b127545c445174fbef76b983fedc293ffc92a4cbc7a49cab04a9512",
+      "previous": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:fb9beb2ff2c3f49517a0b03b9f326daf9cbf9383a257c07528e90d5b4eb7f0a5"
+      },
+      "current": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:92abb6c67f8ab2704100ed68adec77095196a3e858a814b15c2e305343d630e4"
+      },
+      "next": {
+        "present": true,
+        "mode": "100644",
+        "hash": "sha256:a166cbdca12019b52222f7c3c58ee056034f739c04419fe48209660f3965906c"
+      }
+    }
+  ]
+}

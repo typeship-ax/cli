@@ -2444,10 +2444,11 @@ export interface OAuthApplicationRead {
 
 /**
  * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
- * when omitted or null. Requests must include at least one of subject_field, account_field, or
- * organization_field; send null for a field to clear it.
+ * when omitted or null. At least one of subject_field, account_field, or organization_field must be
+ * a non-null JSON Pointer. Null clears an individual mapping while another remains. Set
+ * identity_verification itself to null to remove the whole policy.
  */
-export interface IdentityVerification {
+export type IdentityVerification = {
   /** resource.method of a safe identity read with no required arguments. */
   operation?: string | null;
   /** JSON Pointer to the stable caller ID in the identity response. */
@@ -2456,7 +2457,15 @@ export interface IdentityVerification {
   account_field?: string | null;
   /** JSON Pointer to the customer organization ID. */
   organization_field?: string | null;
+} & ({
+  subject_field: string;
 }
+  | {
+      account_field: string;
+    }
+  | {
+      organization_field: string;
+    });
 
 /** OAuth application and request-value overrides for one named API environment. */
 export interface AuthenticationEnvironment {
@@ -3879,10 +3888,11 @@ export interface OAuthApplicationResponseRead {
 
 /**
  * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
- * when omitted or null. Requests must include at least one of subject_field, account_field, or
- * organization_field; send null for a field to clear it.
+ * when omitted or null. At least one of subject_field, account_field, or organization_field must be
+ * a non-null JSON Pointer. Null clears an individual mapping while another remains. Set
+ * identity_verification itself to null to remove the whole policy.
  */
-export interface IdentityVerificationResponse {
+export type IdentityVerificationResponse = {
   /** resource.method of a safe identity read with no required arguments. */
   operation?: string | null;
   /** JSON Pointer to the stable caller ID in the identity response. */
@@ -3891,7 +3901,15 @@ export interface IdentityVerificationResponse {
   account_field?: string | null;
   /** JSON Pointer to the customer organization ID. */
   organization_field?: string | null;
+} & ({
+  subject_field: string;
 }
+  | {
+      account_field: string;
+    }
+  | {
+      organization_field: string;
+    });
 
 /** OAuth application and request-value overrides for one named API environment. */
 export interface AuthenticationEnvironmentResponse {

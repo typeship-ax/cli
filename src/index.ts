@@ -22,8 +22,8 @@ import { AccountResource } from "./resources/account.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.14.0";
-const USER_AGENT = "@typeship-ax/cli/0.14.0 (typeship)";
+export const VERSION = "0.14.1";
+const USER_AGENT = "@typeship-ax/cli/0.14.1 (typeship)";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -79,7 +79,7 @@ export interface ClientOptions {
 }
 
 /**
- * typeship — v0.14.0
+ * typeship — v0.14.1
  *
  * Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
  * selected CLI, MCP, and SDK Target current.
@@ -90,6 +90,10 @@ export interface ClientOptions {
  * consent. OAuth grants cannot switch organizations after consent. A browser
  * session is not a credential for this API. The exception is POST /generate,
  * which works anonymously with the free plan's limits.
+ *
+ * Examples use Parcel, a fictional delivery service. Replace its domains,
+ * repository names, and resource identifiers with your own. The hosted
+ * petstore Definition is a runnable sample.
  */
 export class TypeshipClient {
   readonly generate: GenerateResource;

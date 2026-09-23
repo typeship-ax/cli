@@ -1,6 +1,6 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.14.0).
+This package contains the generated CLI for **typeship** (API v1.0.0, package v0.14.1).
 
 Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.
@@ -11,6 +11,10 @@ read, generate, or write capability and the organization selected during
 consent. OAuth grants cannot switch organizations after consent. A browser
 session is not a credential for this API. The exception is POST /generate,
 which works anonymously with the free plan's limits.
+
+Examples use Parcel, a fictional delivery service. Replace its domains,
+repository names, and resource identifiers with your own. The hosted
+petstore Definition is a runnable sample.
 
 ## Ground rules
 - For a linked repository Delivery, commit package customizations to the rolling Draft. Typeship three-way merges those commits with the next unmodified Generation, preserves exact bytes and file modes, and stops for explicit review when both sides touch the same region or file ownership is ambiguous.

@@ -1323,7 +1323,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship projects create --name example --definition '{\"source\":{\"kind\":\"url\",\"url\":\"https://example.com\"}}' --targets '[{\"name\":\"example\",\"generator\":\"typescript-sdk\"}]'",
+      "example_command": "typeship projects create --name 'Parcel API' --definition '{\"source\":{\"kind\":\"url\",\"url\":\"https://api.parcel.example/openapi.json\"}}' --targets '[{\"name\":\"Parcel CLI\",\"generator\":\"cli\",\"deliveries\":[{\"kind\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\"},\"package_name\":\"parcel-client\",\"publish_on_merge\":false}]}]'",
       "method": "POST",
       "path": "/projects",
       "summary": "Create a project",
@@ -1349,7 +1349,8 @@
           "name": {
             "minLength": 1,
             "maxLength": 80,
-            "type": "string"
+            "type": "string",
+            "example": "Parcel API"
           },
           "definition": {
             "properties": {
@@ -1405,7 +1406,7 @@
                           "identifier": {
                             "description": "Provider-native repository identity, opaque outside its adapter.",
                             "examples": [
-                              "acme/payments-api"
+                              "parcel-example/api"
                             ],
                             "maxLength": 512,
                             "type": "string"
@@ -1611,7 +1612,13 @@
               "source"
             ],
             "additionalProperties": false,
-            "type": "object"
+            "type": "object",
+            "example": {
+              "source": {
+                "kind": "url",
+                "url": "https://api.parcel.example/openapi.json"
+              }
+            }
           },
           "targets": {
             "description": "Initial first-class Targets. More than one may use the same generator with different identities or Deliveries.",
@@ -1784,7 +1791,24 @@
               "additionalProperties": false,
               "type": "object"
             },
-            "type": "array"
+            "type": "array",
+            "example": [
+              {
+                "name": "Parcel CLI",
+                "generator": "cli",
+                "deliveries": [
+                  {
+                    "kind": "repository",
+                    "repository": {
+                      "provider": "github",
+                      "identifier": "parcel-example/parcel-client"
+                    },
+                    "package_name": "parcel-client",
+                    "publish_on_merge": false
+                  }
+                ]
+              }
+            ]
           },
           "auto_generate": {
             "description": "Whether Typeship should regenerate automatically when the source changes. Default: false.",
@@ -2267,17 +2291,28 @@
         "type": "object"
       },
       "example_arguments": {
-        "name": "example",
+        "name": "Parcel API",
         "definition": {
           "source": {
             "kind": "url",
-            "url": "https://example.com"
+            "url": "https://api.parcel.example/openapi.json"
           }
         },
         "targets": [
           {
-            "name": "example",
-            "generator": "typescript-sdk"
+            "name": "Parcel CLI",
+            "generator": "cli",
+            "deliveries": [
+              {
+                "kind": "repository",
+                "repository": {
+                  "provider": "github",
+                  "identifier": "parcel-example/parcel-client"
+                },
+                "package_name": "parcel-client",
+                "publish_on_merge": false
+              }
+            ]
           }
         ]
       }
@@ -2573,7 +2608,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship projects update prj_4f8k2m7x9q1v6b3n",
+      "example_command": "typeship projects update prj_4f8k2m7x9q1v6b3n --auto-generate true",
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
@@ -2603,7 +2638,8 @@
             "type": "string"
           },
           "auto_generate": {
-            "type": "boolean"
+            "type": "boolean",
+            "example": true
           },
           "relay_enabled": {
             "description": "Enable webhook relay sessions. Requires the CLI target and Pro.",
@@ -3078,7 +3114,8 @@
         "type": "object"
       },
       "example_arguments": {
-        "project_id": "prj_4f8k2m7x9q1v6b3n"
+        "project_id": "prj_4f8k2m7x9q1v6b3n",
+        "auto_generate": true
       }
     },
     {
@@ -3796,7 +3833,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship projects remediate-diagnostics prj_4f8k2m7x9q1v6b3n --diagnostic-ids '[\"value\"]'",
+      "example_command": "typeship projects remediate-diagnostics prj_4f8k2m7x9q1v6b3n --diagnostic-ids '[\"missing-operation-id\"]'",
       "method": "POST",
       "path": "/projects/{project_id}/diagnostics/remediations",
       "summary": "Apply exact, reviewed diagnostic remediations",
@@ -3835,7 +3872,10 @@
             "items": {
               "type": "string"
             },
-            "type": "array"
+            "type": "array",
+            "example": [
+              "missing-operation-id"
+            ]
           }
         },
         "required": [
@@ -3882,7 +3922,7 @@
       "example_arguments": {
         "project_id": "prj_4f8k2m7x9q1v6b3n",
         "diagnostic_ids": [
-          "value"
+          "missing-operation-id"
         ]
       }
     },
@@ -3968,7 +4008,7 @@
                     "identifier": {
                       "description": "Provider-native repository identity, opaque outside its adapter.",
                       "examples": [
-                        "acme/payments-api"
+                        "parcel-example/api"
                       ],
                       "maxLength": 512,
                       "type": "string"
@@ -4205,26 +4245,30 @@
                   "status": "succeeded",
                   "trigger": "manual",
                   "target_id": "tgt_5m8q2v7k1p9d4h6c",
-                  "generator": "typescript-sdk",
+                  "generator": "cli",
                   "provenance": {
                     "generator_edition": "2026-08-24",
-                    "resolved_config": null,
+                    "resolved_config": {
+                      "cli": {
+                        "command_name": "parcel"
+                      }
+                    },
                     "package_version": "1.0.0"
                   },
                   "meta": {
-                    "title": "Acme Payments API",
+                    "title": "Parcel API",
                     "api_version": "1.0.0",
                     "version": "1.0.0",
                     "oas_version": "3.1",
-                    "artifact_name": "@acme/payments",
-                    "client_name": "AcmeClient",
+                    "artifact_name": "parcel-client",
+                    "client_name": "ParcelClient",
                     "generators": [
-                      "typescript-sdk"
+                      "cli"
                     ]
                   },
                   "warnings": [],
                   "error": null,
-                  "created_at": "2026-01-01T00:00:00Z"
+                  "created_at": "2026-09-23T08:00:00Z"
                 }
               ],
               "properties": {
@@ -4462,26 +4506,30 @@
                       "status": "succeeded",
                       "trigger": "manual",
                       "target_id": "tgt_5m8q2v7k1p9d4h6c",
-                      "generator": "typescript-sdk",
+                      "generator": "cli",
                       "provenance": {
                         "generator_edition": "2026-08-24",
-                        "resolved_config": null,
+                        "resolved_config": {
+                          "cli": {
+                            "command_name": "parcel"
+                          }
+                        },
                         "package_version": "1.0.0"
                       },
                       "meta": {
-                        "title": "Acme Payments API",
+                        "title": "Parcel API",
                         "api_version": "1.0.0",
                         "version": "1.0.0",
                         "oas_version": "3.1",
-                        "artifact_name": "@acme/payments",
-                        "client_name": "AcmeClient",
+                        "artifact_name": "parcel-client",
+                        "client_name": "ParcelClient",
                         "generators": [
-                          "typescript-sdk"
+                          "cli"
                         ]
                       },
                       "warnings": [],
                       "error": null,
-                      "created_at": "2026-01-01T00:00:00Z"
+                      "created_at": "2026-09-23T08:00:00Z"
                     }
                   ],
                   "properties": {
@@ -4754,7 +4802,7 @@
                       "identifier": {
                         "description": "Provider-native repository identity, opaque outside its adapter.",
                         "examples": [
-                          "acme/payments-api"
+                          "parcel-example/api"
                         ],
                         "maxLength": 512,
                         "type": "string"
@@ -5025,7 +5073,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship definitions update def_2p8m4q7k1v9d6h3c",
+      "example_command": "typeship definitions update def_2p8m4q7k1v9d6h3c --source '{\"kind\":\"url\",\"url\":\"https://api.parcel.example/openapi.json\"}'",
       "method": "PATCH",
       "path": "/definitions/{definition_id}",
       "summary": "Update and resolve a Definition",
@@ -5112,7 +5160,7 @@
                       "identifier": {
                         "description": "Provider-native repository identity, opaque outside its adapter.",
                         "examples": [
-                          "acme/payments-api"
+                          "parcel-example/api"
                         ],
                         "maxLength": 512,
                         "type": "string"
@@ -5141,7 +5189,11 @@
                 "additionalProperties": false,
                 "type": "object"
               }
-            ]
+            ],
+            "example": {
+              "kind": "url",
+              "url": "https://api.parcel.example/openapi.json"
+            }
           },
           "patches": {
             "maxItems": 50,
@@ -5393,7 +5445,7 @@
                       "identifier": {
                         "description": "Provider-native repository identity, opaque outside its adapter.",
                         "examples": [
-                          "acme/payments-api"
+                          "parcel-example/api"
                         ],
                         "maxLength": 512,
                         "type": "string"
@@ -5609,7 +5661,11 @@
         "type": "object"
       },
       "example_arguments": {
-        "definition_id": "def_2p8m4q7k1v9d6h3c"
+        "definition_id": "def_2p8m4q7k1v9d6h3c",
+        "source": {
+          "kind": "url",
+          "url": "https://api.parcel.example/openapi.json"
+        }
       }
     },
     {
@@ -6075,7 +6131,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets create prj_4f8k2m7x9q1v6b3n --name example --definition-id def_2p8m4q7k1v9d6h3c --generator typescript-sdk",
+      "example_command": "typeship targets create prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --definition-id def_2p8m4q7k1v9d6h3c --generator cli --config '{\"cli\":{\"command_name\":\"parcel\"}}' --deliveries '[{\"kind\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\"},\"package_name\":\"parcel-client\",\"publish_on_merge\":false}]'",
       "method": "POST",
       "path": "/projects/{project_id}/targets",
       "summary": "Create an independently configured Target",
@@ -6109,7 +6165,8 @@
           "name": {
             "minLength": 1,
             "maxLength": 80,
-            "type": "string"
+            "type": "string",
+            "example": "Parcel CLI"
           },
           "definition_id": {
             "description": "Unique identifier for a project's logical API Definition.",
@@ -6117,7 +6174,8 @@
               "def_2p8m4q7k1v9d6h3c"
             ],
             "pattern": "^def_[a-z0-9]{16}$",
-            "type": "string"
+            "type": "string",
+            "example": "def_2p8m4q7k1v9d6h3c"
           },
           "generator": {
             "enum": [
@@ -6129,7 +6187,8 @@
               "mcp"
             ],
             "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
-            "type": "string"
+            "type": "string",
+            "example": "cli"
           },
           "state": {
             "enum": [
@@ -6517,7 +6576,12 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "example": {
+              "cli": {
+                "command_name": "parcel"
+              }
+            }
           },
           "deliveries": {
             "maxItems": 2,
@@ -6541,7 +6605,7 @@
                         "identifier": {
                           "description": "Provider-native repository identity, opaque outside its adapter.",
                           "examples": [
-                            "acme/payments-api"
+                            "parcel-example/api"
                           ],
                           "maxLength": 512,
                           "type": "string"
@@ -6602,7 +6666,18 @@
                 }
               ]
             },
-            "type": "array"
+            "type": "array",
+            "example": [
+              {
+                "kind": "repository",
+                "repository": {
+                  "provider": "github",
+                  "identifier": "parcel-example/parcel-client"
+                },
+                "package_name": "parcel-client",
+                "publish_on_merge": false
+              }
+            ]
           }
         },
         "required": [
@@ -6884,9 +6959,25 @@
       },
       "example_arguments": {
         "project_id": "prj_4f8k2m7x9q1v6b3n",
-        "name": "example",
+        "name": "Parcel CLI",
         "definition_id": "def_2p8m4q7k1v9d6h3c",
-        "generator": "typescript-sdk"
+        "generator": "cli",
+        "config": {
+          "cli": {
+            "command_name": "parcel"
+          }
+        },
+        "deliveries": [
+          {
+            "kind": "repository",
+            "repository": {
+              "provider": "github",
+              "identifier": "parcel-example/parcel-client"
+            },
+            "package_name": "parcel-client",
+            "publish_on_merge": false
+          }
+        ]
       }
     },
     {
@@ -7360,7 +7451,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets update tgt_5m8q2v7k1p9d4h6c",
+      "example_command": "typeship targets update tgt_5m8q2v7k1p9d4h6c --state disabled",
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target, its Deliveries, or its next reviewed version",
@@ -7394,7 +7485,8 @@
               "active",
               "disabled"
             ],
-            "type": "string"
+            "type": "string",
+            "example": "disabled"
           },
           "edition": {
             "type": "string"
@@ -7793,7 +7885,7 @@
                         "identifier": {
                           "description": "Provider-native repository identity, opaque outside its adapter.",
                           "examples": [
-                            "acme/payments-api"
+                            "parcel-example/api"
                           ],
                           "maxLength": 512,
                           "type": "string"
@@ -8132,7 +8224,8 @@
         "type": "object"
       },
       "example_arguments": {
-        "target_id": "tgt_5m8q2v7k1p9d4h6c"
+        "target_id": "tgt_5m8q2v7k1p9d4h6c",
+        "state": "disabled"
       }
     },
     {
@@ -8286,7 +8379,7 @@
                         "identifier": {
                           "description": "Provider-native repository identity, opaque outside its adapter.",
                           "examples": [
-                            "acme/payments-api"
+                            "parcel-example/api"
                           ],
                           "maxLength": 512,
                           "type": "string"
@@ -8844,7 +8937,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets update-draft tgt_5m8q2v7k1p9d4h6c --body-version 1.0.0",
+      "example_command": "typeship targets update-draft tgt_5m8q2v7k1p9d4h6c --body-version 1.1.0 --expected-revision 2",
       "method": "PATCH",
       "path": "/targets/{target_id}/draft",
       "summary": "Select an exact Draft version or return to automatic versioning",
@@ -8873,11 +8966,13 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "example": "1.1.0"
           },
           "expected_revision": {
             "minimum": 0,
-            "type": "integer"
+            "type": "integer",
+            "example": 2
           }
         },
         "required": [
@@ -9018,7 +9113,8 @@
       },
       "example_arguments": {
         "target_id": "tgt_5m8q2v7k1p9d4h6c",
-        "version": "1.0.0"
+        "version": "1.1.0",
+        "expected_revision": 2
       }
     },
     {
@@ -9561,7 +9657,7 @@
           "required": true
         }
       ],
-      "example_command": "typeship targets reset-customizations tgt_5m8q2v7k1p9d4h6c --data '{\"paths\":[\"openapi.yaml\"],\"expected_head_revision\":\"0123456789abcdef0123456789abcdef01234567\"}'",
+      "example_command": "typeship targets reset-customizations tgt_5m8q2v7k1p9d4h6c --data '{\"paths\":[\"README.md\"],\"choice\":\"generated\",\"expected_head_revision\":\"0123456789abcdef0123456789abcdef01234567\"}'",
       "method": "POST",
       "path": "/targets/{target_id}/customizations/reset",
       "summary": "Resolve or reset custom code on the rolling Draft",
@@ -9658,7 +9754,14 @@
                 "additionalProperties": false,
                 "type": "object"
               }
-            ]
+            ],
+            "example": {
+              "paths": [
+                "README.md"
+              ],
+              "choice": "generated",
+              "expected_head_revision": "0123456789abcdef0123456789abcdef01234567"
+            }
           }
         },
         "required": [
@@ -10143,8 +10246,9 @@
         "target_id": "tgt_5m8q2v7k1p9d4h6c",
         "body": {
           "paths": [
-            "openapi.yaml"
+            "README.md"
           ],
+          "choice": "generated",
           "expected_head_revision": "0123456789abcdef0123456789abcdef01234567"
         }
       }
@@ -10187,7 +10291,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets adopt-release tgt_5m8q2v7k1p9d4h6c --body-version 1.0.0 --tag value",
+      "example_command": "typeship targets adopt-release tgt_5m8q2v7k1p9d4h6c --body-version 1.0.0 --tag v1.0.0",
       "method": "POST",
       "path": "/targets/{target_id}/adopt",
       "summary": "Adopt a verified existing package as Current",
@@ -10220,13 +10324,15 @@
           },
           "version": {
             "description": "Exact already-published package version to make Current.",
-            "type": "string"
+            "type": "string",
+            "example": "1.0.0"
           },
           "tag": {
             "description": "Immutable repository tag containing the matching package source.",
             "minLength": 1,
             "maxLength": 255,
-            "type": "string"
+            "type": "string",
+            "example": "v1.0.0"
           }
         },
         "required": [
@@ -10308,7 +10414,7 @@
                   "identifier": {
                     "description": "Provider-native repository identity, opaque outside its adapter.",
                     "examples": [
-                      "acme/payments-api"
+                      "parcel-example/api"
                     ],
                     "maxLength": 512,
                     "type": "string"
@@ -10636,7 +10742,7 @@
       "example_arguments": {
         "target_id": "tgt_5m8q2v7k1p9d4h6c",
         "version": "1.0.0",
-        "tag": "value"
+        "tag": "v1.0.0"
       }
     },
     {
@@ -10756,7 +10862,7 @@
                   "identifier": {
                     "description": "Provider-native repository identity, opaque outside its adapter.",
                     "examples": [
-                      "acme/payments-api"
+                      "parcel-example/api"
                     ],
                     "maxLength": 512,
                     "type": "string"
@@ -11217,7 +11323,7 @@
                   "identifier": {
                     "description": "Provider-native repository identity, opaque outside its adapter.",
                     "examples": [
-                      "acme/payments-api"
+                      "parcel-example/api"
                     ],
                     "maxLength": 512,
                     "type": "string"
@@ -11783,7 +11889,7 @@
           "required": true
         }
       ],
-      "example_command": "typeship generations retrieve-file gen_7h2p5d9c3m8w1k6q --path openapi.yaml",
+      "example_command": "typeship generations retrieve-file gen_7h2p5d9c3m8w1k6q --path README.md",
       "method": "GET",
       "path": "/generations/{generation_id}/file",
       "summary": "Fetch one file from a generation",
@@ -11809,6 +11915,7 @@
           },
           "path": {
             "type": "string",
+            "example": "README.md",
             "description": "Repo-relative path inside the generated package."
           }
         },
@@ -11819,7 +11926,7 @@
       },
       "example_arguments": {
         "generation_id": "gen_7h2p5d9c3m8w1k6q",
-        "path": "openapi.yaml"
+        "path": "README.md"
       }
     },
     {
@@ -12578,7 +12685,7 @@
           "required": true
         }
       ],
-      "example_command": "typeship api-keys revoke api_key_123 --force",
+      "example_command": "typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3 --force",
       "method": "DELETE",
       "path": "/api_keys/{api_key_id}",
       "summary": "Revoke an API key",
@@ -12598,7 +12705,8 @@
             "description": "Identifier returned by the API key list. Accepts an ID or an exact name (resolved via api_keys_list). IDs come from api_keys_list.",
             "type": "string",
             "examples": [
-              "example-name"
+              "example-name",
+              "apikey_2nY8mR6pQ4vK9cH3"
             ]
           }
         },
@@ -12648,7 +12756,7 @@
         "type": "object"
       },
       "example_arguments": {
-        "api_key_id": "api_key_123"
+        "api_key_id": "apikey_2nY8mR6pQ4vK9cH3"
       }
     }
   ]

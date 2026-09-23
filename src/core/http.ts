@@ -155,7 +155,16 @@ export function validateAgainstSchema(value: unknown, schema: unknown, path: str
 
   if (Array.isArray(s.allOf)) for (const sub of s.allOf) validateAgainstSchema(value, sub, path, out, defs);
   const variants = s.anyOf ?? s.oneOf;
-  if (Array.isArray(variants) && variants.length > 0) {
+  const discriminator = s.responseDiscriminator;
+  const tag = typeof discriminator?.propertyName === "string" && value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)[discriminator.propertyName] : undefined;
+  if (typeof tag === "string") {
+    if (Object.hasOwn(discriminator.mapping, tag)) {
+      validateAgainstSchema(value, discriminator.mapping[tag], path, out, defs);
+    }
+    // Unknown variants remain raw data. Callers must handle their tag before
+    // interpreting fields or taking an action based on workflow state.
+  } else if (Array.isArray(variants) && variants.length > 0) {
     const matched = variants.some((sub: unknown) => {
       const scratch: Violation[] = [];
       validateAgainstSchema(value, sub, path, scratch, defs);

@@ -24,7 +24,7 @@ Requires Node.js 18+. The package is ESM.
 Generation does not publish a package. Before using the registry command below, confirm `name` and `version` in `package.json`, publish under a name you control, and verify that release is available on npm.
 
 ```sh
-npm install --global @typeship-ax/cli@0.16.1
+npm install --global @typeship-ax/cli@0.17.0
 ```
 
 ## CLI

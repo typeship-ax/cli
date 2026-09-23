@@ -1086,7 +1086,10 @@ export interface TargetDependencyRead {
 
 /**
  * Required checks run against the complete combined package. Generated checks and customer commands
- * share one reproducible workflow; repository_required names existing repository checks.
+ * share one reproducible workflow; repository_required names existing repository checks. Supplying
+ * checks replaces all settings. Omitted generated restores build, package, and public_entrypoint;
+ * omitted repository_required and customer restore empty lists. An empty object restores these
+ * defaults. An empty array clears the corresponding list.
  */
 export interface TargetChecks {
   /** Default: ["build","package","public_entrypoint"] */
@@ -1196,11 +1199,16 @@ export interface TargetUpdateRequest {
   state?: "active" | "disabled";
   edition?: string;
   release_channel?: "stable" | "prerelease";
+  /**
+   * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
+   * endpoint for an optional revision precondition.
+   */
   proposed_version?: string | null;
   checks?: TargetChecks;
   /**
-   * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * Replaces the complete stored override object. Send null or an empty object to resume Project
+   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the
+   * Definition.
    */
   config?: TargetConfig | null;
   /**
@@ -1219,11 +1227,16 @@ export interface TargetUpdateRequestRead {
   state?: ("active" | "disabled") | (string & {});
   edition?: string;
   release_channel?: ("stable" | "prerelease") | (string & {});
+  /**
+   * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
+   * endpoint for an optional revision precondition.
+   */
   proposed_version?: string | null;
   checks?: TargetChecksRead;
   /**
-   * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * Replaces the complete stored override object. Send null or an empty object to resume Project
+   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the
+   * Definition.
    */
   config?: TargetConfigRead | null;
   /**
@@ -1621,6 +1634,11 @@ export type TargetDraftResponseRead = TargetDraftRead & ResponseMetadata;
 export interface TargetDraftUpdate {
   /** Exact SemVer, or null to return to automatic selection. */
   version: string | null;
+  /**
+   * Optional revision from the last Draft read. An intervening change returns 409
+   * stale_release_revision without saving or regenerating. Omit to apply the selection without this
+   * precondition.
+   */
   expected_revision?: number;
 }
 
@@ -3784,7 +3802,10 @@ export interface DiagnosticPolicyResponseRead {
 
 /**
  * Required checks run against the complete combined package. Generated checks and customer commands
- * share one reproducible workflow; repository_required names existing repository checks.
+ * share one reproducible workflow; repository_required names existing repository checks. Supplying
+ * checks replaces all settings. Omitted generated restores build, package, and public_entrypoint;
+ * omitted repository_required and customer restore empty lists. An empty object restores these
+ * defaults. An empty array clears the corresponding list.
  */
 export interface TargetChecksResponse {
   /** Default: ["build","package","public_entrypoint"] */

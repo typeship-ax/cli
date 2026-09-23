@@ -187,6 +187,13 @@ export class TargetsResource {
   /**
    * Update a Target, its Deliveries, or its next reviewed version
    *
+   * Omitted fields keep their current values. Supplied config, checks, and deliveries replace their
+   * complete stored values.
+   * Updates have no revision precondition. Concurrent updates preserve omitted fields, and the last
+   * saved update to a supplied field wins.
+   * Send proposed_version by itself; use the Draft endpoint for a version selection with an
+   * optional revision precondition.
+   *
    * A `502` response means the selected version was saved, but regeneration failed.
    * `PATCH /targets/{target_id}`
    */
@@ -290,6 +297,11 @@ export class TargetsResource {
    *
    * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
+   *
+   * Send the last read revision as expected_revision to reject an intervening change with 409
+   * stale_release_revision before saving or regenerating.
+   * The precondition is optional; omitting it applies the selection to the current Draft. Version
+   * is required; null restores automatic selection.
    *
    * A `502` response means the selected version was saved, but regeneration failed.
    * `PATCH /targets/{target_id}/draft`

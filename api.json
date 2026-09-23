@@ -1677,7 +1677,7 @@
                   ]
                 },
                 "checks": {
-                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list.",
                   "properties": {
                     "generated": {
                       "default": [
@@ -2625,7 +2625,7 @@
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
-      "description": "A `502` response means the Project was saved, but an obsolete release pull request could not be retired.",
+      "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\n\nA `502` response means the Project was saved, but an obsolete release pull request could not be retired.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5904,7 +5904,7 @@
                   "type": "integer"
                 },
                 "checks": {
-                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+                  "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list.",
                   "properties": {
                     "generated": {
                       "default": [
@@ -6241,7 +6241,7 @@
             ]
           },
           "checks": {
-            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list.",
             "properties": {
               "generated": {
                 "default": [
@@ -7475,7 +7475,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target, its Deliveries, or its next reviewed version",
-      "description": "A `502` response means the selected version was saved, but regeneration failed.",
+      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\nSend proposed_version by itself; use the Draft endpoint for a version selection with an optional revision precondition.\n\nA `502` response means the selected version was saved, but regeneration failed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -7519,13 +7519,14 @@
             "type": "string"
           },
           "proposed_version": {
+            "description": "Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft endpoint for an optional revision precondition.",
             "type": [
               "string",
               "null"
             ]
           },
           "checks": {
-            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks.",
+            "description": "Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list.",
             "properties": {
               "generated": {
                 "default": [
@@ -7583,7 +7584,7 @@
             "type": "object"
           },
           "config": {
-            "description": "Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition.",
+            "description": "Replaces the complete stored override object. Send null or an empty object to resume Project inheritance. Effective values merge over Project.config; GraphQL settings belong to the Definition.",
             "anyOf": [
               {
                 "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
@@ -8959,7 +8960,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}/draft",
       "summary": "Select an exact Draft version or return to automatic versioning",
-      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nA `502` response means the selected version was saved, but regeneration failed.",
+      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nSend the last read revision as expected_revision to reject an intervening change with 409 stale_release_revision before saving or regenerating.\nThe precondition is optional; omitting it applies the selection to the current Draft. Version is required; null restores automatic selection.\n\nA `502` response means the selected version was saved, but regeneration failed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -8988,6 +8989,7 @@
             "example": "1.1.0"
           },
           "expected_revision": {
+            "description": "Optional revision from the last Draft read. An intervening change returns 409 stale_release_revision without saving or regenerating. Omit to apply the selection without this precondition.",
             "minimum": 0,
             "type": "integer",
             "example": 2

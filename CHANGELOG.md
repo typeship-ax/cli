@@ -1,5 +1,79 @@
 # Changelog
 
+## 0.18.0 (2026-09-23) (7 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification additional properties changed: false -&gt; unspecified
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification additional properties changed: false -&gt; unspecified
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `projects.retrieve()`
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification additional properties changed: false -&gt; unspecified
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `projects.listGenerations()`
+  - `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `projects.generate()`
+  - `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].provenance.resolved\_config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+- `generations.retrieve()`
+  - `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification intersection added: \{ /\*\* resource.method of a safe identity read with no req...
+  - `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification intersection added: \{ subject\_field: string; \} \| \{ account\_field: string; \} \|...
+  - **breaking** `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification additional properties changed: true -&gt; unspecified
+  - **breaking** `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification.account\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification.operation removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification.organization\_field removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.provenance.resolved\_config.auth.identity\_verification.subject\_field removed \(was string \| null\)
+
 ## 0.17.0 (2026-09-23) (36 breaking)
 
 ### Changed

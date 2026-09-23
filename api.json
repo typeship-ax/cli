@@ -536,7 +536,12 @@
                   "identity_verification": {
                     "anyOf": [
                       {
-                        "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
+                        "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. At least one of subject_field, account_field, or organization_field must be a non-null JSON Pointer. Null clears an individual mapping while another remains. Set identity_verification itself to null to remove the whole policy.",
+                        "example": {
+                          "subject_field": "/id",
+                          "account_field": "/account_id",
+                          "organization_field": "/organization_id"
+                        },
                         "properties": {
                           "operation": {
                             "description": "resource.method of a safe identity read with no required arguments.",
@@ -549,7 +554,9 @@
                           },
                           "subject_field": {
                             "description": "JSON Pointer to the stable caller ID in the identity response.",
+                            "example": "/id",
                             "maxLength": 512,
+                            "pattern": "^/(?:[^~\\x00-\\x1f\\x7f]|~[01])*$",
                             "type": [
                               "string",
                               "null"
@@ -557,7 +564,9 @@
                           },
                           "account_field": {
                             "description": "JSON Pointer to the customer account ID.",
+                            "example": "/account_id",
                             "maxLength": 512,
+                            "pattern": "^/(?:[^~\\x00-\\x1f\\x7f]|~[01])*$",
                             "type": [
                               "string",
                               "null"
@@ -565,7 +574,9 @@
                           },
                           "organization_field": {
                             "description": "JSON Pointer to the customer organization ID.",
+                            "example": "/organization_id",
                             "maxLength": 512,
+                            "pattern": "^/(?:[^~\\x00-\\x1f\\x7f]|~[01])*$",
                             "type": [
                               "string",
                               "null"
@@ -1925,7 +1936,12 @@
                       "identity_verification": {
                         "anyOf": [
                           {
-                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. At least one of subject_field, account_field, or organization_field must be a non-null JSON Pointer. Null clears an individual mapping while another remains. Set identity_verification itself to null to remove the whole policy.",
+                            "example": {
+                              "subject_field": "/id",
+                              "account_field": "/account_id",
+                              "organization_field": "/organization_id"
+                            },
                             "type": "object"
                           },
                           {
@@ -2750,7 +2766,12 @@
                       "identity_verification": {
                         "anyOf": [
                           {
-                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. At least one of subject_field, account_field, or organization_field must be a non-null JSON Pointer. Null clears an individual mapping while another remains. Set identity_verification itself to null to remove the whole policy.",
+                            "example": {
+                              "subject_field": "/id",
+                              "account_field": "/account_id",
+                              "organization_field": "/organization_id"
+                            },
                             "type": "object"
                           },
                           {

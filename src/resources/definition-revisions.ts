@@ -10,6 +10,7 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   RateLimitedError,
   UnauthorizedError,
@@ -56,6 +57,7 @@ export class DefinitionRevisionsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "definitionRevisions.list",
@@ -90,6 +92,7 @@ export class DefinitionRevisionsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "definitionRevisions.retrieve",
@@ -117,6 +120,7 @@ export class DefinitionRevisionsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "definitionRevisions.retrieveContent",
@@ -142,6 +146,7 @@ export class DefinitionRevisionsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "definitionRevisions.retrieveDocumentContent",
@@ -167,6 +172,7 @@ export type DefinitionRevisionsListError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -178,6 +184,7 @@ export type DefinitionRevisionsRetrieveError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -189,6 +196,7 @@ export type DefinitionRevisionsRetrieveContentError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -200,6 +208,7 @@ export type DefinitionRevisionsRetrieveDocumentContentError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

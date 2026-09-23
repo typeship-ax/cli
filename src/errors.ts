@@ -78,6 +78,16 @@ export class RateLimitedError extends ApiError<429, ErrorModelRead> {
 }
 
 /**
+ * An unexpected error prevented the request from completing.
+ * Raised for HTTP 500 responses.
+ */
+export class InternalServerError extends ApiError<500, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("An unexpected error prevented the request from completing.", 500, body, response);
+  }
+}
+
+/**
  * Unexpected error.
  * Raised for "default" responses.
  */
@@ -98,16 +108,6 @@ export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
 }
 
 /**
- * Project setup failed unexpectedly; the key reservation is released.
- * Raised for HTTP 500 responses.
- */
-export class InternalServerError extends ApiError<500, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("Project setup failed unexpectedly; the key reservation is released.", 500, body, response);
-  }
-}
-
-/**
  * No such resource in this account.
  * Raised for HTTP 404 responses.
  */
@@ -118,11 +118,11 @@ export class NotFoundError extends ApiError<404, ErrorModelRead> {
 }
 
 /**
- * The Project was saved, but an obsolete release pull request could not be retired.
+ * Dependent work failed while completing the request.
  * Raised for HTTP 502 responses.
  */
 export class BadGatewayError extends ApiError<502, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Project was saved, but an obsolete release pull request could not be retired.", 502, body, response);
+    super("Dependent work failed while completing the request.", 502, body, response);
   }
 }

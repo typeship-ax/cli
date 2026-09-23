@@ -12,7 +12,9 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
+  PaymentRequiredError,
   RateLimitedError,
   UnauthorizedError,
   UnprocessableEntityError,
@@ -73,6 +75,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.list",
@@ -113,11 +116,13 @@ export class TargetsResource {
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,
+        "402": PaymentRequiredError,
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.create",
@@ -142,6 +147,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.retrieve",
@@ -170,6 +176,7 @@ export class TargetsResource {
         "404": NotFoundError,
         "409": ConflictError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.delete",
@@ -179,6 +186,8 @@ export class TargetsResource {
 
   /**
    * Update a Target, its Deliveries, or its next reviewed version
+   *
+   * A `502` response means the selected version was saved, but regeneration failed.
    * `PATCH /targets/{target_id}`
    */
   async update(
@@ -194,11 +203,14 @@ export class TargetsResource {
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,
+        "402": PaymentRequiredError,
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
       },
       schemaKey: "targets.update",
       options,
@@ -230,6 +242,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.listReleases",
@@ -264,6 +277,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.retrieveDraft",
@@ -276,6 +290,8 @@ export class TargetsResource {
    *
    * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
+   *
+   * A `502` response means the selected version was saved, but regeneration failed.
    * `PATCH /targets/{target_id}/draft`
    */
   async updateDraft(
@@ -296,6 +312,8 @@ export class TargetsResource {
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
       },
       schemaKey: "targets.updateDraft",
       options,
@@ -323,6 +341,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.retrieveCustomizations",
@@ -336,6 +355,8 @@ export class TargetsResource {
    * Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns
    * integration and checks on the same Draft. Supply the expected head revision to prevent a stale
    * choice from changing a newer Draft.
+   *
+   * A `502` response means regeneration failed after the reset commit.
    * `POST /targets/{target_id}/customizations/reset`
    */
   async resetCustomizations(
@@ -355,6 +376,7 @@ export class TargetsResource {
         "404": NotFoundError,
         "409": ConflictError,
         "429": RateLimitedError,
+        "500": InternalServerError,
         "502": BadGatewayError,
       },
       schemaKey: "targets.resetCustomizations",
@@ -394,6 +416,7 @@ export class TargetsResource {
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.adoptRelease",
@@ -418,6 +441,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.retrieveRelease",
@@ -430,6 +454,8 @@ export class TargetsResource {
    *
    * Retries publication of the specified release through its repository workflow. Uses that
    * release's version and accepted commit, even if a newer Draft or release exists.
+   *
+   * A `502` response means the repository publication workflow could not be dispatched.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /target_releases/{target_release_id}/republish`
@@ -447,11 +473,13 @@ export class TargetsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       errors: {
+        "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
         "429": RateLimitedError,
+        "500": InternalServerError,
         "502": BadGatewayError,
       },
       idempotencyKey: "Idempotency-Key",
@@ -478,6 +506,7 @@ export type TargetsListError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -497,11 +526,13 @@ export interface TargetsCreateParams {
 export type TargetsCreateError =
   | BadRequestError
   | UnauthorizedError
+  | PaymentRequiredError
   | ForbiddenError
   | NotFoundError
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -513,6 +544,7 @@ export type TargetsRetrieveError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -525,6 +557,7 @@ export type TargetsDeleteError =
   | NotFoundError
   | ConflictError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -534,11 +567,14 @@ export type TargetsDeleteError =
 export type TargetsUpdateError =
   | BadRequestError
   | UnauthorizedError
+  | PaymentRequiredError
   | ForbiddenError
   | NotFoundError
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -561,6 +597,7 @@ export type TargetsListReleasesError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -572,6 +609,7 @@ export type TargetsRetrieveDraftError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -586,6 +624,8 @@ export type TargetsUpdateDraftError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -597,6 +637,7 @@ export type TargetsRetrieveCustomizationsError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -610,6 +651,7 @@ export type TargetsResetCustomizationsError =
   | NotFoundError
   | ConflictError
   | RateLimitedError
+  | InternalServerError
   | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
@@ -635,6 +677,7 @@ export type TargetsAdoptReleaseError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -646,6 +689,7 @@ export type TargetsRetrieveReleaseError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -663,11 +707,13 @@ export interface TargetsRepublishReleaseParams {
 
 /** Every error `republishRelease` can produce, as a discriminated union. */
 export type TargetsRepublishReleaseError =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
   | ConflictError
   | RateLimitedError
+  | InternalServerError
   | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError

@@ -10,6 +10,7 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   RateLimitedError,
   UnauthorizedError,
@@ -48,6 +49,7 @@ export class ApiKeysResource {
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "apiKeys.list",
@@ -84,6 +86,7 @@ export class ApiKeysResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "apiKeys.revoke",
@@ -108,6 +111,7 @@ export type ApiKeysListError =
   | UnauthorizedError
   | ForbiddenError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -119,6 +123,7 @@ export type ApiKeysRevokeError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

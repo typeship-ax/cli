@@ -8,6 +8,7 @@ import {
   UnexpectedApiError,
   ValidationError,
   ForbiddenError,
+  InternalServerError,
   RateLimitedError,
   UnauthorizedError,
 } from "../errors.js";
@@ -27,7 +28,12 @@ export class AccountResource {
       method: "GET",
       path: "/me",
       security: [{"apiKey":[]}],
-      errors: { "401": UnauthorizedError, "403": ForbiddenError, "429": RateLimitedError },
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
       idempotent: true,
       schemaKey: "account.retrieve",
       options,
@@ -40,6 +46,7 @@ export type AccountRetrieveError =
   | UnauthorizedError
   | ForbiddenError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

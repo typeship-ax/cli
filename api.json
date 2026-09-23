@@ -958,10 +958,6 @@
                 "description": "Whether a destination pull request opened, was unnecessary because the generated tree already match…",
                 "type": "string"
               },
-              "pr_error": {
-                "description": "Why the configured destination pull request was not opened.",
-                "type": "string"
-              },
               "changelog": {
                 "description": "Markdown changelog entry for this regeneration, from the API surface diff.",
                 "type": "string"
@@ -973,9 +969,10 @@
               "baseline": {
                 "enum": [
                   "destination",
+                  "last-generation",
                   "none"
                 ],
-                "description": "What the diff was measured against; \"destination\" means the .typeship/surface.json merged in the de…",
+                "description": "What the diff was measured against.",
                 "type": "string"
               },
               "api_compatibility": {
@@ -4267,7 +4264,7 @@
                     ]
                   },
                   "warnings": [],
-                  "error": null,
+                  "errors": [],
                   "created_at": "2026-09-23T08:00:00Z"
                 }
               ],
@@ -4395,11 +4392,12 @@
                   },
                   "type": "array"
                 },
-                "error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                "errors": {
+                  "description": "Recorded failures.",
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
                 },
                 "created_at": {
                   "format": "date-time",
@@ -4528,7 +4526,7 @@
                         ]
                       },
                       "warnings": [],
-                      "error": null,
+                      "errors": [],
                       "created_at": "2026-09-23T08:00:00Z"
                     }
                   ],
@@ -4629,11 +4627,9 @@
                     "warnings": {
                       "type": "array"
                     },
-                    "error": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                    "errors": {
+                      "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                      "type": "array"
                     },
                     "created_at": {
                       "format": "date-time",
@@ -4669,8 +4665,9 @@
                       "const": "failed",
                       "type": "string"
                     },
-                    "error": {
-                      "type": "string"
+                    "errors": {
+                      "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                      "type": "array"
                     }
                   },
                   "type": "object"
@@ -8660,11 +8657,9 @@
                           "null"
                         ]
                       },
-                      "error": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                      "errors": {
+                        "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                        "type": "array"
                       },
                       "started_at": {
                         "format": "date-time",
@@ -10695,11 +10690,12 @@
                     "null"
                   ]
                 },
-                "error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                "errors": {
+                  "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
                 },
                 "started_at": {
                   "format": "date-time",
@@ -11143,11 +11139,12 @@
                     "null"
                   ]
                 },
-                "error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                "errors": {
+                  "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
                 },
                 "started_at": {
                   "format": "date-time",
@@ -11604,11 +11601,12 @@
                     "null"
                   ]
                 },
-                "error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                "errors": {
+                  "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
                 },
                 "started_at": {
                   "format": "date-time",
@@ -11840,11 +11838,12 @@
             },
             "type": "array"
           },
-          "error": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "errors": {
+            "description": "Recorded failures.",
+            "items": {
+              "type": "object"
+            },
+            "type": "array"
           },
           "created_at": {
             "format": "date-time",

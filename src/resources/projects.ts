@@ -14,6 +14,7 @@ import {
   ForbiddenError,
   InternalServerError,
   NotFoundError,
+  PayloadTooLargeError,
   PaymentRequiredError,
   RateLimitedError,
   UnauthorizedError,
@@ -428,9 +429,11 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
+        "413": PayloadTooLargeError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
+        "502": BadGatewayError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.generate",
@@ -659,9 +662,11 @@ export type ProjectsGenerateError =
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | PayloadTooLargeError
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

@@ -12,6 +12,10 @@ consent. OAuth grants cannot switch organizations after consent. A browser
 session is not a credential for this API. The exception is POST /generate,
 which works anonymously with the free plan's limits.
 
+Examples use Parcel, a fictional delivery service. Replace its domains,
+repository names, and resource identifiers with your own. The hosted
+petstore Definition is a runnable sample.
+
 ## Ground rules
 - For a linked repository Delivery, commit package customizations to the rolling Draft. Typeship three-way merges those commits with the next unmodified Generation, preserves exact bytes and file modes, and stops for explicit review when both sides touch the same region or file ownership is ambiguous.
 - A preserved file participates in the combined package only when the package manifest, exports, build, and tests include it. Configure Target checks for every custom build or test requirement; do not assume a file is published merely because it survives regeneration.

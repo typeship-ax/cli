@@ -52,7 +52,7 @@ const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
 const PKG_NAME = "@typeship-ax/cli";
 const UPDATE_NOTICE = false;
-const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n";
+const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n\nExamples use Parcel, a fictional delivery service. Replace its domains,\nrepository names, and resource identifiers with your own. The hosted\npetstore Definition is a runnable sample.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
 const DOCS_INDEX_URL_DEFAULT: string | null = null;
 const RELAY: { mintUrl: string; project: string } | null = null;
@@ -140,7 +140,8 @@ function parseArgv(argv: string[]): Parsed {
         setFlag(arg.slice(2, eq), arg.slice(eq + 1));
       } else if (isBooleanFlag(arg.slice(2), positionals)) {
         const next = argv[i + 1];
-        if (next === "true" || next === "false") { setFlag(arg.slice(2), next); i++; }
+        const nullable = positionals.length >= 2 && findOp(positionals[0]!, positionals[1]!)?.params.some((p) => p.flag === arg.slice(2) && p.nullable);
+        if (next === "true" || next === "false" || (next === "null" && nullable)) { setFlag(arg.slice(2), next); i++; }
         else flags.set(arg.slice(2), true);
       } else {
         const next = argv[i + 1];
@@ -1054,7 +1055,7 @@ function commandSummaries(): CommandSummary[] {
     paginated: op.paginated,
     destructive: op.safety === "destructive",
     auth: op.auth,
-    flags: op.params.filter((p) => p.kind !== "path").map((p) => ({ flag: p.flag, type: p.type, ...(p.items ? { items: p.items } : {}), ...(p.enum ? { enum: p.enum } : {}), required: p.required, ...(p.description ? { description: p.description.split("\n")[0] } : {}) })),
+    flags: op.params.filter((p) => p.kind !== "path").map((p) => ({ flag: p.flag, type: p.type, ...(p.nullable ? { nullable: true } : {}), ...(p.items ? { items: p.items } : {}), ...(p.enum ? { enum: p.enum } : {}), required: p.required, ...(p.description ? { description: p.description.split("\n")[0] } : {}) })),
   }));
 }
 
@@ -1885,6 +1886,7 @@ function helpSentence(description: string | undefined): string {
 
 /** Type column text for a param: string, number, string[], a|b|c, enum, object, json, path. */
 function typeLabel(p: ParamSpec): string {
+  if (p.nullable) return typeLabel({ ...p, nullable: false }) + "|null";
   if (p.type === "file") return "path (uploaded)";
   if (p.format && p.type === "string") return p.format;
   const inlineEnum = (values: string[] | undefined) => values && values.join("|").length <= 24 ? values.join("|") : undefined;
@@ -2043,11 +2045,12 @@ function commandExtras(op: OpSpec): [string, string][] {
   return extras;
 }
 
-/** One runnable example built from the required inputs. */
+/** One runnable example from required inputs and authored optional values. */
 function exampleLine(op: OpSpec): string {
   const parts = [BIN, op.command[0], op.command[1]];
   for (const p of op.params) {
-    if (!p.required) continue;
+    const hasExample = p.type !== "file" && Object.hasOwn(op.exampleArguments, p.name);
+    if (!p.required && !hasExample) continue;
     const generated = p.type === "file" ? undefined : op.exampleArguments[p.name];
     const values = p.type === "array" ? p.items?.enum : p.enum;
     const fallback: unknown = p.type === "file" ? "./file"
@@ -2057,17 +2060,18 @@ function exampleLine(op: OpSpec): string {
       : p.type === "object" ? {}
       : p.type === "array" ? [p.items?.type === "number" ? 1 : "value"]
       : "value";
-    const value = generated ?? fallback;
+    const value = hasExample ? generated : fallback;
     const sample = typeof value === "string" ? shellQuote(value)
       : typeof value === "object" ? shellQuote(JSON.stringify(value))
       : String(value);
     if (p.kind === "path") parts.push(sample);
     else parts.push("--" + p.flag, sample);
   }
-  const required = op.bodyStyle === "data" && ((op.inputSchema.required as string[] | undefined) ?? []).includes("body");
-  if (required) {
-    const body = op.exampleArguments.body;
-    parts.push(op.bodyKind === "binary" ? "--file ./file" : "--data " + shellQuote(JSON.stringify(body ?? {})));
+  const showBody = op.bodyStyle === "data" && (Object.hasOwn(op.exampleArguments, "body")
+    || ((op.inputSchema.required as string[] | undefined) ?? []).includes("body"));
+  if (showBody) {
+    const body = Object.hasOwn(op.exampleArguments, "body") ? op.exampleArguments.body : {};
+    parts.push(op.bodyKind === "binary" ? "--file ./file" : "--data " + shellQuote(JSON.stringify(body)));
   }
   if (op.safety === "destructive") parts.push("--force");
   return parts.join(" ");
@@ -2096,6 +2100,9 @@ function printOp(op: OpSpec): void {
   lines.push("  " + exampleLine(op));
   if (op.paginated) lines.push("  " + usageLine(op) + " --all | jq -r '.id'");
   const arrayFlag = rows.find((p) => p.type === "array");
+  if (rows.some((p) => p.nullable)) {
+    lines.push("", "Nullable body flags accept null for JSON null. Use --data to send the literal string null.");
+  }
   if (arrayFlag) {
     const sample = arrayFlag.items?.enum ? arrayFlag.items.enum.slice(0, 2).join(",") : arrayFlag.items?.type === "number" ? "1,2" : "a,b";
     lines.push("", "Array flags take a comma list (--" + arrayFlag.flag + " " + sample + "), the flag repeated, or a JSON array.");
@@ -2177,6 +2184,7 @@ function coerceScalar(flag: string, type: "string" | "number" | "boolean" | "obj
  * Objects must be JSON. Enum values are checked locally.
  */
 function coerce(spec: ParamSpec, raw: string | boolean, repeated?: string[]): unknown {
+  if (spec.nullable && raw === "null" && repeated === undefined) return null;
   if (spec.type === "file") {
     if (raw === true) fail(2, "--" + spec.flag + " expects a file path");
     return fileFromPath(spec.flag, String(raw));

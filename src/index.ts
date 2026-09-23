@@ -90,6 +90,10 @@ export interface ClientOptions {
  * consent. OAuth grants cannot switch organizations after consent. A browser
  * session is not a credential for this API. The exception is POST /generate,
  * which works anonymously with the free plan's limits.
+ *
+ * Examples use Parcel, a fictional delivery service. Replace its domains,
+ * repository names, and resource identifiers with your own. The hosted
+ * petstore Definition is a runnable sample.
  */
 export class TypeshipClient {
   readonly generate: GenerateResource;

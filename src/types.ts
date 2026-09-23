@@ -3565,14 +3565,15 @@ export interface ErrorDetail {
   code: ErrorCode;
   /**
    * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
-   * pointer refers to the request body.
+   * pointer refers to the request body. Header pointers use lowercase header names, such as
+   * /idempotency-key.
    */
   field?: string;
   /**
-   * Request part containing field. Query-parameter errors use query; omitted for request-body
-   * errors.
+   * Request part containing field. Query-parameter errors use query; header errors use header. Body
+   * errors use body or omit in.
    */
-  in?: "body" | "query";
+  in?: "body" | "query" | "header";
   /** Human-readable explanation. Its wording may change. */
   message: string;
   /** Whether retrying later can succeed without changing the request. */
@@ -3592,14 +3593,15 @@ export interface ErrorDetailRead {
   code: ErrorCode | (string & {});
   /**
    * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
-   * pointer refers to the request body.
+   * pointer refers to the request body. Header pointers use lowercase header names, such as
+   * /idempotency-key.
    */
   field?: string;
   /**
-   * Request part containing field. Query-parameter errors use query; omitted for request-body
-   * errors.
+   * Request part containing field. Query-parameter errors use query; header errors use header. Body
+   * errors use body or omit in.
    */
-  in?: ("body" | "query") | (string & {});
+  in?: ("body" | "query" | "header") | (string & {});
   /** Human-readable explanation. Its wording may change. */
   message: string;
   /** Whether retrying later can succeed without changing the request. */

@@ -428,13 +428,13 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** AGENTS.md by default; CLAUDE.md when only it exists, or when running under Claude Code and AGENTS.md is absent. */
-export function agentInstructionsFile(cwd: string, harness: string | null): string {
+/** AGENTS.md for every harness; preserve an existing CLAUDE.md when AGENTS.md is absent. */
+export function agentInstructionsFile(cwd: string): string {
   const agents = join(cwd, "AGENTS.md");
   const claude = join(cwd, "CLAUDE.md");
   if (existsSync(agents)) return agents;
   if (existsSync(claude)) return claude;
-  return harness === "claude-code" ? claude : agents;
+  return agents;
 }
 
 // ---- command index + guide ------------------------------------------------

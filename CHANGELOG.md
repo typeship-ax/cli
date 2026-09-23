@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.13.0 (2026-09-23) (4 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+
 ## 0.12.0 (2026-09-23) (35 breaking)
 
 ### Changed

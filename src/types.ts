@@ -2444,18 +2444,18 @@ export interface OAuthApplicationRead {
 
 /**
  * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
- * when omitted. Requests must include at least one of subject_field, account_field, or
- * organization_field.
+ * when omitted or null. Requests must include at least one of subject_field, account_field, or
+ * organization_field; send null for a field to clear it.
  */
 export interface IdentityVerification {
   /** resource.method of a safe identity read with no required arguments. */
-  operation?: string;
+  operation?: string | null;
   /** JSON Pointer to the stable caller ID in the identity response. */
-  subject_field?: string;
+  subject_field?: string | null;
   /** JSON Pointer to the customer account ID. */
-  account_field?: string;
+  account_field?: string | null;
   /** JSON Pointer to the customer organization ID. */
-  organization_field?: string;
+  organization_field?: string | null;
 }
 
 /** OAuth application and request-value overrides for one named API environment. */

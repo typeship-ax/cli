@@ -238,11 +238,6 @@ export interface GenerationMeta {
    */
   pr_status?: "opened" | "no_changes" | "blocked";
   /**
-   * Why the configured destination pull request was not opened. Generation itself still succeeded;
-   * fix this action and regenerate.
-   */
-  pr_error?: string;
-  /**
    * Markdown changelog entry for this regeneration, from the API surface diff. Absent on a first
    * generation or when nothing changed.
    */
@@ -253,10 +248,10 @@ export interface GenerationMeta {
    */
   breaking_count?: number;
   /**
-   * What the diff was measured against; "destination" means the .typeship/surface.json merged in
-   * the destination repository.
+   * What the diff was measured against. destination uses the accepted repository state;
+   * last-generation uses the previous successful Generation; none means no baseline was available.
    */
-  baseline?: "destination" | "none";
+  baseline?: "destination" | "last-generation" | "none";
   /** Objective compatibility of the generated API surface against the merged destination baseline. */
   api_compatibility?: "compatible" | "breaking" | "unknown";
   /**
@@ -350,11 +345,6 @@ export interface GenerationMetaRead {
    */
   pr_status?: ("opened" | "no_changes" | "blocked") | (string & {});
   /**
-   * Why the configured destination pull request was not opened. Generation itself still succeeded;
-   * fix this action and regenerate.
-   */
-  pr_error?: string;
-  /**
    * Markdown changelog entry for this regeneration, from the API surface diff. Absent on a first
    * generation or when nothing changed.
    */
@@ -365,10 +355,10 @@ export interface GenerationMetaRead {
    */
   breaking_count?: number;
   /**
-   * What the diff was measured against; "destination" means the .typeship/surface.json merged in
-   * the destination repository.
+   * What the diff was measured against. destination uses the accepted repository state;
+   * last-generation uses the previous successful Generation; none means no baseline was available.
    */
-  baseline?: ("destination" | "none") | (string & {});
+  baseline?: ("destination" | "last-generation" | "none") | (string & {});
   /** Objective compatibility of the generated API surface against the merged destination baseline. */
   api_compatibility?: ("compatible" | "breaking" | "unknown") | (string & {});
   /**
@@ -1526,7 +1516,8 @@ export interface Publication {
   /** Format: uri */
   registry_url: string | null;
   artifact_digest: string | null;
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
   /** Format: date-time */
   started_at: string | null;
   /** Format: date-time */
@@ -1548,7 +1539,8 @@ export interface PublicationRead {
   /** Format: uri */
   registry_url: string | null;
   artifact_digest: string | null;
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainErrorRead[];
   /** Format: date-time */
   started_at: string | null;
   /** Format: date-time */
@@ -3066,7 +3058,8 @@ export interface Generation {
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
   files?: GeneratedFile[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
@@ -3095,7 +3088,8 @@ export interface GenerationWrite {
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
   files?: GeneratedFile[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
@@ -3125,7 +3119,8 @@ export interface GenerationRead {
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
   files?: GeneratedFileRead[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainErrorRead[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
@@ -3150,7 +3145,8 @@ export interface GenerationSummary {
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
   /** Format: date-time */
   created_at: string;
 }
@@ -3170,7 +3166,8 @@ export interface GenerationSummaryWrite {
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
   /** Format: date-time */
   created_at: string;
 }
@@ -3191,7 +3188,8 @@ export interface GenerationSummaryRead {
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
-  error: string | null;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainErrorRead[];
   /** Format: date-time */
   created_at: string;
 }
@@ -3209,7 +3207,8 @@ export interface GenerationFailure {
   target_id: TargetId;
   generator: GeneratorKind;
   status: "failed";
-  error: string;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainError[];
 }
 
 /** Response shape for GenerationFailure. */
@@ -3217,7 +3216,8 @@ export interface GenerationFailureRead {
   target_id: TargetId;
   generator: GeneratorKind | (string & {});
   status: "failed" | (string & {});
-  error: string;
+  /** Recorded failures. Empty when this resource has no recorded failure. */
+  errors: DomainErrorRead[];
 }
 
 /**
@@ -3517,6 +3517,7 @@ export const ErrorType = {
   SOURCE_ERROR: "source_error",
   RATE_LIMIT_ERROR: "rate_limit_error",
   API_ERROR: "api_error",
+  UNKNOWN_ERROR: "unknown_error",
 } as const;
 export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
@@ -3557,12 +3558,50 @@ export const ErrorCode = {
   PAYLOAD_TOO_LARGE: "payload_too_large",
   RATE_LIMITED: "rate_limited",
   INTERNAL_ERROR: "internal_error",
+  DEPENDENCY_MISSING: "dependency_missing",
+  DEPENDENCY_NOT_FOUND: "dependency_not_found",
+  DEPENDENCY_SELF: "dependency_self",
+  DEPENDENCY_CYCLE: "dependency_cycle",
+  DEPENDENCY_CROSS_PROJECT: "dependency_cross_project",
+  DEPENDENCY_CROSS_LINEAGE: "dependency_cross_lineage",
+  DEPENDENCY_WRONG_GENERATOR: "dependency_wrong_generator",
+  DEPENDENCY_DISABLED: "dependency_disabled",
+  DEPENDENCY_MODULE_PATH_MISSING: "dependency_module_path_missing",
+  DEPENDENCY_UNRELEASED: "dependency_unreleased",
+  DEPENDENCY_REVISION_MISMATCH: "dependency_revision_mismatch",
+  DEPENDENCY_EDITION_INCOMPATIBLE: "dependency_edition_incompatible",
+  PUBLICATION_FAILED: "publication_failed",
+  CUSTOMIZATION_CONFLICT: "customization_conflict",
+  CHECKS_UNAVAILABLE: "checks_unavailable",
+  GENERATION_STALE: "generation_stale",
+  UNCLASSIFIED_ERROR: "unclassified_error",
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** The stage that failed. A delivery failure does not change a Generation's succeeded status. */
+export const FailurePhase = {
+  DEFINITION: "definition",
+  GENERATION: "generation",
+  DELIVERY: "delivery",
+  PUBLICATION: "publication",
+} as const;
+export type FailurePhase = (typeof FailurePhase)[keyof typeof FailurePhase];
+
+export type DomainError = ErrorDetail & {
+  phase: FailurePhase;
+};
+
+/** Response shape for DomainError. */
+export type DomainErrorRead = ErrorDetailRead & {
+  phase: FailurePhase | (string & {});
+};
 
 export interface ErrorDetail {
   type: ErrorType;
   code: ErrorCode;
+  phase?: FailurePhase;
+  /** The affected Target when an operation reports failures for multiple Targets. */
+  target_id?: TargetId;
   /**
    * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
    * pointer refers to the request body. Header pointers use lowercase header names, such as
@@ -3576,7 +3615,11 @@ export interface ErrorDetail {
   in?: "body" | "query" | "header";
   /** Human-readable explanation. Its wording may change. */
   message: string;
-  /** Whether retrying later can succeed without changing the request. */
+  /**
+   * Whether another attempt can succeed without correcting the inputs. For a recorded failure,
+   * start generation or publication again; retrieving the resource or replaying an idempotency key
+   * does not start another attempt.
+   */
   retryable: boolean;
   /** Stable, concise recovery instruction suitable for a person or agent. */
   suggested_action: string;
@@ -3591,6 +3634,9 @@ export interface ErrorDetail {
 export interface ErrorDetailRead {
   type: ErrorType | (string & {});
   code: ErrorCode | (string & {});
+  phase?: FailurePhase | (string & {});
+  /** The affected Target when an operation reports failures for multiple Targets. */
+  target_id?: TargetId;
   /**
    * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
    * pointer refers to the request body. Header pointers use lowercase header names, such as
@@ -3604,7 +3650,11 @@ export interface ErrorDetailRead {
   in?: ("body" | "query" | "header") | (string & {});
   /** Human-readable explanation. Its wording may change. */
   message: string;
-  /** Whether retrying later can succeed without changing the request. */
+  /**
+   * Whether another attempt can succeed without correcting the inputs. For a recorded failure,
+   * start generation or publication again; retrieving the resource or replaying an idempotency key
+   * does not start another attempt.
+   */
   retryable: boolean;
   /** Stable, concise recovery instruction suitable for a person or agent. */
   suggested_action: string;

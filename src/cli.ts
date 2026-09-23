@@ -42,7 +42,7 @@ const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.13.1";
+const VERSION = "0.14.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -291,11 +291,23 @@ function humanError(body: ReturnType<typeof envelope>, code: number): string {
   if (detail?.violations !== undefined) {
     for (const v of (detail.violations as { path?: string; message?: string }[]).slice(0, 8)) lines.push("  " + paintErr("dim", (v.path ? v.path + ": " : "") + (v.message ?? "")));
   } else if (detail?.body !== undefined) {
-    // The API's own body, when the message above did not already come from
-    // it; the request id always, for support tickets.
-    const compact = typeof detail.body === "string" ? detail.body : JSON.stringify(detail.body);
-    const firstWords = (issue?.message ?? "").slice(0, 40);
-    if (compact && compact !== "{}" && !(firstWords && compact.includes(firstWords))) lines.push("  " + paintErr("dim", "API said: " + (compact.length > 300 ? compact.slice(0, 297) + "…" : compact)));
+    // Keep every API error and its field visible, even when the headline
+    // already used the first message. Unstructured bodies retain a summary.
+    const apiErrors = typeof detail.body === "object" && detail.body !== null
+      ? (detail.body as { errors?: unknown }).errors : undefined;
+    const entries = Array.isArray(apiErrors) ? apiErrors.filter((entry): entry is { message: string; field?: string; in?: string } =>
+      entry !== null && typeof entry === "object" && typeof entry.message === "string") : [];
+    if (entries.length > 0) {
+      for (const entry of entries) {
+        const field = typeof entry.field === "string" ? entry.field : "";
+        const location = typeof entry.in === "string" ? entry.in + " " : "";
+        lines.push("  " + paintErr("dim", (field ? location + field + ": " : "") + entry.message));
+      }
+    } else {
+      const compact = typeof detail.body === "string" ? detail.body : JSON.stringify(detail.body);
+      const firstWords = (issue?.message ?? "").slice(0, 40);
+      if (compact && compact !== "{}" && !(firstWords && compact.includes(firstWords))) lines.push("  " + paintErr("dim", "API said: " + (compact.length > 300 ? compact.slice(0, 297) + "…" : compact)));
+    }
     const requestId = detail.request_id ?? (detail.body as { request_id?: unknown; requestId?: unknown } | null)?.request_id ?? (detail.body as { requestId?: unknown } | null)?.requestId;
     if (typeof requestId === "string") lines.push("  " + paintErr("dim", "request id: " + requestId));
   }
@@ -1948,7 +1960,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.13.1");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.14.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");

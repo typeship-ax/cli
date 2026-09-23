@@ -1266,9 +1266,8 @@ export interface Target {
     pre1_breaking: "minor";
   };
   /**
-   * Deprecated projection of the newest immutable Target Release; null until a release becomes
-   * Current.
-   * @deprecated
+   * Read-only version of the Target's Current release, or null before its first release. Registry
+   * publication status is separate; inspect the Target Release for publication results.
    */
   current_version: string | null;
   proposed_version: string | null;
@@ -1307,9 +1306,8 @@ export interface TargetWrite {
     pre1_breaking: "minor";
   };
   /**
-   * Deprecated projection of the newest immutable Target Release; null until a release becomes
-   * Current.
-   * @deprecated
+   * Read-only version of the Target's Current release, or null before its first release. Registry
+   * publication status is separate; inspect the Target Release for publication results.
    */
   current_version: string | null;
   proposed_version: string | null;
@@ -1353,9 +1351,8 @@ export interface TargetRead {
     pre1_breaking: "minor" | (string & {});
   };
   /**
-   * Deprecated projection of the newest immutable Target Release; null until a release becomes
-   * Current.
-   * @deprecated
+   * Read-only version of the Target's Current release, or null before its first release. Registry
+   * publication status is separate; inspect the Target Release for publication results.
    */
   current_version: string | null;
   proposed_version: string | null;
@@ -3024,18 +3021,25 @@ export type GenerationTrigger = (typeof GenerationTrigger)[keyof typeof Generati
 export interface GenerationProvenance {
   /** Pinned generator contract edition. */
   generator_edition: string;
-  /** Exact engine build identifier used for replay and support. */
-  engine_build: string;
   /**
-   * Immutable effective Target configuration used by this run; source credentials are never
-   * included.
+   * Recorded configuration for this Generation in the public Config format, including inherited
+   * Project defaults and Target overrides. Later edits do not change it. Source credentials are
+   * never included. Null when no configuration was recorded.
    */
-  resolved_config: Record<string, unknown> | null;
-  config_hash: string | null;
-  /** Resolved generator and entitlement plan used to select the emitted public surface. */
-  surface_plan: Record<string, unknown> | null;
-  surface_plan_hash: string | null;
-  entitlement_cap: number | null;
+  resolved_config: ConfigResponse | null;
+  package_version: string | null;
+}
+
+/** Response shape for GenerationProvenance. */
+export interface GenerationProvenanceRead {
+  /** Pinned generator contract edition. */
+  generator_edition: string;
+  /**
+   * Recorded configuration for this Generation in the public Config format, including inherited
+   * Project defaults and Target overrides. Later edits do not change it. Source credentials are
+   * never included. Null when no configuration was recorded.
+   */
+  resolved_config: ConfigResponseRead | null;
   package_version: string | null;
 }
 
@@ -3115,7 +3119,7 @@ export interface GenerationRead {
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
-  provenance: GenerationProvenance;
+  provenance: GenerationProvenanceRead;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
@@ -3183,7 +3187,7 @@ export interface GenerationSummaryRead {
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
-  provenance: GenerationProvenance;
+  provenance: GenerationProvenanceRead;
   /** Null only for a failed or legacy generation that produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
@@ -3559,8 +3563,16 @@ export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 export interface ErrorDetail {
   type: ErrorType;
   code: ErrorCode;
-  /** JSON Pointer to the invalid request field, when one field caused the error. */
+  /**
+   * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
+   * pointer refers to the request body.
+   */
   field?: string;
+  /**
+   * Request part containing field. Query-parameter errors use query; omitted for request-body
+   * errors.
+   */
+  in?: "body" | "query";
   /** Human-readable explanation. Its wording may change. */
   message: string;
   /** Whether retrying later can succeed without changing the request. */
@@ -3578,8 +3590,16 @@ export interface ErrorDetail {
 export interface ErrorDetailRead {
   type: ErrorType | (string & {});
   code: ErrorCode | (string & {});
-  /** JSON Pointer to the invalid request field, when one field caused the error. */
+  /**
+   * JSON Pointer to the invalid field within the request part named by in. When in is omitted, the
+   * pointer refers to the request body.
+   */
   field?: string;
+  /**
+   * Request part containing field. Query-parameter errors use query; omitted for request-body
+   * errors.
+   */
+  in?: ("body" | "query") | (string & {});
   /** Human-readable explanation. Its wording may change. */
   message: string;
   /** Whether retrying later can succeed without changing the request. */
@@ -4038,6 +4058,78 @@ export interface PackageBehaviorResponse {
   copyright?: string | null;
   /** Go identifier when the destination repository name is unsuitable. */
   go_package_name?: string | null;
+}
+
+/**
+ * Everything Typeship needs beyond the Definition, in one object: generation customization
+ * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
+ * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
+ * itself. One-shot generation also accepts GraphQL settings here; stored projects keep those
+ * settings on their Definition.
+ */
+export interface ConfigResponse {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
+  pagination?: Record<string, PaginationRuleResponse | boolean>;
+  graphql?: GraphqlSettingsResponse;
+  auth?: AuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponse;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   */
+  docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
+}
+
+/** Response shape for ConfigResponse. */
+export interface ConfigResponseRead {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
+  pagination?: Record<string, PaginationRuleResponseRead | boolean>;
+  graphql?: GraphqlSettingsResponseRead;
+  auth?: AuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponseRead;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   */
+  docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
 }
 
 /**

@@ -4208,12 +4208,7 @@
                   "generator": "typescript-sdk",
                   "provenance": {
                     "generator_edition": "2026-08-24",
-                    "engine_build": "abc123",
                     "resolved_config": null,
-                    "config_hash": null,
-                    "surface_plan": null,
-                    "surface_plan_hash": null,
-                    "entitlement_cap": null,
                     "package_version": "1.0.0"
                   },
                   "meta": {
@@ -4318,43 +4313,16 @@
                       "description": "Pinned generator contract edition.",
                       "type": "string"
                     },
-                    "engine_build": {
-                      "description": "Exact engine build identifier used for replay and support.",
-                      "type": "string"
-                    },
                     "resolved_config": {
-                      "description": "Immutable effective Target configuration used by this run; source credentials are never included.",
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    },
-                    "config_hash": {
-                      "pattern": "^[a-f0-9]{64}$",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "surface_plan": {
-                      "description": "Resolved generator and entitlement plan used to select the emitted public surface.",
-                      "type": [
-                        "object",
-                        "null"
-                      ]
-                    },
-                    "surface_plan_hash": {
-                      "pattern": "^[a-f0-9]{64}$",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "entitlement_cap": {
-                      "minimum": 1,
-                      "type": [
-                        "integer",
-                        "null"
+                      "description": "Recorded configuration for this Generation in the public Config format, including inherited Project…",
+                      "anyOf": [
+                        {
+                          "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals,…",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
                       ]
                     },
                     "package_version": {
@@ -4497,12 +4465,7 @@
                       "generator": "typescript-sdk",
                       "provenance": {
                         "generator_edition": "2026-08-24",
-                        "engine_build": "abc123",
                         "resolved_config": null,
-                        "config_hash": null,
-                        "surface_plan": null,
-                        "surface_plan_hash": null,
-                        "entitlement_cap": null,
                         "package_version": "1.0.0"
                       },
                       "meta": {
@@ -5829,8 +5792,7 @@
                   "type": "object"
                 },
                 "current_version": {
-                  "description": "Deprecated projection of the newest immutable Target Release; null until a release becomes Current.",
-                  "deprecated": true,
+                  "description": "Read-only version of the Target's Current release, or null before its first release. Registry publication status is separate; inspect the Target Release for publication results.",
                   "type": [
                     "string",
                     "null"
@@ -6752,8 +6714,7 @@
             "type": "object"
           },
           "current_version": {
-            "description": "Deprecated projection of the newest immutable Target Release; null until a release becomes Current.",
-            "deprecated": true,
+            "description": "Read-only version of the Target's Current release, or null before its first release.",
             "type": [
               "string",
               "null"
@@ -7075,8 +7036,7 @@
             "type": "object"
           },
           "current_version": {
-            "description": "Deprecated projection of the newest immutable Target Release; null until a release becomes Current.",
-            "deprecated": true,
+            "description": "Read-only version of the Target's Current release, or null before its first release.",
             "type": [
               "string",
               "null"
@@ -8003,8 +7963,7 @@
             "type": "object"
           },
           "current_version": {
-            "description": "Deprecated projection of the newest immutable Target Release; null until a release becomes Current.",
-            "deprecated": true,
+            "description": "Read-only version of the Target's Current release, or null before its first release.",
             "type": [
               "string",
               "null"
@@ -11730,43 +11689,16 @@
                 "description": "Pinned generator contract edition.",
                 "type": "string"
               },
-              "engine_build": {
-                "description": "Exact engine build identifier used for replay and support.",
-                "type": "string"
-              },
               "resolved_config": {
-                "description": "Immutable effective Target configuration used by this run; source credentials are never included.",
-                "type": [
-                  "object",
-                  "null"
-                ]
-              },
-              "config_hash": {
-                "pattern": "^[a-f0-9]{64}$",
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "surface_plan": {
-                "description": "Resolved generator and entitlement plan used to select the emitted public surface.",
-                "type": [
-                  "object",
-                  "null"
-                ]
-              },
-              "surface_plan_hash": {
-                "pattern": "^[a-f0-9]{64}$",
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "entitlement_cap": {
-                "minimum": 1,
-                "type": [
-                  "integer",
-                  "null"
+                "description": "Recorded configuration for this Generation in the public Config format, including inherited Project…",
+                "anyOf": [
+                  {
+                    "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals,…",
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "package_version": {

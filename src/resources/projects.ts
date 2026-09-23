@@ -72,6 +72,7 @@ export class ProjectsResource {
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.list",
@@ -93,7 +94,7 @@ export class ProjectsResource {
    *
    * Free includes one saved Project, all selected Targets, and the first 25 operations per Target,
    * with regeneration, history, delivery pull requests, and previews. Pro supports additional
-   * Projects and all operations. Stateless generation does not use a Project slot.
+   * Projects and all operations. One-shot generation does not use a Project slot.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /projects`
@@ -147,6 +148,7 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.retrieve",
@@ -156,6 +158,9 @@ export class ProjectsResource {
 
   /**
    * Delete a project
+   *
+   * A `502` response means the Project was not deleted because its release pull requests could not
+   * be retired.
    * `DELETE /projects/{project_id}`
    */
   async delete(
@@ -171,6 +176,8 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
       },
       idempotent: true,
       schemaKey: "projects.delete",
@@ -180,6 +187,9 @@ export class ProjectsResource {
 
   /**
    * Update a project
+   *
+   * A `502` response means the Project was saved, but an obsolete release pull request could not be
+   * retired.
    * `PATCH /projects/{project_id}`
    */
   async update(
@@ -201,6 +211,7 @@ export class ProjectsResource {
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
         "502": BadGatewayError,
       },
       schemaKey: "projects.update",
@@ -229,6 +240,7 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.retrieveDiagnostics",
@@ -258,12 +270,14 @@ export class ProjectsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       errors: {
+        "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.refreshDiagnostics",
@@ -305,6 +319,7 @@ export class ProjectsResource {
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.remediateDiagnostics",
@@ -332,6 +347,7 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.retrieveIntegrationHealth",
@@ -365,6 +381,7 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.listGenerations",
@@ -405,6 +422,7 @@ export class ProjectsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       errors: {
+        "400": BadRequestError,
         "401": UnauthorizedError,
         "402": PaymentRequiredError,
         "403": ForbiddenError,
@@ -437,6 +455,7 @@ export type ProjectsListError =
   | UnauthorizedError
   | ForbiddenError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -473,6 +492,7 @@ export type ProjectsRetrieveError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -484,6 +504,8 @@ export type ProjectsDeleteError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -499,6 +521,7 @@ export type ProjectsUpdateError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
@@ -511,6 +534,7 @@ export type ProjectsRetrieveDiagnosticsError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -528,12 +552,14 @@ export interface ProjectsRefreshDiagnosticsParams {
 
 /** Every error `refreshDiagnostics` can produce, as a discriminated union. */
 export type ProjectsRefreshDiagnosticsError =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -558,6 +584,7 @@ export type ProjectsRemediateDiagnosticsError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -569,6 +596,7 @@ export type ProjectsRetrieveIntegrationHealthError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -593,6 +621,7 @@ export type ProjectsListGenerationsError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -610,6 +639,7 @@ export interface ProjectsGenerateParams {
 
 /** Every error `generate` can produce, as a discriminated union. */
 export type ProjectsGenerateError =
+  | BadRequestError
   | UnauthorizedError
   | PaymentRequiredError
   | ForbiddenError

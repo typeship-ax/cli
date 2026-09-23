@@ -10,6 +10,7 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   RateLimitedError,
   UnauthorizedError,
@@ -41,6 +42,7 @@ export class DefinitionsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "definitions.retrieve",
@@ -78,6 +80,7 @@ export class DefinitionsResource {
         "409": ConflictError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "definitions.update",
@@ -92,6 +95,7 @@ export type DefinitionsRetrieveError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -116,6 +120,7 @@ export type DefinitionsUpdateError =
   | ConflictError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

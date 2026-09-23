@@ -11,6 +11,7 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  InternalServerError,
   PayloadTooLargeError,
   RateLimitedError,
   UnauthorizedError,
@@ -21,10 +22,12 @@ import type { GenerateRequest, GenerationResult, GenerationResultRead } from "..
 export class GenerateResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * Generate one Target from a Definition
+   * Generate one package from a Definition
    *
-   * Returns one generated package without saving a Project or retaining source files or generated
-   * files.
+   * Returns one generated package without creating a Project.
+   *
+   * Supports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed
+   * responses include generated files in the replay cache.
    *
    * Anonymous and Free requests include the first 25 operations. Paid plans include all operations.
    * Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an
@@ -57,6 +60,7 @@ export class GenerateResource {
         "413": PayloadTooLargeError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
+        "500": InternalServerError,
         default: ApiResponseError,
       },
       idempotencyKey: "Idempotency-Key",
@@ -85,6 +89,7 @@ export type GenerateRunError =
   | PayloadTooLargeError
   | UnprocessableEntityError
   | RateLimitedError
+  | InternalServerError
   | ApiResponseError
   | UnexpectedApiError
   | ResponseParseError

@@ -44,13 +44,15 @@ export type PublicationId = string;
 
 /**
  * Generator implementation selected by a Target. This is configuration, not identity; several
- * Targets may use the same generator.
+ * Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a
+ * distinct product that imports one exact paired Go SDK module rather than a client of its own.
  */
 export const GeneratorKind = {
   TYPESCRIPT_SDK: "typescript-sdk",
   PYTHON_SDK: "python-sdk",
   GO_SDK: "go-sdk",
   CLI: "cli",
+  GO_CLI: "go-cli",
   MCP: "mcp",
 } as const;
 export type GeneratorKind = (typeof GeneratorKind)[keyof typeof GeneratorKind];
@@ -64,7 +66,7 @@ export interface UrlDefinitionInput {
   url: string;
   /**
    * Request headers for a protected URL. Sent on the document GET and GraphQL introspection POST,
-   * never returned or retained by stateless generation.
+   * never returned or retained by one-shot generation.
    */
   headers?: Record<string, string>;
 }
@@ -84,15 +86,49 @@ export interface InlineDefinitionInput {
   inline: string;
 }
 
-/** A Definition for stateless generation, provided as exactly one URL or inline entrypoint. */
+/** A Definition for one-shot generation, provided as exactly one URL or inline entrypoint. */
 export type DefinitionInput = UrlDefinitionInput | InlineDefinitionInput;
 
 /** Response shape for DefinitionInput. */
 export type DefinitionInputRead = UrlDefinitionInputRead | InlineDefinitionInput;
 
+/**
+ * The exact paired Go SDK a go-cli generation is built on. Required when target.generator is go-cli
+ * and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range
+ * or a branch pins nothing.
+ */
+export interface GoSdkDescriptor {
+  /**
+   * Go module path of the SDK the CLI imports, for example github.com/acme/payments-go. Must be a
+   * valid Go module path.
+   */
+  module_path: string;
+  /**
+   * Exact SDK module version the CLI requires: v-prefixed SemVer such as v1.2.3, or an immutable Go
+   * pseudo-version naming a commit such as v0.0.0-20240824120000-abcdef123456. Ranges, branches,
+   * and "latest" are rejected.
+   */
+  version: string;
+  /**
+   * SHA-256 hex digest of the Definition the SDK was generated from. Must match the resolved
+   * Definition, or the request fails with spec_error.
+   */
+  definition_digest: string;
+  /**
+   * The generator edition the SDK was generated with. Only the current edition, 2026-08-24, is
+   * accepted.
+   */
+  edition: string;
+  /**
+   * Go package identifier of the SDK, when the module path's last element does not imply it.
+   * Optional.
+   */
+  package_name?: string;
+}
+
 export interface GenerateRequest {
   definition: DefinitionInput;
-  /** Stateless generator descriptor; no persisted Target is created. */
+  /** One-shot generator descriptor; no persisted Target is created. */
   target: {
     generator: GeneratorKind;
   };
@@ -102,17 +138,18 @@ export interface GenerateRequest {
    */
   package_name?: string;
   /**
-   * Go module path override. Valid only for the Go SDK. Linked projects derive this from the Go
-   * destination repository by default.
+   * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
+   * Go CLI outputs. Linked projects derive this from the Go destination repository by default.
    */
   module_path?: string;
+  go_sdk?: GoSdkDescriptor;
   config?: Config;
 }
 
 /** Response shape for GenerateRequest. */
 export interface GenerateRequestRead {
   definition: DefinitionInputRead;
-  /** Stateless generator descriptor; no persisted Target is created. */
+  /** One-shot generator descriptor; no persisted Target is created. */
   target: {
     generator: GeneratorKind | (string & {});
   };
@@ -122,10 +159,11 @@ export interface GenerateRequestRead {
    */
   package_name?: string;
   /**
-   * Go module path override. Valid only for the Go SDK. Linked projects derive this from the Go
-   * destination repository by default.
+   * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
+   * Go CLI outputs. Linked projects derive this from the Go destination repository by default.
    */
   module_path?: string;
+  go_sdk?: GoSdkDescriptor;
   config?: ConfigRead;
 }
 
@@ -134,7 +172,7 @@ export interface GeneratedFile {
   path: string;
   content: string;
   /**
-   * Exact Git file mode. Omitted stateless outputs are regular files.
+   * Exact Git file mode. Omitted one-shot outputs are regular files.
    * Default: "100644"
    */
   mode?: "100644" | "100755";
@@ -146,7 +184,7 @@ export interface GeneratedFileRead {
   path: string;
   content: string;
   /**
-   * Exact Git file mode. Omitted stateless outputs are regular files.
+   * Exact Git file mode. Omitted one-shot outputs are regular files.
    * Default: "100644"
    */
   mode?: ("100644" | "100755") | (string & {});
@@ -171,6 +209,18 @@ export interface GenerationMeta {
    * Generation.
    */
   generators: GeneratorKind[];
+  /**
+   * Present for go-cli generations only. Names the exact paired Go SDK module and version the CLI
+   * was generated against, as its go.mod requires it.
+   */
+  go_sdk?: {
+    /** Go module path of the SDK the Go CLI imports and pins. */
+    module_path: string;
+    /** Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. */
+    version: string;
+    /** Go package identifier of the SDK, when the module path does not imply it. */
+    package_name?: string;
+  };
   resource_count?: number;
   operation_count?: number;
   schema_count?: number;
@@ -271,6 +321,18 @@ export interface GenerationMetaRead {
    * Generation.
    */
   generators: Array<GeneratorKind | (string & {})>;
+  /**
+   * Present for go-cli generations only. Names the exact paired Go SDK module and version the CLI
+   * was generated against, as its go.mod requires it.
+   */
+  go_sdk?: {
+    /** Go module path of the SDK the Go CLI imports and pins. */
+    module_path: string;
+    /** Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. */
+    version: string;
+    /** Go package identifier of the SDK, when the module path does not imply it. */
+    package_name?: string;
+  };
   resource_count?: number;
   operation_count?: number;
   schema_count?: number;
@@ -905,7 +967,7 @@ export interface RepositoryDeliveryInput {
   directory?: string | null;
   /** npm or Python registry identity where applicable. */
   package_name?: string | null;
-  /** Explicit Go module path where applicable. */
+  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
   module_path?: string | null;
   /**
    * Commit repository-owned registry automation and report publication after the Draft merges.
@@ -921,7 +983,7 @@ export interface RepositoryDeliveryInputRead {
   directory?: string | null;
   /** npm or Python registry identity where applicable. */
   package_name?: string | null;
-  /** Explicit Go module path where applicable. */
+  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
   module_path?: string | null;
   /**
    * Commit repository-owned registry automation and report publication after the Draft merges.
@@ -1016,6 +1078,21 @@ export type Delivery = RepositoryDelivery | HostedMcpDelivery;
 export type DeliveryRead = RepositoryDeliveryRead
   | HostedMcpDeliveryRead
   | Record<string, unknown> & { kind?: string };
+
+/**
+ * One Target generated from a sibling Target. A go-cli Target carries kind go_sdk_module, naming
+ * the Go SDK Target it is generated against.
+ */
+export interface TargetDependency {
+  kind: "go_sdk_module";
+  target_id: TargetId;
+}
+
+/** Response shape for TargetDependency. */
+export interface TargetDependencyRead {
+  kind: "go_sdk_module" | (string & {});
+  target_id: TargetId;
+}
 
 /**
  * Required checks run against the complete combined package. Generated checks and customer commands
@@ -1136,6 +1213,13 @@ export interface TargetUpdateRequest {
    * belong to the Definition.
    */
   config?: TargetConfig | null;
+  /**
+   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
+   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
+   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
+   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
+   * for hosted_mcp, a new URL.
+   */
   deliveries?: DeliveryInput[];
 }
 
@@ -1152,10 +1236,63 @@ export interface TargetUpdateRequestRead {
    * belong to the Definition.
    */
   config?: TargetConfigRead | null;
+  /**
+   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
+   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
+   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
+   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
+   * for hosted_mcp, a new URL.
+   */
   deliveries?: DeliveryInputRead[];
 }
 
 export interface Target {
+  id: TargetId;
+  object: "target";
+  project_id: ProjectId;
+  definition_id: DefinitionId;
+  name: string;
+  generator: GeneratorKind;
+  /**
+   * Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.
+   * Every other generator reports null.
+   */
+  dependency: TargetDependency | null;
+  state: "active" | "disabled";
+  edition: string;
+  release_channel: "stable" | "prerelease";
+  version_policy: {
+    mode: "reviewed_semver";
+    pre1_breaking: "minor";
+  };
+  /**
+   * Deprecated projection of the newest immutable Target Release; null until a release becomes
+   * Current.
+   * @deprecated
+   */
+  current_version: string | null;
+  proposed_version: string | null;
+  proposed_version_source: "console" | "api" | "github" | null;
+  proposed_version_actor: string | null;
+  /** Optimistic concurrency revision for Draft selections. */
+  release_revision: number;
+  checks: TargetChecks;
+  /**
+   * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
+   * never appear here.
+   */
+  config: TargetConfig | null;
+  /** At most one repository and one hosted MCP Delivery. */
+  deliveries: Delivery[];
+  /** Format: date-time */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
+  request_id?: RequestId;
+}
+
+/** Request shape for Target. */
+export interface TargetWrite {
   id: TargetId;
   object: "target";
   project_id: ProjectId;
@@ -1203,6 +1340,11 @@ export interface TargetRead {
   definition_id: DefinitionId;
   name: string;
   generator: GeneratorKind | (string & {});
+  /**
+   * Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.
+   * Every other generator reports null.
+   */
+  dependency: TargetDependencyRead | null;
   state: ("active" | "disabled") | (string & {});
   edition: string;
   release_channel: ("stable" | "prerelease") | (string & {});
@@ -1238,12 +1380,24 @@ export interface TargetRead {
 
 export type TargetResponse = Target & ResponseMetadata;
 
+/** Request shape for TargetResponse. */
+export type TargetResponseWrite = TargetWrite & ResponseMetadata;
+
 /** Response shape for TargetResponse. */
 export type TargetResponseRead = TargetRead & ResponseMetadata;
 
 export interface TargetList {
   object: ListObject;
   data: Target[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Request shape for TargetList. */
+export interface TargetListWrite {
+  object: ListObject;
+  data: TargetWrite[];
   has_more: boolean;
   next_cursor: string | null;
   request_id: RequestId;
@@ -2315,7 +2469,7 @@ export interface AuthenticationEnvironment {
 
 /**
  * Public authentication defaults for generated clients and tools. Stored Projects own the OAuth
- * server, application catalog, and identity policy; stateless generation accepts the same shape for
+ * server, application catalog, and identity policy; one-shot generation accepts the same shape for
  * one run. Runtime credentials and client secrets are never accepted.
  */
 export interface AuthenticationConfig {
@@ -2539,7 +2693,7 @@ export interface PackageBehavior {
  * Everything Typeship needs beyond the Definition, in one object: generation customization
  * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
  * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
- * itself. Stateless generation also accepts GraphQL settings here; stored projects keep those
+ * itself. One-shot generation also accepts GraphQL settings here; stored projects keep those
  * settings on their Definition.
  */
 export interface Config {
@@ -2898,7 +3052,7 @@ export interface Generation {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
@@ -2927,7 +3081,7 @@ export interface GenerationWrite {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
@@ -2957,7 +3111,7 @@ export interface GenerationRead {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus | (string & {});
   trigger: GenerationTrigger | (string & {});
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
@@ -2984,7 +3138,7 @@ export interface GenerationSummary {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
@@ -3004,7 +3158,7 @@ export interface GenerationSummaryWrite {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
@@ -3025,7 +3179,7 @@ export interface GenerationSummaryRead {
   definition_revision_id: DefinitionRevisionId | null;
   status: GenerationStatus | (string & {});
   trigger: GenerationTrigger | (string & {});
-  /** Persisted Target identity. Null only for stateless generation. */
+  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});

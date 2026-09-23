@@ -9,6 +9,7 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   RateLimitedError,
   UnauthorizedError,
@@ -37,6 +38,7 @@ export class GenerationsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "generations.retrieve",
@@ -69,6 +71,7 @@ export class GenerationsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "429": RateLimitedError,
+        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "generations.retrieveFile",
@@ -83,6 +86,7 @@ export type GenerationsRetrieveError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -100,6 +104,7 @@ export type GenerationsRetrieveFileError =
   | ForbiddenError
   | NotFoundError
   | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

@@ -44,6 +44,13 @@
           "required": false
         },
         {
+          "name": "go_sdk",
+          "flag": "--go-sdk",
+          "in": "body",
+          "type": "object",
+          "required": false
+        },
+        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -61,8 +68,8 @@
       "example_command": "typeship generate run --definition '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"generator\":\"cli\"}'",
       "method": "POST",
       "path": "/generate",
-      "summary": "Generate one Target from a Definition",
-      "description": "Returns one generated package without saving a Project or retaining source files or generated files.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
+      "summary": "Generate one package from a Definition",
+      "description": "Returns one generated package without creating a Project.\n\nSupports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
       "safety": "write",
       "auth": "optional",
       "security": [
@@ -83,7 +90,7 @@
             "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
           },
           "definition": {
-            "description": "A Definition for stateless generation, provided as exactly one URL or inline entrypoint.",
+            "description": "A Definition for one-shot generation, provided as exactly one URL or inline entrypoint.",
             "anyOf": [
               {
                 "properties": {
@@ -94,7 +101,7 @@
                     "type": "string"
                   },
                   "headers": {
-                    "description": "Request headers for a protected URL. Sent on the document GET and GraphQL introspection POST, never returned or retained by stateless generation.",
+                    "description": "Request headers for a protected URL. Sent on the document GET and GraphQL introspection POST, never returned or retained by one-shot generation.",
                     "additionalProperties": {
                       "maxLength": 4096,
                       "type": "string"
@@ -127,7 +134,7 @@
             }
           },
           "target": {
-            "description": "Stateless generator descriptor; no persisted Target is created.",
+            "description": "One-shot generator descriptor; no persisted Target is created.",
             "properties": {
               "generator": {
                 "enum": [
@@ -135,9 +142,10 @@
                   "python-sdk",
                   "go-sdk",
                   "cli",
+                  "go-cli",
                   "mcp"
                 ],
-                "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+                "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
                 "type": "string"
               }
             },
@@ -155,11 +163,45 @@
             "type": "string"
           },
           "module_path": {
-            "description": "Go module path override. Valid only for the Go SDK. Linked projects derive this from the Go destination repository by default.",
+            "description": "Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI outputs. Linked projects derive this from the Go destination repository by default.",
             "type": "string"
           },
+          "go_sdk": {
+            "description": "The exact paired Go SDK a go-cli generation is built on. Required when target.generator is go-cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing.",
+            "properties": {
+              "module_path": {
+                "description": "Go module path of the SDK the CLI imports, for example github.com/acme/payments-go. Must be a valid Go module path.",
+                "type": "string"
+              },
+              "version": {
+                "description": "Exact SDK module version the CLI requires: v-prefixed SemVer such as v1.2.3, or an immutable Go pseudo-version naming a commit such as v0.0.0-20240824120000-abcdef123456. Ranges, branches, and \"latest\" are rejected.",
+                "type": "string"
+              },
+              "definition_digest": {
+                "description": "SHA-256 hex digest of the Definition the SDK was generated from. Must match the resolved Definition, or the request fails with spec_error.",
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "edition": {
+                "description": "The generator edition the SDK was generated with. Only the current edition, 2026-08-24, is accepted.",
+                "type": "string"
+              },
+              "package_name": {
+                "description": "Go package identifier of the SDK, when the module path's last element does not imply it. Optional.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "module_path",
+              "version",
+              "definition_digest",
+              "edition"
+            ],
+            "additionalProperties": false,
+            "type": "object"
+          },
           "config": {
-            "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. Stateless generation also accepts GraphQL settings here; stored projects keep those settings on their Definition.",
+            "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Definition.",
             "properties": {
               "globals": {
                 "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
@@ -336,7 +378,7 @@
                 "type": "object"
               },
               "auth": {
-                "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
                 "properties": {
                   "oauth_server": {
                     "anyOf": [
@@ -858,6 +900,10 @@
                 "uniqueItems": true,
                 "type": "array"
               },
+              "go_sdk": {
+                "description": "Present for go-cli generations only.",
+                "type": "object"
+              },
               "resource_count": {
                 "type": "integer"
               },
@@ -1266,7 +1312,7 @@
       "method": "POST",
       "path": "/projects",
       "summary": "Create a project",
-      "description": "Creates a Project from a URL or GitHub Definition.\n\nFree includes one saved Project, all selected Targets, and the first 25 operations per Target, with regeneration, history, delivery pull requests, and previews. Pro supports additional Projects and all operations. Stateless generation does not use a Project slot.",
+      "description": "Creates a Project from a URL or GitHub Definition.\n\nFree includes one saved Project, all selected Targets, and the first 25 operations per Target, with regeneration, history, delivery pull requests, and previews. Pro supports additional Projects and all operations. One-shot generation does not use a Project slot.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -1568,9 +1614,10 @@
                     "python-sdk",
                     "go-sdk",
                     "cli",
+                    "go-cli",
                     "mcp"
                   ],
-                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
                   "type": "string"
                 },
                 "state": {
@@ -1806,7 +1853,7 @@
                     "type": "object"
                   },
                   "auth": {
-                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
                     "properties": {
                       "oauth_server": {
                         "anyOf": [
@@ -2408,6 +2455,7 @@
       "method": "DELETE",
       "path": "/projects/{project_id}",
       "summary": "Delete a project",
+      "description": "A `502` response means the Project was not deleted because its release pull requests could not be retired.",
       "safety": "destructive",
       "auth": "required",
       "security": [
@@ -2514,6 +2562,7 @@
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
+      "description": "A `502` response means the Project was saved, but an obsolete release pull request could not be retired.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -2617,7 +2666,7 @@
                     "type": "object"
                   },
                   "auth": {
-                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; stateless generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                    "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
                     "properties": {
                       "oauth_server": {
                         "anyOf": [
@@ -4239,6 +4288,7 @@
                     "python-sdk",
                     "go-sdk",
                     "cli",
+                    "go-cli",
                     "mcp"
                   ],
                   "description": "Generator implementation selected by a Target.",
@@ -4506,7 +4556,7 @@
                       "type": "string"
                     },
                     "target_id": {
-                      "description": "Persisted Target identity. Null only for stateless generation.",
+                      "description": "Persisted Target identity. Null only for one-shot generation.",
                       "anyOf": [
                         {
                           "description": "Stable identifier for one configured generated product.",
@@ -4527,9 +4577,10 @@
                         "python-sdk",
                         "go-sdk",
                         "cli",
+                        "go-cli",
                         "mcp"
                       ],
-                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
                       "type": "string"
                     },
                     "provenance": {
@@ -4579,9 +4630,10 @@
                         "python-sdk",
                         "go-sdk",
                         "cli",
+                        "go-cli",
                         "mcp"
                       ],
-                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
                       "type": "string"
                     },
                     "status": {
@@ -5693,10 +5745,37 @@
                     "python-sdk",
                     "go-sdk",
                     "cli",
+                    "go-cli",
                     "mcp"
                   ],
-                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
                   "type": "string"
+                },
+                "dependency": {
+                  "description": "Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against. Every other generator reports null.",
+                  "anyOf": [
+                    {
+                      "description": "One Target generated from a sibling Target. A go-cli Target carries kind go_sdk_module, naming the Go SDK Target it is generated against.",
+                      "properties": {
+                        "kind": {
+                          "const": "go_sdk_module",
+                          "type": "string"
+                        },
+                        "target_id": {
+                          "description": "Stable identifier for one configured generated product.",
+                          "examples": [
+                            "tgt_5m8q2v7k1p9d4h6c"
+                          ],
+                          "pattern": "^tgt_[a-z0-9]{16}$",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "state": {
                   "enum": [
@@ -6063,9 +6142,10 @@
               "python-sdk",
               "go-sdk",
               "cli",
+              "go-cli",
               "mcp"
             ],
-            "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator.",
+            "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
             "type": "string"
           },
           "state": {
@@ -6505,7 +6585,7 @@
                       ]
                     },
                     "module_path": {
-                      "description": "Explicit Go module path where applicable.",
+                      "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
                       "type": [
                         "string",
                         "null"
@@ -6588,10 +6668,37 @@
               "python-sdk",
               "go-sdk",
               "cli",
+              "go-cli",
               "mcp"
             ],
             "description": "Generator implementation selected by a Target.",
             "type": "string"
+          },
+          "dependency": {
+            "description": "Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.",
+            "anyOf": [
+              {
+                "description": "One Target generated from a sibling Target.",
+                "properties": {
+                  "kind": {
+                    "const": "go_sdk_module",
+                    "type": "string"
+                  },
+                  "target_id": {
+                    "description": "Stable identifier for one configured generated product.",
+                    "examples": [
+                      "tgt_5m8q2v7k1p9d4h6c"
+                    ],
+                    "pattern": "^tgt_[a-z0-9]{16}$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "enum": [
@@ -6884,10 +6991,37 @@
               "python-sdk",
               "go-sdk",
               "cli",
+              "go-cli",
               "mcp"
             ],
             "description": "Generator implementation selected by a Target.",
             "type": "string"
+          },
+          "dependency": {
+            "description": "Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.",
+            "anyOf": [
+              {
+                "description": "One Target generated from a sibling Target.",
+                "properties": {
+                  "kind": {
+                    "const": "go_sdk_module",
+                    "type": "string"
+                  },
+                  "target_id": {
+                    "description": "Stable identifier for one configured generated product.",
+                    "examples": [
+                      "tgt_5m8q2v7k1p9d4h6c"
+                    ],
+                    "pattern": "^tgt_[a-z0-9]{16}$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "enum": [
@@ -7249,6 +7383,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target, its Deliveries, or its next reviewed version",
+      "description": "A `502` response means the selected version was saved, but regeneration failed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -7655,6 +7790,7 @@
             ]
           },
           "deliveries": {
+            "description": "Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and, for hosted_mcp, a new URL.",
             "maxItems": 2,
             "items": {
               "anyOf": [
@@ -7703,7 +7839,7 @@
                       ]
                     },
                     "module_path": {
-                      "description": "Explicit Go module path where applicable.",
+                      "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
                       "type": [
                         "string",
                         "null"
@@ -7783,10 +7919,37 @@
               "python-sdk",
               "go-sdk",
               "cli",
+              "go-cli",
               "mcp"
             ],
             "description": "Generator implementation selected by a Target.",
             "type": "string"
+          },
+          "dependency": {
+            "description": "Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.",
+            "anyOf": [
+              {
+                "description": "One Target generated from a sibling Target.",
+                "properties": {
+                  "kind": {
+                    "const": "go_sdk_module",
+                    "type": "string"
+                  },
+                  "target_id": {
+                    "description": "Stable identifier for one configured generated product.",
+                    "examples": [
+                      "tgt_5m8q2v7k1p9d4h6c"
+                    ],
+                    "pattern": "^tgt_[a-z0-9]{16}$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "enum": [
@@ -8702,7 +8865,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}/draft",
       "summary": "Select an exact Draft version or return to automatic versioning",
-      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.",
+      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nA `502` response means the selected version was saved, but regeneration failed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -9419,7 +9582,7 @@
       "method": "POST",
       "path": "/targets/{target_id}/customizations/reset",
       "summary": "Resolve or reset custom code on the rolling Draft",
-      "description": "Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns integration and checks on the same Draft. Supply the expected head revision to prevent a stale choice from changing a newer Draft.",
+      "description": "Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns integration and checks on the same Draft. Supply the expected head revision to prevent a stale choice from changing a newer Draft.\n\nA `502` response means regeneration failed after the reset commit.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -10967,7 +11130,7 @@
       "method": "POST",
       "path": "/target_releases/{target_release_id}/republish",
       "summary": "Retry publication of an exact Target release",
-      "description": "Retries publication of the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.",
+      "description": "Retries publication of the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.\n\nA `502` response means the repository publication workflow could not be dispatched.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -11531,6 +11694,7 @@
               "python-sdk",
               "go-sdk",
               "cli",
+              "go-cli",
               "mcp"
             ],
             "description": "Generator implementation selected by a Target.",

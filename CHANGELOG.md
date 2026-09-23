@@ -1,5 +1,119 @@
 # Changelog
 
+## 0.12.0 (2026-09-23) (35 breaking)
+
+### Changed
+- `generate.run()`
+  - `body-field-type-changed`: request body.target.generator enum value added: "go-cli"
+  - `body-field-added`: request body.go\_sdk added: GoSdkDescriptor \(optional\)
+  - **breaking** `return-type-changed`: response.meta.generators\[\] enum value added: "go-cli"
+  - `return-type-changed`: response.meta.go\_sdk added: \{   /\*\* Go module path of the SDK the Go CLI imports and pins. \*/   module\_path: string;   /\*\* Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. \*/   version: string;   /\*\* Go package identifier of the SDK, when the module path does not imply it. \*/   package\_name?: string; \} \(optional\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.list()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.create()`
+  - `body-field-type-changed`: request body.targets\[\].generator enum value added: "go-cli"
+  - `documentation-changed`: summary or description changed
+- `projects.retrieve()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.delete()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 500: InternalServerError
+  - **breaking** `error-added`: 502: BadGatewayError
+- `projects.update()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.retrieveDiagnostics()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.refreshDiagnostics()`
+  - **breaking** `error-added`: 400: BadRequestError
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.remediateDiagnostics()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response.data\[\].generator enum value added: "go-cli"
+  - **breaking** `return-type-changed`: response.data\[\].meta.generators\[\] enum value added: "go-cli"
+  - `return-type-changed`: response.data\[\].meta.go\_sdk added: \{   /\*\* Go module path of the SDK the Go CLI imports and pins. \*/   module\_path: string;   /\*\* Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. \*/   version: string;   /\*\* Go package identifier of the SDK, when the module path does not imply it. \*/   package\_name?: string; \} \(optional\)
+  - **breaking** `error-added`: 500: InternalServerError
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response.data\[\].generator enum value added: "go-cli"
+  - **breaking** `return-type-changed`: response.data\[\].generator enum value added: "go-cli"
+  - **breaking** `return-type-changed`: response.data\[\].meta.generators\[\] enum value added: "go-cli"
+  - `return-type-changed`: response.data\[\].meta.go\_sdk added: \{   /\*\* Go module path of the SDK the Go CLI imports and pins. \*/   module\_path: string;   /\*\* Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. \*/   version: string;   /\*\* Go package identifier of the SDK, when the module path does not imply it. \*/   package\_name?: string; \} \(optional\)
+  - **breaking** `error-added`: 400: BadRequestError
+- `definitions.retrieve()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `definitions.update()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.list()`
+  - **breaking** `return-type-changed`: response.data\[\].generator enum value added: "go-cli"
+  - `return-type-changed`: response.data\[\].dependency added: TargetDependency \| null \(required\)
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.create()`
+  - `body-field-type-changed`: request body.generator enum value added: "go-cli"
+  - **breaking** `return-type-changed`: response.generator enum value added: "go-cli"
+  - `return-type-changed`: response.dependency added: TargetDependency \| null \(required\)
+  - **breaking** `error-added`: 402: PaymentRequiredError
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: response.generator enum value added: "go-cli"
+  - `return-type-changed`: response.dependency added: TargetDependency \| null \(required\)
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.delete()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.update()`
+  - **breaking** `return-type-changed`: response.generator enum value added: "go-cli"
+  - `return-type-changed`: response.dependency added: TargetDependency \| null \(required\)
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 402: PaymentRequiredError
+  - **breaking** `error-added`: 500: InternalServerError
+  - **breaking** `error-added`: 502: BadGatewayError
+- `targets.listReleases()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.retrieveDraft()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.updateDraft()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 500: InternalServerError
+  - **breaking** `error-added`: 502: BadGatewayError
+- `targets.retrieveCustomizations()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.resetCustomizations()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.adoptRelease()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.retrieveRelease()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `targets.republishRelease()`
+  - `documentation-changed`: summary or description changed
+  - **breaking** `error-added`: 400: BadRequestError
+  - **breaking** `error-added`: 500: InternalServerError
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response.generator enum value added: "go-cli"
+  - **breaking** `return-type-changed`: response.meta.generators\[\] enum value added: "go-cli"
+  - `return-type-changed`: response.meta.go\_sdk added: \{   /\*\* Go module path of the SDK the Go CLI imports and pins. \*/   module\_path: string;   /\*\* Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. \*/   version: string;   /\*\* Go package identifier of the SDK, when the module path does not imply it. \*/   package\_name?: string; \} \(optional\)
+  - **breaking** `error-added`: 500: InternalServerError
+- `generations.retrieveFile()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `definitionRevisions.list()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `definitionRevisions.retrieve()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `account.retrieve()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `apiKeys.list()`
+  - **breaking** `error-added`: 500: InternalServerError
+- `apiKeys.revoke()`
+  - **breaking** `error-added`: 500: InternalServerError
+
 ## 0.11.0 (2026-09-21) (34 breaking)
 
 ### Added

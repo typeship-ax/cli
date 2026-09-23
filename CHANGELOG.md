@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.1 (2026-09-23)
+
+### Changed
+- `projects.update()`
+  - `documentation-changed`: summary or description changed
+- `targets.update()`
+  - `documentation-changed`: summary or description changed
+- `targets.updateDraft()`
+  - `documentation-changed`: summary or description changed
+
 ## 0.18.0 (2026-09-23) (7 breaking)
 
 ### Changed

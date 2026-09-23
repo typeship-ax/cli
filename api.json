@@ -5074,7 +5074,7 @@
       "method": "PATCH",
       "path": "/definitions/{definition_id}",
       "summary": "Update and resolve a Definition",
-      "description": "Resolves the source documents and records a new Definition Revision before saving the update.",
+      "description": "Resolves the source documents before saving the update and records a new Definition Revision when the source changes.\nOmitted fields remain unchanged; supplied objects and arrays replace the whole field.\nNo revision parameter or If-Match header is required. If the Definition or its Project\nconfiguration changes during validation, returns 409 definition_changed without saving\nthe rejected update. Retrieve the current Definition and Project, reconcile your changes,\nand submit a new request with a new Idempotency-Key if using one.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5193,6 +5193,7 @@
             }
           },
           "patches": {
+            "description": "Replace all patches in order. An empty array removes every patch; null is invalid.",
             "maxItems": 50,
             "items": {
               "description": "A fix applied to the resolved Definition before generation. Paths are JSON\nPointers into the document. A patch whose target no longer exists is\nskipped and reported as a warning on the generation, never silently.",
@@ -5243,6 +5244,7 @@
             "type": "array"
           },
           "graphql": {
+            "description": "Replace all GraphQL settings. Null or an empty object clears them.",
             "anyOf": [
               {
                 "description": "What a GraphQL schema cannot say about itself. Ignored for OpenAPI specs.",

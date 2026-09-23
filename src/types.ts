@@ -2124,18 +2124,29 @@ export interface DefinitionRead {
   request_id: RequestId;
 }
 
+/**
+ * Omitted fields remain unchanged. Supplied objects and arrays replace the whole field. URL source
+ * headers are preserved when the URL is unchanged and headers are omitted; null or empty headers
+ * clear them.
+ */
 export interface DefinitionUpdateRequest {
   source?: DefinitionSourceInput;
+  /** Replace all patches in order. An empty array removes every patch; null is invalid. */
   patches?: DefinitionPatch[];
+  /** Replace all GraphQL settings. Null or an empty object clears them. */
   graphql?: GraphqlSettings | null;
+  /** Replace the complete policy and suppression list. Null and an empty object are invalid. */
   diagnostic_policy?: DiagnosticPolicy;
 }
 
 /** Response shape for DefinitionUpdateRequest. */
 export interface DefinitionUpdateRequestRead {
   source?: DefinitionSourceInputRead;
+  /** Replace all patches in order. An empty array removes every patch; null is invalid. */
   patches?: DefinitionPatchRead[];
+  /** Replace all GraphQL settings. Null or an empty object clears them. */
   graphql?: GraphqlSettingsRead | null;
+  /** Replace the complete policy and suppression list. Null and an empty object are invalid. */
   diagnostic_policy?: DiagnosticPolicyRead;
 }
 
@@ -3541,6 +3552,7 @@ export const ErrorCode = {
   NO_CHANGES: "no_changes",
   INVALID_VERSION: "invalid_version",
   STALE_RELEASE_REVISION: "stale_release_revision",
+  DEFINITION_CHANGED: "definition_changed",
   VERSION_OCCUPIED: "version_occupied",
   VERSION_TOO_LOW: "version_too_low",
   RELEASE_ANALYSIS_STALE: "release_analysis_stale",

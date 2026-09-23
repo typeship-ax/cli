@@ -1,22 +1,22 @@
 {
   "schema": 2,
   "target_id": "tgt_fc588abaa296f1cc",
-  "attempt_id": "int_uqlspc4rsjbztxif",
+  "attempt_id": "int_aieyt113bosx0e7n",
   "current_release_id": "rel_v9clnjxgkpq7up2n",
   "previous_generation_id": "gen_ew5ngptj5wbzkl1q",
   "previous_generated_snapshot_id": "snap_c7ne0az7p1lk4uw5",
   "previous_combined_snapshot_id": "snap_875bb1yrlfkyja75",
-  "current_snapshot_id": "snap_uqh52ljqw7ckz6t5",
-  "next_generation_id": "gen_o67m1pqnr26y8ytw",
-  "next_generated_snapshot_id": "snap_yzudcs1r1mqrsf3j",
+  "current_snapshot_id": "snap_k9ndatzouecni78e",
+  "next_generation_id": "gen_9e9d6bajxrcd1lvx",
+  "next_generated_snapshot_id": "snap_67kfnthc69q6b9j9",
   "default_revision": "af1231891c66bbe6b99c8af783cdec8854cb0dd3",
-  "draft_revision": "3b8e4ab7f2cd6a5ac190a35c98d4cb45c16604a2",
+  "draft_revision": "d644911adc6f1972643e8fd764c090655ed11cf9",
   "conflict_stage": "generation",
   "conflicts": [
     {
       "path": "src/cli.ts",
       "kind": "overlapping_text",
-      "fingerprint": "sha256:6a2aaed4063d028cef105e340d35c41f29206b8dd3ece0e48da2aa1fd912aa6f",
+      "fingerprint": "sha256:84cd68d9d71d320488cbe3902a077f74120ba497e8d7c39f58ac022f1ba59dc0",
       "previous": {
         "present": true,
         "mode": "100644",
@@ -30,7 +30,7 @@
       "next": {
         "present": true,
         "mode": "100644",
-        "hash": "sha256:398538550fc2de39eb9079569279951e3cb43dd9de81b39c508e6ef611499998"
+        "hash": "sha256:f6c8a86340b20d139f8d971ce373b84a1bca0db2e43b6cdf8fb7f71ee195e817"
       }
     }
   ]

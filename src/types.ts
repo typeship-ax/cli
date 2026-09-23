@@ -539,7 +539,7 @@ export interface RepositoryReferenceRead {
 
 export interface RepositoryDefinitionSource {
   kind: "repository";
-  repository: RepositoryReference;
+  repository: RepositoryReferenceResponse;
   /** Repository-relative Definition entrypoint. */
   path: string;
 }
@@ -547,7 +547,7 @@ export interface RepositoryDefinitionSource {
 /** Response shape for RepositoryDefinitionSource. */
 export interface RepositoryDefinitionSourceRead {
   kind: "repository" | (string & {});
-  repository: RepositoryReferenceRead;
+  repository: RepositoryReferenceResponseRead;
   /** Repository-relative Definition entrypoint. */
   path: string;
 }
@@ -671,7 +671,7 @@ export interface DiagnosticFix {
    */
   kind: "spec_patch" | "source_edit";
   /** Exact patches when kind is spec_patch. */
-  patches?: DefinitionPatch[];
+  patches?: DefinitionPatchResponse[];
   /** Source-level guidance when an exact patch would invent intent. */
   instructions?: string;
 }
@@ -686,7 +686,7 @@ export interface DiagnosticFixRead {
    */
   kind: ("spec_patch" | "source_edit") | (string & {});
   /** Exact patches when kind is spec_patch. */
-  patches?: DefinitionPatchRead[];
+  patches?: DefinitionPatchResponseRead[];
   /** Source-level guidance when an exact patch would invent intent. */
   instructions?: string;
 }
@@ -850,7 +850,7 @@ export interface DiagnosticSuppressionSignal {
 export interface DiagnosticQualitySignals {
   suppressed_by_rule: DiagnosticSuppressionSignal[];
   /** Reviewed exceptions whose rule or exact path no longer matches this revision. */
-  stale_suppressions: DiagnosticSuppression[];
+  stale_suppressions: DiagnosticSuppressionResponse[];
 }
 
 /** Compact rule and location reference; full guidance appears once in diagnostics. */
@@ -901,7 +901,7 @@ export interface DiagnosticReport {
   summary: DiagnosticSummary;
   /** Stable grouped diagnostics, ordered by severity and rule identifier. */
   diagnostics: Diagnostic[];
-  policy: DiagnosticPolicy;
+  policy: DiagnosticPolicyResponse;
   evaluation: DiagnosticEvaluation;
   quality_signals: DiagnosticQualitySignals;
   delta: DiagnosticDelta;
@@ -924,7 +924,7 @@ export interface DiagnosticReportRead {
   summary: DiagnosticSummary;
   /** Stable grouped diagnostics, ordered by severity and rule identifier. */
   diagnostics: DiagnosticRead[];
-  policy: DiagnosticPolicyRead;
+  policy: DiagnosticPolicyResponseRead;
   evaluation: DiagnosticEvaluationRead;
   quality_signals: DiagnosticQualitySignals;
   delta: DiagnosticDeltaRead;
@@ -1014,7 +1014,7 @@ export interface RepositoryDelivery {
   target_id: TargetId;
   kind: "repository";
   state: "active" | "disabled";
-  repository: RepositoryReference;
+  repository: RepositoryReferenceResponse;
   directory: string | null;
   package_name: string | null;
   module_path: string | null;
@@ -1032,7 +1032,7 @@ export interface RepositoryDeliveryRead {
   target_id: TargetId;
   kind: "repository" | (string & {});
   state: ("active" | "disabled") | (string & {});
-  repository: RepositoryReferenceRead;
+  repository: RepositoryReferenceResponseRead;
   directory: string | null;
   package_name: string | null;
   module_path: string | null;
@@ -1276,12 +1276,12 @@ export interface Target {
   proposed_version_actor: string | null;
   /** Optimistic concurrency revision for Draft selections. */
   release_revision: number;
-  checks: TargetChecks;
+  checks: TargetChecksResponse;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
    */
-  config: TargetConfig | null;
+  config: TargetConfigResponse | null;
   /** At most one repository and one hosted MCP Delivery. */
   deliveries: Delivery[];
   /** Format: date-time */
@@ -1317,12 +1317,12 @@ export interface TargetWrite {
   proposed_version_actor: string | null;
   /** Optimistic concurrency revision for Draft selections. */
   release_revision: number;
-  checks: TargetChecks;
+  checks: TargetChecksResponse;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
    */
-  config: TargetConfig | null;
+  config: TargetConfigResponse | null;
   /** At most one repository and one hosted MCP Delivery. */
   deliveries: Delivery[];
   /** Format: date-time */
@@ -1363,12 +1363,12 @@ export interface TargetRead {
   proposed_version_actor: string | null;
   /** Optimistic concurrency revision for Draft selections. */
   release_revision: number;
-  checks: TargetChecksRead;
+  checks: TargetChecksResponseRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
    * never appear here.
    */
-  config: TargetConfigRead | null;
+  config: TargetConfigResponseRead | null;
   /** At most one repository and one hosted MCP Delivery. */
   deliveries: DeliveryRead[];
   /** Format: date-time */
@@ -1424,7 +1424,7 @@ export interface TargetRelease {
   channel: "stable" | "prerelease";
   /** Delivery provider that accepted the release. */
   provider: string;
-  repository: RepositoryReference | null;
+  repository: RepositoryReferenceResponse | null;
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
@@ -1466,7 +1466,7 @@ export interface TargetReleaseRead {
   channel: ("stable" | "prerelease") | (string & {});
   /** Delivery provider that accepted the release. */
   provider: string;
-  repository: RepositoryReferenceRead | null;
+  repository: RepositoryReferenceResponseRead | null;
   definition_revision_id: DefinitionRevisionId | null;
   /** Immutable provider-native revision that was merged or published. */
   delivery_revision: string;
@@ -1985,7 +1985,7 @@ export interface RepositoryHealthIssueRead {
 }
 
 export interface RepositoryHealth {
-  repository: RepositoryReference;
+  repository: RepositoryReferenceResponse;
   roles: Array<"source" | "destination">;
   status: "ready" | "action_required";
   default_branch?: string;
@@ -2001,7 +2001,7 @@ export interface RepositoryHealth {
 
 /** Response shape for RepositoryHealth. */
 export interface RepositoryHealthRead {
-  repository: RepositoryReferenceRead;
+  repository: RepositoryReferenceResponseRead;
   roles: Array<("source" | "destination") | (string & {})>;
   status: ("ready" | "action_required") | (string & {});
   default_branch?: string;
@@ -2088,9 +2088,9 @@ export interface Definition {
   project_id: ProjectId;
   source: DefinitionSource;
   format: "openapi" | "graphql" | null;
-  patches: DefinitionPatch[];
-  graphql: GraphqlSettings | null;
-  diagnostic_policy: DiagnosticPolicy;
+  patches: DefinitionPatchResponse[];
+  graphql: GraphqlSettingsResponse | null;
+  diagnostic_policy: DiagnosticPolicyResponse;
   latest_revision_id: DefinitionRevisionId | null;
   /** Format: date-time */
   created_at: string;
@@ -2106,9 +2106,9 @@ export interface DefinitionWrite {
   project_id: ProjectId;
   source: DefinitionSourceWrite;
   format: "openapi" | "graphql" | null;
-  patches: DefinitionPatch[];
-  graphql: GraphqlSettings | null;
-  diagnostic_policy: DiagnosticPolicy;
+  patches: DefinitionPatchResponse[];
+  graphql: GraphqlSettingsResponse | null;
+  diagnostic_policy: DiagnosticPolicyResponse;
   latest_revision_id: DefinitionRevisionId | null;
   /** Format: date-time */
   created_at: string;
@@ -2124,9 +2124,9 @@ export interface DefinitionRead {
   project_id: ProjectId;
   source: DefinitionSourceRead;
   format: ("openapi" | "graphql" | null) | (string & {}) | null;
-  patches: DefinitionPatchRead[];
-  graphql: GraphqlSettingsRead | null;
-  diagnostic_policy: DiagnosticPolicyRead;
+  patches: DefinitionPatchResponseRead[];
+  graphql: GraphqlSettingsResponseRead | null;
+  diagnostic_policy: DiagnosticPolicyResponseRead;
   latest_revision_id: DefinitionRevisionId | null;
   /** Format: date-time */
   created_at: string;
@@ -2175,7 +2175,7 @@ export interface Project {
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
    * settings remain Definition-owned.
    */
-  config: ProjectConfig | null;
+  config: ProjectConfigResponse | null;
   /** Format: date-time */
   created_at: string;
   /**
@@ -2206,7 +2206,7 @@ export interface ProjectWrite {
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
    * settings remain Definition-owned.
    */
-  config: ProjectConfig | null;
+  config: ProjectConfigResponse | null;
   request_id: RequestId;
 }
 
@@ -2232,7 +2232,7 @@ export interface ProjectRead {
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
    * settings remain Definition-owned.
    */
-  config: ProjectConfigRead | null;
+  config: ProjectConfigResponseRead | null;
   /** Format: date-time */
   created_at: string;
   /**
@@ -2444,18 +2444,18 @@ export interface OAuthApplicationRead {
 
 /**
  * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
- * when omitted. Requests must include at least one of subject_field, account_field, or
- * organization_field.
+ * when omitted or null. Requests must include at least one of subject_field, account_field, or
+ * organization_field; send null for a field to clear it.
  */
 export interface IdentityVerification {
   /** resource.method of a safe identity read with no required arguments. */
-  operation?: string;
+  operation?: string | null;
   /** JSON Pointer to the stable caller ID in the identity response. */
-  subject_field?: string;
+  subject_field?: string | null;
   /** JSON Pointer to the customer account ID. */
-  account_field?: string;
+  account_field?: string | null;
   /** JSON Pointer to the customer organization ID. */
-  organization_field?: string;
+  organization_field?: string | null;
 }
 
 /** OAuth application and request-value overrides for one named API environment. */
@@ -3286,7 +3286,7 @@ export interface UrlDefinitionRevisionSourceRead {
 
 export interface RepositoryDefinitionRevisionSource {
   kind: "repository";
-  repository: RepositoryReference;
+  repository: RepositoryReferenceResponse;
   /** Repository-relative Definition entrypoint path. */
   path: string;
   /** Git ref resolved for this revision, when recorded. */
@@ -3298,7 +3298,7 @@ export interface RepositoryDefinitionRevisionSource {
 /** Response shape for RepositoryDefinitionRevisionSource. */
 export interface RepositoryDefinitionRevisionSourceRead {
   kind: "repository" | (string & {});
-  repository: RepositoryReferenceRead;
+  repository: RepositoryReferenceResponseRead;
   /** Repository-relative Definition entrypoint path. */
   path: string;
   /** Git ref resolved for this revision, when recorded. */
@@ -3525,6 +3525,7 @@ export const ErrorCode = {
   INSUFFICIENT_SCOPE: "insufficient_scope",
   FORBIDDEN: "forbidden",
   NOT_FOUND: "not_found",
+  METHOD_NOT_ALLOWED: "method_not_allowed",
   SPEC_ERROR: "spec_error",
   FETCH_ERROR: "fetch_error",
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
@@ -3590,6 +3591,686 @@ export interface ErrorDetailRead {
    * Format: uri
    */
   docs_url: string;
+}
+
+export interface RepositoryReferenceResponse {
+  /** GitHub is the only launch provider; the field is stable for future adapters. */
+  provider: "github";
+  /** Provider-native repository identity, opaque outside its adapter. */
+  identifier: string;
+}
+
+/** Response shape for RepositoryReferenceResponse. */
+export interface RepositoryReferenceResponseRead {
+  /** GitHub is the only launch provider; the field is stable for future adapters. */
+  provider: "github" | (string & {});
+  /** Provider-native repository identity, opaque outside its adapter. */
+  identifier: string;
+}
+
+/**
+ * A fix applied to the resolved Definition before generation. Paths are JSON
+ * Pointers into the document. A patch whose target no longer exists is
+ * skipped and reported as a warning on the generation, never silently.
+ */
+export interface DefinitionPatchResponse {
+  op: "set" | "append" | "remove" | "rename";
+  /**
+   * JSON-Pointer-style path. Pattern segments enable bulk fixes:
+   * * (any child), ** (any depth), [key=value] (filter), e.g.
+   * /paths/**\/parameters/[name=account_id]/schema/type. Renaming a
+   * schema under /components/schemas also rewrites its $refs.
+   */
+  path: string;
+  /** set only; the replacement value. */
+  value?: unknown;
+  /** rename only; the new key name. */
+  to?: string | null;
+  reason?: string | null;
+}
+
+/** Response shape for DefinitionPatchResponse. */
+export interface DefinitionPatchResponseRead {
+  op: ("set" | "append" | "remove" | "rename") | (string & {});
+  /**
+   * JSON-Pointer-style path. Pattern segments enable bulk fixes:
+   * * (any child), ** (any depth), [key=value] (filter), e.g.
+   * /paths/**\/parameters/[name=account_id]/schema/type. Renaming a
+   * schema under /components/schemas also rewrites its $refs.
+   */
+  path: string;
+  /** set only; the replacement value. */
+  value?: unknown;
+  /** rename only; the new key name. */
+  to?: string | null;
+  reason?: string | null;
+}
+
+export interface DiagnosticSuppressionResponse {
+  rule_id: string;
+  /** Exact schema coordinate. Omit only to suppress every occurrence of the rule. */
+  path?: string;
+  /** The reviewed product decision behind this exception. */
+  reason: string;
+}
+
+/**
+ * Source pull-request enforcement threshold, new-versus-complete baseline, and explicitly reviewed
+ * rule or location exceptions.
+ */
+export interface DiagnosticPolicyResponse {
+  /**
+   * Severity threshold that fails the API change review check.
+   * Default: "error"
+   */
+  fail_on: "never" | "error" | "warning";
+  /**
+   * Enforce only occurrences introduced by the proposed source change.
+   * Default: true
+   */
+  only_new: boolean;
+  /** Default: [] */
+  suppressions: DiagnosticSuppressionResponse[];
+}
+
+/** Response shape for DiagnosticPolicyResponse. */
+export interface DiagnosticPolicyResponseRead {
+  /**
+   * Severity threshold that fails the API change review check.
+   * Default: "error"
+   */
+  fail_on: ("never" | "error" | "warning") | (string & {});
+  /**
+   * Enforce only occurrences introduced by the proposed source change.
+   * Default: true
+   */
+  only_new: boolean;
+  /** Default: [] */
+  suppressions: DiagnosticSuppressionResponse[];
+}
+
+/**
+ * Required checks run against the complete combined package. Generated checks and customer commands
+ * share one reproducible workflow; repository_required names existing repository checks.
+ */
+export interface TargetChecksResponse {
+  /** Default: ["build","package","public_entrypoint"] */
+  generated?: Array<"build" | "package" | "public_entrypoint">;
+  repository_required?: string[];
+  customer?: Array<{
+    name: string;
+    command: string;
+  }>;
+}
+
+/** Response shape for TargetChecksResponse. */
+export interface TargetChecksResponseRead {
+  /** Default: ["build","package","public_entrypoint"] */
+  generated?: Array<("build" | "package" | "public_entrypoint") | (string & {})>;
+  repository_required?: string[];
+  customer?: Array<{
+    name: string;
+    command: string;
+  }>;
+}
+
+/**
+ * Authorization-server metadata used by generated OAuth flows. Secrets and runtime credentials are
+ * never accepted here.
+ */
+export interface OAuthServerResponse {
+  /**
+   * Exact authorization-server issuer, including any tenant path.
+   * Format: uri
+   */
+  issuer?: string | null;
+  /**
+   * Exact metadata URL when it cannot be derived from the issuer.
+   * Format: uri
+   */
+  discovery_url?: string | null;
+  /**
+   * Authorization endpoint override.
+   * Format: uri
+   */
+  authorization_url?: string | null;
+  /**
+   * Token endpoint override.
+   * Format: uri
+   */
+  token_url?: string | null;
+  /**
+   * Device-authorization endpoint override.
+   * Format: uri
+   */
+  device_authorization_url?: string | null;
+  /** Default scopes requested during login. */
+  scopes?: string[] | null;
+  /** Default audience included in authorization and token requests. */
+  audience?: string | null;
+  /**
+   * Protected API resource included in authorization and token requests.
+   * Format: uri
+   */
+  resource?: string | null;
+}
+
+/**
+ * OAuth application available to generated products. Public clients support interactive login;
+ * confidential clients support runtime-supplied machine credentials. Client secrets are never
+ * stored.
+ */
+export interface OAuthApplicationResponse {
+  /** OAuth client identifier. */
+  client_id: string;
+  /** Interactive login method. Browser login uses Authorization Code with PKCE. */
+  login_method?: "browser" | "device" | null;
+  /** How a runtime-supplied client secret is sent for machine grants. */
+  client_auth_method?: "post" | "basic" | null;
+  /**
+   * Loopback callback URL for browser login.
+   * Format: uri
+   */
+  redirect_uri?: string | null;
+  /** Provider parameter used to request an organization during browser login. */
+  organization_parameter?: "organization" | "organization_id" | null;
+}
+
+/** Response shape for OAuthApplicationResponse. */
+export interface OAuthApplicationResponseRead {
+  /** OAuth client identifier. */
+  client_id: string;
+  /** Interactive login method. Browser login uses Authorization Code with PKCE. */
+  login_method?: ("browser" | "device" | null) | (string & {}) | null;
+  /** How a runtime-supplied client secret is sent for machine grants. */
+  client_auth_method?: ("post" | "basic" | null) | (string & {}) | null;
+  /**
+   * Loopback callback URL for browser login.
+   * Format: uri
+   */
+  redirect_uri?: string | null;
+  /** Provider parameter used to request an organization during browser login. */
+  organization_parameter?: ("organization" | "organization_id" | null) | (string & {}) | null;
+}
+
+/**
+ * Authenticated identity read used to verify a login before it is saved. Operation is auto-detected
+ * when omitted or null. Requests must include at least one of subject_field, account_field, or
+ * organization_field; send null for a field to clear it.
+ */
+export interface IdentityVerificationResponse {
+  /** resource.method of a safe identity read with no required arguments. */
+  operation?: string | null;
+  /** JSON Pointer to the stable caller ID in the identity response. */
+  subject_field?: string | null;
+  /** JSON Pointer to the customer account ID. */
+  account_field?: string | null;
+  /** JSON Pointer to the customer organization ID. */
+  organization_field?: string | null;
+}
+
+/** OAuth application and request-value overrides for one named API environment. */
+export interface AuthenticationEnvironmentResponse {
+  oauth_application?: string | null;
+  scopes?: string[] | null;
+  audience?: string | null;
+  /** Format: uri */
+  resource?: string | null;
+}
+
+/**
+ * Public authentication defaults for generated clients and tools. Stored Projects own the OAuth
+ * server, application catalog, and identity policy; one-shot generation accepts the same shape for
+ * one run. Runtime credentials and client secrets are never accepted.
+ */
+export interface AuthenticationConfigResponse {
+  oauth_server?: OAuthServerResponse | null;
+  /** OAuth applications keyed by a stable name. */
+  oauth_applications?: Record<string, OAuthApplicationResponse> | null;
+  /** Default OAuth application used by generated products. */
+  oauth_application?: string | null;
+  identity_verification?: IdentityVerificationResponse | null;
+  /**
+   * Base URL of a custom browser-approval backend implementing the start, status, and revoke
+   * contract. Used only when OAuth is not configured.
+   * Format: uri
+   */
+  approval_url?: string | null;
+  /** Authentication selections keyed by generated API environment name. */
+  environments?: Record<string, AuthenticationEnvironmentResponse> | null;
+}
+
+export interface TargetAuthenticationEnvironmentResponse {
+  oauth_application?: string | null;
+}
+
+/**
+ * Selects a Project OAuth application for one Target. OAuth server metadata, applications, and
+ * identity policy remain Project-owned.
+ */
+export interface TargetAuthenticationConfigResponse {
+  /** Project OAuth application to use. Omit to inherit the Project default. */
+  oauth_application?: string | null;
+  /** Project OAuth application selections keyed by API environment. */
+  environments?: Record<string, TargetAuthenticationEnvironmentResponse> | null;
+}
+
+/** How the generated CLI behaves. Part of Config. */
+export interface CliBehaviorResponse {
+  /** Command users run, independent of how the CLI is distributed. */
+  command_name?: string | null;
+  /**
+   * Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated
+   * code phones nobody unless this is enabled.
+   */
+  update_notice?: boolean;
+  /**
+   * Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8
+   * Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to
+   * disable, then regenerate.
+   */
+  changelog_url?: string | null;
+  /**
+   * Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled
+   * title and environment details.
+   */
+  support_url?: string | null;
+  /**
+   * Hosted MCP endpoint installed by the generated CLI instead of launching the package's local
+   * stdio server.
+   */
+  mcp_url?: string | null;
+  /** GitHub owner/name of the skills package the generated CLI offers to install during init. */
+  skills_repo?: string | null;
+}
+
+/** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */
+export interface McpBehaviorResponse {
+  /** Stable official MCP registry name, independent of the server runtime. */
+  registry_name?: string | null;
+  /**
+   * Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting
+   * application resolves upstream API credentials separately at runtime. This setting does not
+   * apply to the Typeship-hosted endpoint.
+   */
+  access?: {
+    /**
+     * Exact issuer allowed to sign MCP connection tokens.
+     * Format: uri
+     */
+    issuer: string;
+    /**
+     * Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.
+     * Format: uri
+     */
+    resource: string;
+    /**
+     * Public signing-key endpoint. Omit to discover it from the issuer.
+     * Format: uri
+     */
+    jwks_url?: string;
+    /** Minimum scopes required to connect to the self-hosted MCP server. */
+    scopes?: string[];
+  };
+  /**
+   * MCP tool shape. meta collapses per-operation tools into search_docs, read_docs, and execute so
+   * large APIs don't flood an agent's context window. Auto considers the serialized tool schemas,
+   * switching near 10k tokens or above 100 operations.
+   */
+  tool_mode?: "auto" | "operations" | "meta";
+  /**
+   * Guidance appended to the MCP server's instructions, which agents read once when they connect
+   * (server/discover): what to call first, conventions the spec does not state, what not to do.
+   * Carried by the package's server and the hosted endpoint alike.
+   */
+  instructions?: string | null;
+  /**
+   * Hand-written MCP tool descriptions keyed by operationId or "METHOD /path". Each replaces the
+   * text typeship derives for that operation (summary, first sentence, method and path, deprecation
+   * and auth notes). For flows the spec cannot describe, such as a multi-step upload. Keys that
+   * match no operation are reported as generation warnings.
+   */
+  tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
+}
+
+/** Response shape for McpBehaviorResponse. */
+export interface McpBehaviorResponseRead {
+  /** Stable official MCP registry name, independent of the server runtime. */
+  registry_name?: string | null;
+  /**
+   * Authorization for callers connecting to a generated MCP server deployed over HTTP. The hosting
+   * application resolves upstream API credentials separately at runtime. This setting does not
+   * apply to the Typeship-hosted endpoint.
+   */
+  access?: {
+    /**
+     * Exact issuer allowed to sign MCP connection tokens.
+     * Format: uri
+     */
+    issuer: string;
+    /**
+     * Canonical public URL of the self-hosted MCP endpoint that connection tokens must target.
+     * Format: uri
+     */
+    resource: string;
+    /**
+     * Public signing-key endpoint. Omit to discover it from the issuer.
+     * Format: uri
+     */
+    jwks_url?: string;
+    /** Minimum scopes required to connect to the self-hosted MCP server. */
+    scopes?: string[];
+  };
+  /**
+   * MCP tool shape. meta collapses per-operation tools into search_docs, read_docs, and execute so
+   * large APIs don't flood an agent's context window. Auto considers the serialized tool schemas,
+   * switching near 10k tokens or above 100 operations.
+   */
+  tool_mode?: ("auto" | "operations" | "meta") | (string & {});
+  /**
+   * Guidance appended to the MCP server's instructions, which agents read once when they connect
+   * (server/discover): what to call first, conventions the spec does not state, what not to do.
+   * Carried by the package's server and the hosted endpoint alike.
+   */
+  instructions?: string | null;
+  /**
+   * Hand-written MCP tool descriptions keyed by operationId or "METHOD /path". Each replaces the
+   * text typeship derives for that operation (summary, first sentence, method and path, deprecation
+   * and auth notes). For flows the spec cannot describe, such as a multi-step upload. Keys that
+   * match no operation are reported as generation warnings.
+   */
+  tool_descriptions?: Record<string, string>;
+  /**
+   * Exact name-or-ID resolver overrides keyed first by the target operationId or "METHOD /path",
+   * then by its wire argument name. A resolver names one read collection operation plus 1-4 item
+   * fields to match case-insensitively; false opts that argument out of strict inference.
+   */
+  reference_resolvers?: Record<string, Record<string, false | (string & {})
+    | {
+        /** OperationId, "METHOD /path", MCP tool name, or dotted resource.method of the list operation. */
+        via: string;
+        /** Item fields compared exactly and case-insensitively, such as name, slug, key, or email. */
+        match: string[];
+        /** Item field substituted into the requested argument. Defaults to id. */
+        id?: string;
+      }>>;
+}
+
+/** Generated README behavior. Part of Config. */
+export interface ReadmeBehaviorResponse {
+  /**
+   * operationId or "METHOD /path" to feature as the README's first API call. It must be present in
+   * the generated package and callable with no required input beyond path placeholders. Missing or
+   * unsuitable choices produce a warning and use the automatic example.
+   */
+  quickstart_operation?: string | null;
+}
+
+/**
+ * Published-package metadata the API spec does not own. Repository is derived from each
+ * destination.
+ */
+export interface PackageBehaviorResponse {
+  /** Homepage written into registry metadata. */
+  homepage?: string | null;
+  /** SPDX identifier written into registry metadata. Defaults to info.license. */
+  license?: string | null;
+  /**
+   * Exact LICENSE file contents. Supply this for licences the engine does not build in; MIT is
+   * built in when copyright is also set.
+   */
+  license_text?: string | null;
+  /** Copyright line used in generated license files. */
+  copyright?: string | null;
+  /** Go identifier when the destination repository name is unsuitable. */
+  go_package_name?: string | null;
+}
+
+/**
+ * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
+ * defaults. Target.config is merged over them for one Target; top-level values replace defaults
+ * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
+ * the Project's Definition and are rejected in both stored config scopes.
+ */
+export interface ProjectConfigResponse {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
+  pagination?: Record<string, PaginationRuleResponse | boolean>;
+  auth?: AuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponse;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   */
+  docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
+}
+
+/** Response shape for ProjectConfigResponse. */
+export interface ProjectConfigResponseRead {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
+  pagination?: Record<string, PaginationRuleResponseRead | boolean>;
+  auth?: AuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponseRead;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   */
+  docs_url?: string | null;
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
+  docs_index_url?: string | null;
+}
+
+/**
+ * Target-specific generation and delivery overrides. Authentication may only select a Project-owned
+ * OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned.
+ * Self-hosted MCP access may be overridden for a Target-specific deployment.
+ */
+export interface TargetConfigResponse {
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  pagination?: Record<string, PaginationRuleResponse | boolean>;
+  auth?: TargetAuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponse;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /** Format: uri */
+  docs_url?: string | null;
+  /** Format: uri */
+  docs_index_url?: string | null;
+}
+
+/** Response shape for TargetConfigResponse. */
+export interface TargetConfigResponseRead {
+  globals?: string[];
+  retries?: RetryTuningResponse;
+  pagination?: Record<string, PaginationRuleResponseRead | boolean>;
+  auth?: TargetAuthenticationConfigResponse;
+  cli?: CliBehaviorResponse;
+  mcp?: McpBehaviorResponseRead;
+  readme?: ReadmeBehaviorResponse;
+  package?: PackageBehaviorResponse;
+  /** Format: uri */
+  docs_url?: string | null;
+  /** Format: uri */
+  docs_index_url?: string | null;
+}
+
+/** What a GraphQL schema cannot say about itself. Ignored for OpenAPI specs. */
+export interface GraphqlSettingsResponse {
+  /**
+   * The URL every request is POSTed to; the generated client's default baseUrl. Defaults to the URL
+   * the schema was fetched from. Without either, baseUrl is a required client option.
+   * Format: uri
+   */
+  endpoint?: string;
+  /**
+   * Named endpoints (sandbox, production). Each becomes a client environment; the first is the
+   * default unless endpoint is set.
+   */
+  environments?: Array<{
+    name: string;
+    /** Format: uri */
+    url: string;
+  }>;
+  /**
+   * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
+   * (public key as username, private key as password); api_key sends a header named by
+   * api_key_header; none generates no auth option.
+   * Default: "bearer"
+   */
+  auth?: "bearer" | "basic" | "api_key" | "none";
+  /**
+   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
+   * a vendor-specific header name.
+   */
+  api_key_header?: string;
+  /**
+   * The API's name; drives the package and client names ("Acme" gives acme and AcmeClient).
+   * Defaults to a name derived from the endpoint's host.
+   */
+  title?: string;
+  /**
+   * JSON representation of each custom scalar, keyed by GraphQL scalar name. Unmapped scalars
+   * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
+   */
+  scalars?: Record<string, "string" | "integer" | "number" | "boolean" | "json">;
+}
+
+/** Response shape for GraphqlSettingsResponse. */
+export interface GraphqlSettingsResponseRead {
+  /**
+   * The URL every request is POSTed to; the generated client's default baseUrl. Defaults to the URL
+   * the schema was fetched from. Without either, baseUrl is a required client option.
+   * Format: uri
+   */
+  endpoint?: string;
+  /**
+   * Named endpoints (sandbox, production). Each becomes a client environment; the first is the
+   * default unless endpoint is set.
+   */
+  environments?: Array<{
+    name: string;
+    /** Format: uri */
+    url: string;
+  }>;
+  /**
+   * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
+   * (public key as username, private key as password); api_key sends a header named by
+   * api_key_header; none generates no auth option.
+   * Default: "bearer"
+   */
+  auth?: ("bearer" | "basic" | "api_key" | "none") | (string & {});
+  /**
+   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
+   * a vendor-specific header name.
+   */
+  api_key_header?: string;
+  /**
+   * The API's name; drives the package and client names ("Acme" gives acme and AcmeClient).
+   * Defaults to a name derived from the endpoint's host.
+   */
+  title?: string;
+  /**
+   * JSON representation of each custom scalar, keyed by GraphQL scalar name. Unmapped scalars
+   * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
+   */
+  scalars?: Record<string, ("string" | "integer" | "number" | "boolean" | "json") | (string & {})>;
+}
+
+/**
+ * Retry behavior. Top-level fields adjust every operation; operations maps operationId or "METHOD
+ * /path" keys to per-operation overrides.
+ */
+export interface RetryTuningResponse {
+  max_retries?: number;
+  /** Replaces the default retryable set (408, 429, 500, 502, 503, 504). */
+  statuses?: number[];
+  initial_delay_ms?: number;
+  max_delay_ms?: number;
+  /** Also retry non-idempotent methods (POST/PATCH). */
+  retry_non_idempotent?: boolean;
+  /** Shorthand for max_retries 0. */
+  disabled?: boolean;
+  operations?: Record<string, RetryTuningResponse>;
+}
+
+export interface PaginationRuleResponse {
+  /** Default: "cursor" */
+  style?: "cursor" | "cursorFromLastId" | "page" | "offset";
+  /** Response field holding the item array. */
+  items_field: string;
+  cursor_param?: string;
+  next_cursor_field?: string;
+  has_more_field?: string;
+  id_field?: string;
+  page_param?: string;
+  offset_param?: string;
+  limit_param?: string;
+}
+
+/** Response shape for PaginationRuleResponse. */
+export interface PaginationRuleResponseRead {
+  /** Default: "cursor" */
+  style?: ("cursor" | "cursorFromLastId" | "page" | "offset") | (string & {});
+  /** Response field holding the item array. */
+  items_field: string;
+  cursor_param?: string;
+  next_cursor_field?: string;
+  has_more_field?: string;
+  id_field?: string;
+  page_param?: string;
+  offset_param?: string;
+  limit_param?: string;
 }
 
 export interface ErrorModel {

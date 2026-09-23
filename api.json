@@ -536,28 +536,40 @@
                   "identity_verification": {
                     "anyOf": [
                       {
-                        "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                        "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
                         "properties": {
                           "operation": {
                             "description": "resource.method of a safe identity read with no required arguments.",
                             "maxLength": 2000,
                             "pattern": "^[\\w$]+\\.[\\w$]+$",
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "subject_field": {
                             "description": "JSON Pointer to the stable caller ID in the identity response.",
                             "maxLength": 512,
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "account_field": {
                             "description": "JSON Pointer to the customer account ID.",
                             "maxLength": 512,
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "organization_field": {
                             "description": "JSON Pointer to the customer organization ID.",
                             "maxLength": 512,
-                            "type": "string"
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "additionalProperties": false,
@@ -1176,11 +1188,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           }
         }
       },
@@ -1889,7 +1904,7 @@
                       "identity_verification": {
                         "anyOf": [
                           {
-                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
                             "type": "object"
                           },
                           {
@@ -2702,7 +2717,7 @@
                       "identity_verification": {
                         "anyOf": [
                           {
-                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted. Requests must include at least one of subject_field, account_field, or organization_field.",
+                            "description": "Authenticated identity read used to verify a login before it is saved. Operation is auto-detected when omitted or null. Requests must include at least one of subject_field, account_field, or organization_field; send null for a field to clear it.",
                             "type": "object"
                           },
                           {
@@ -4152,11 +4167,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           },
           "target_id": {
             "description": "Stable identifier for one configured generated product.",
@@ -5690,11 +5708,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           }
         },
         "required": [
@@ -8214,11 +8235,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           }
         },
         "required": [
@@ -11926,11 +11950,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           }
         },
         "required": [
@@ -12526,11 +12553,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
           },
           "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
           }
         }
       },

@@ -1,5 +1,3199 @@
 # Changelog
 
+## 0.13.0 (2026-09-23) (36 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 413 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error default additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.refreshDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.remediateDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.last\_event additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].issues\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.required\_checks additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.create()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.updateDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.resetCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `account.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.revoke()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+
+## 0.13.0 (2026-09-23) (36 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 413 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error default additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.refreshDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.remediateDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.last\_event additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].issues\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.required\_checks additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.create()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.updateDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.resetCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `account.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.revoke()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+
+## 0.13.0 (2026-09-23) (36 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 413 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error default additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_applications.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.oauth\_server additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.refreshDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.added\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.delta.resolved\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].fix.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostics\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.evaluation.blocking\[\].locations\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.stale\_suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.quality\_signals.suppressed\_by\_rule\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.summary additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.remediateDiagnostics()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.last\_event additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].issues\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repositories\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.required\_checks additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `projects.generate()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitions.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.diagnostic\_policy.suppressions\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.graphql.environments\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.patches\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.create()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.delete()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.update()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks.customer\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.auth.environments.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.cli additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.access additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.mcp.reference\_resolvers.\*.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.package additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.pagination.\* additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.readme additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.config.retries.operations.\* type changed: RetryTuning -&gt; RetryTuningResponse
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.deliveries\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.dependency additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.version\_policy additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 402 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.updateDraft()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.selection additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.resetCustomizations()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.changes\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].current additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].next additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.conflicts\[\].previous additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.input additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.output additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.reused\_resolutions\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 422 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.accepted\_risks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.checks\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.import\_provenance additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.publications\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.repository additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 409 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 502 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.diagnostics.summary additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.meta.go\_sdk additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.provenance additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\].source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.documents\[\] additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source.repository additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.source additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `account.retrieve()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.list()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `return-type-changed`: response.data\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+- `apiKeys.revoke()`
+  - **breaking** `return-type-changed`: response additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 403 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 404 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 429 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "method\_not\_allowed"
+  - **breaking** `error-schema-changed`: error 500 additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\] additional properties changed: false -&gt; true
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "method\_not\_allowed"
+
+## 0.13.0 (2026-09-23) (4 breaking)
+
+### Changed
+- `generate.run()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.retrieve()`
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+- `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `body-field-type-changed`: request body.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.account\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.operation type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.organization\_field type changed: string -&gt; string \| null
+  - **breaking** `return-type-changed`: response.config.auth.identity\_verification.subject\_field type changed: string -&gt; string \| null
+
 ## 0.12.0 (2026-09-23) (35 breaking)
 
 ### Changed

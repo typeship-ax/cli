@@ -33,12 +33,12 @@ export class ApiKeysResource {
    * keys in the Console.
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
-   * `GET /api_keys`
+   * `GET /api-keys`
    */
   list(params?: ApiKeysListParams, options?: RequestOptions): PagePromise<ApiKeyRead, ApiKeysListError> {
     return paginate<ApiKeyRead, ApiKeysListError>(this._core, {
       method: "GET",
-      path: "/api_keys",
+      path: "/api-keys",
       security: [{"apiKey":[]}],
       query: {
         limit: params?.limit,
@@ -71,7 +71,7 @@ export class ApiKeysResource {
    *
    * With OAuth, members can revoke their own keys; organization admins can revoke any key.
    * Organization API keys can revoke any key in their account.
-   * `DELETE /api_keys/{api_key_id}`
+   * `DELETE /api-keys/{api_key_id}`
    */
   async revoke(
     apiKeyId: string,
@@ -79,7 +79,7 @@ export class ApiKeysResource {
   ): Promise<ApiResult<ApiKeyResponseRead, ApiKeysRevokeError>> {
     return this._core.request<ApiKeyResponseRead, ApiKeysRevokeError>({
       method: "DELETE",
-      path: `/api_keys/${encodeURIComponent(String(apiKeyId))}`,
+      path: `/api-keys/${encodeURIComponent(String(apiKeyId))}`,
       security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,

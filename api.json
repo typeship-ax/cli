@@ -690,7 +690,7 @@
         ],
         "tool": "targets_retrieve_release",
         "httpMethod": "GET",
-        "path": "/target_releases/{target_release_id}"
+        "path": "/target-releases/{target_release_id}"
       },
       {
         "resource": "targets",
@@ -701,7 +701,7 @@
         ],
         "tool": "targets_republish_release",
         "httpMethod": "POST",
-        "path": "/target_releases/{target_release_id}/republish"
+        "path": "/target-releases/{target_release_id}/republish"
       },
       {
         "resource": "targets",
@@ -800,7 +800,7 @@
         ],
         "tool": "definition_revisions_retrieve",
         "httpMethod": "GET",
-        "path": "/definition_revisions/{definition_revision_id}"
+        "path": "/definition-revisions/{definition_revision_id}"
       },
       {
         "resource": "definitionRevisions",
@@ -811,7 +811,7 @@
         ],
         "tool": "definition_revisions_retrieve_content",
         "httpMethod": "GET",
-        "path": "/definition_revisions/{definition_revision_id}/content"
+        "path": "/definition-revisions/{definition_revision_id}/content"
       },
       {
         "resource": "definitionRevisions",
@@ -822,7 +822,7 @@
         ],
         "tool": "definition_revisions_retrieve_document_content",
         "httpMethod": "GET",
-        "path": "/definition_revisions/{definition_revision_id}/documents/{document_id}/content"
+        "path": "/definition-revisions/{definition_revision_id}/documents/{document_id}/content"
       },
       {
         "resource": "account",
@@ -844,7 +844,7 @@
         ],
         "tool": "api_keys_list",
         "httpMethod": "GET",
-        "path": "/api_keys"
+        "path": "/api-keys"
       },
       {
         "resource": "apiKeys",
@@ -855,7 +855,7 @@
         ],
         "tool": "api_keys_revoke",
         "httpMethod": "DELETE",
-        "path": "/api_keys/{api_key_id}"
+        "path": "/api-keys/{api_key_id}"
       }
     ]
   },
@@ -10585,7 +10585,7 @@
       ],
       "example_command": "typeship targets retrieve-release rel_7m2q8v4k1p9d5h6c",
       "method": "GET",
-      "path": "/target_releases/{target_release_id}",
+      "path": "/target-releases/{target_release_id}",
       "summary": "Retrieve an immutable Target release",
       "safety": "read",
       "auth": "required",
@@ -10973,7 +10973,7 @@
       ],
       "example_command": "typeship targets republish-release rel_7m2q8v4k1p9d5h6c",
       "method": "POST",
-      "path": "/target_releases/{target_release_id}/republish",
+      "path": "/target-releases/{target_release_id}/republish",
       "summary": "Retry publication of an exact Target release",
       "description": "Retries publication of the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.\n\nA `502` response means the repository publication workflow could not be dispatched.",
       "safety": "write",
@@ -13024,7 +13024,7 @@
       ],
       "example_command": "typeship definition-revisions retrieve drev_6m1q8v4k2p9d7h3c",
       "method": "GET",
-      "path": "/definition_revisions/{definition_revision_id}",
+      "path": "/definition-revisions/{definition_revision_id}",
       "summary": "Retrieve a Definition Revision",
       "description": "Returns metadata for a saved Definition Revision. Retrieve its resolved content or individual source documents separately.",
       "safety": "read",
@@ -13234,7 +13234,7 @@
       ],
       "example_command": "typeship definition-revisions retrieve-content drev_6m1q8v4k2p9d7h3c",
       "method": "GET",
-      "path": "/definition_revisions/{definition_revision_id}/content",
+      "path": "/definition-revisions/{definition_revision_id}/content",
       "summary": "Retrieve a Definition Revision's canonical content",
       "description": "Returns the saved, resolved content for this revision. Save it locally or compare it with another revision.",
       "safety": "read",
@@ -13291,7 +13291,7 @@
       ],
       "example_command": "typeship definition-revisions retrieve-document-content drev_6m1q8v4k2p9d7h3c doc_8q2m5v1k9p4d7h3c",
       "method": "GET",
-      "path": "/definition_revisions/{definition_revision_id}/documents/{document_id}/content",
+      "path": "/definition-revisions/{definition_revision_id}/documents/{document_id}/content",
       "summary": "Retrieve one source document from a Definition Revision",
       "safety": "read",
       "auth": "required",
@@ -13426,7 +13426,7 @@
       ],
       "example_command": "typeship api-keys list",
       "method": "GET",
-      "path": "/api_keys",
+      "path": "/api-keys",
       "summary": "List API keys",
       "description": "Lists key metadata and the last four characters of each key. Full keys are not returned. Create keys in the Console.",
       "safety": "read",
@@ -13540,7 +13540,7 @@
       ],
       "example_command": "typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3 --force",
       "method": "DELETE",
-      "path": "/api_keys/{api_key_id}",
+      "path": "/api-keys/{api_key_id}",
       "summary": "Revoke an API key",
       "description": "Revokes a key. Repeating the request returns the same result.\n\nWith OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their account.",
       "safety": "destructive",

@@ -77,7 +77,7 @@ export class DefinitionRevisionsResource {
    *
    * Returns metadata for a saved Definition Revision. Retrieve its resolved content or individual
    * source documents separately.
-   * `GET /definition_revisions/{definition_revision_id}`
+   * `GET /definition-revisions/{definition_revision_id}`
    */
   async retrieve(
     definitionRevisionId: DefinitionRevisionId,
@@ -85,7 +85,7 @@ export class DefinitionRevisionsResource {
   ): Promise<ApiResult<DefinitionRevisionResponseRead, DefinitionRevisionsRetrieveError>> {
     return this._core.request<DefinitionRevisionResponseRead, DefinitionRevisionsRetrieveError>({
       method: "GET",
-      path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}`,
+      path: `/definition-revisions/${encodeURIComponent(String(definitionRevisionId))}`,
       security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
@@ -105,7 +105,7 @@ export class DefinitionRevisionsResource {
    *
    * Returns the saved, resolved content for this revision. Save it locally or compare it with
    * another revision.
-   * `GET /definition_revisions/{definition_revision_id}/content`
+   * `GET /definition-revisions/{definition_revision_id}/content`
    */
   async retrieveContent(
     definitionRevisionId: DefinitionRevisionId,
@@ -113,7 +113,7 @@ export class DefinitionRevisionsResource {
   ): Promise<ApiResult<string, DefinitionRevisionsRetrieveContentError>> {
     return this._core.request<string, DefinitionRevisionsRetrieveContentError>({
       method: "GET",
-      path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}/content`,
+      path: `/definition-revisions/${encodeURIComponent(String(definitionRevisionId))}/content`,
       security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
@@ -130,7 +130,7 @@ export class DefinitionRevisionsResource {
 
   /**
    * Retrieve one source document from a Definition Revision
-   * `GET /definition_revisions/{definition_revision_id}/documents/{document_id}/content`
+   * `GET /definition-revisions/{definition_revision_id}/documents/{document_id}/content`
    */
   async retrieveDocumentContent(
     definitionRevisionId: DefinitionRevisionId,
@@ -139,7 +139,7 @@ export class DefinitionRevisionsResource {
   ): Promise<ApiResult<string, DefinitionRevisionsRetrieveDocumentContentError>> {
     return this._core.request<string, DefinitionRevisionsRetrieveDocumentContentError>({
       method: "GET",
-      path: `/definition_revisions/${encodeURIComponent(String(definitionRevisionId))}/documents/${encodeURIComponent(String(documentId))}/content`,
+      path: `/definition-revisions/${encodeURIComponent(String(definitionRevisionId))}/documents/${encodeURIComponent(String(documentId))}/content`,
       security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,

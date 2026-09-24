@@ -388,7 +388,7 @@ export class TargetsResource {
 
   /**
    * Retrieve an immutable Target release
-   * `GET /target_releases/{target_release_id}`
+   * `GET /target-releases/{target_release_id}`
    */
   async retrieveRelease(
     targetReleaseId: TargetReleaseId,
@@ -396,7 +396,7 @@ export class TargetsResource {
   ): Promise<ApiResult<TargetReleaseResponseRead, TargetsRetrieveReleaseError>> {
     return this._core.request<TargetReleaseResponseRead, TargetsRetrieveReleaseError>({
       method: "GET",
-      path: `/target_releases/${encodeURIComponent(String(targetReleaseId))}`,
+      path: `/target-releases/${encodeURIComponent(String(targetReleaseId))}`,
       security: [{"apiKey":[]}],
       errors: {
         "401": UnauthorizedError,
@@ -420,7 +420,7 @@ export class TargetsResource {
    * A `502` response means the repository publication workflow could not be dispatched.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
-   * `POST /target_releases/{target_release_id}/republish`
+   * `POST /target-releases/{target_release_id}/republish`
    */
   async republishRelease(
     targetReleaseId: TargetReleaseId,
@@ -429,7 +429,7 @@ export class TargetsResource {
   ): Promise<ApiResult<TargetReleaseResponseRead, TargetsRepublishReleaseError>> {
     return this._core.request<TargetReleaseResponseRead, TargetsRepublishReleaseError>({
       method: "POST",
-      path: `/target_releases/${encodeURIComponent(String(targetReleaseId))}/republish`,
+      path: `/target-releases/${encodeURIComponent(String(targetReleaseId))}/republish`,
       security: [{"apiKey":[]}],
       headers: {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),

@@ -649,7 +649,7 @@ Read the full command contract with `typeship docs targets adopt-release --json`
 
 Retrieve an immutable Target release
 
-`GET /target_releases/{target_release_id}`
+`GET /target-releases/{target_release_id}`
 
 Safety: **read** · Authentication: **required**
 
@@ -669,7 +669,7 @@ Read the full command contract with `typeship docs targets retrieve-release --js
 
 Retry publication of an exact Target release
 
-`POST /target_releases/{target_release_id}/republish`
+`POST /target-releases/{target_release_id}/republish`
 
 Safety: **write** · Authentication: **required**
 
@@ -903,7 +903,7 @@ Read the full command contract with `typeship docs definition-revisions list --j
 
 Retrieve a Definition Revision
 
-`GET /definition_revisions/{definition_revision_id}`
+`GET /definition-revisions/{definition_revision_id}`
 
 Safety: **read** · Authentication: **required**
 
@@ -925,7 +925,7 @@ Read the full command contract with `typeship docs definition-revisions retrieve
 
 Retrieve a Definition Revision's canonical content
 
-`GET /definition_revisions/{definition_revision_id}/content`
+`GET /definition-revisions/{definition_revision_id}/content`
 
 Safety: **read** · Authentication: **required**
 
@@ -947,7 +947,7 @@ Read the full command contract with `typeship docs definition-revisions retrieve
 
 Retrieve one source document from a Definition Revision
 
-`GET /definition_revisions/{definition_revision_id}/documents/{document_id}/content`
+`GET /definition-revisions/{definition_revision_id}/documents/{document_id}/content`
 
 Safety: **read** · Authentication: **required**
 
@@ -990,7 +990,7 @@ Read the full command contract with `typeship docs account retrieve --json`.
 
 List API keys
 
-`GET /api_keys`
+`GET /api-keys`
 
 Safety: **read** · Authentication: **required**
 
@@ -1013,7 +1013,7 @@ Read the full command contract with `typeship docs api-keys list --json`.
 
 Revoke an API key
 
-`DELETE /api_keys/{api_key_id}`
+`DELETE /api-keys/{api_key_id}`
 
 Safety: **destructive** · Authentication: **required**
 

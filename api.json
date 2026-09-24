@@ -3347,7 +3347,7 @@
       "method": "DELETE",
       "path": "/projects/{project_id}",
       "summary": "Delete a project",
-      "description": "A `502` response means the Project was not deleted because its release pull requests could not be retired.",
+      "description": "A `502` response means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.",
       "safety": "destructive",
       "auth": "required",
       "security": [
@@ -3454,7 +3454,7 @@
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
-      "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\n\nA `502` response means the Project was saved, but an obsolete release pull request could not be retired.",
+      "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\n\nA `502` response means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -8340,7 +8340,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target, its Deliveries, or its next reviewed version",
-      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\nSend proposed_version by itself; use the Draft endpoint for a version selection with an optional revision precondition.\n\nA `502` response means the selected version was saved, but regeneration failed.",
+      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nUpdates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.\nSend proposed_version by itself; use the Draft endpoint for a version selection with an optional revision precondition.\n\nA `502` response means the update was saved, but retiring an obsolete review or regenerating a version selection failed. Retrieve the Target and follow the error's retryable and suggested_action fields. Repeating an unfinished version selection resumes generation; repeating a completed selection starts no new work.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -9817,7 +9817,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}/draft",
       "summary": "Select an exact Draft version or return to automatic versioning",
-      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nSend the last read revision as expected_revision to reject an intervening change with 409 stale_release_revision before saving or regenerating.\nThe precondition is optional; omitting it applies the selection to the current Draft. Version is required; null restores automatic selection.\n\nA `502` response means the selected version was saved, but regeneration failed.",
+      "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nSend the last read revision as expected_revision to reject an intervening change with 409 stale_release_revision before saving or regenerating.\nThe precondition is optional; omitting it applies the selection to the current Draft. Version is required; null restores automatic selection.\n\nA `502` response means the selected version was saved, but regeneration failed. Follow the error's retryable and suggested_action fields. Repeating an unfinished selection resumes generation; repeating a completed selection starts no new work. If using expected_revision, retrieve the Draft and confirm the saved selection before retrying with its current revision.",
       "safety": "write",
       "auth": "required",
       "security": [

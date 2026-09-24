@@ -162,7 +162,8 @@ export class ProjectsResource {
    * Delete a project
    *
    * A `502` response means the Project was not deleted because its release pull requests could not
-   * be retired.
+   * be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed
+   * deletion returns `404`.
    * `DELETE /projects/{project_id}`
    */
   async delete(
@@ -196,7 +197,8 @@ export class ProjectsResource {
    * saved update to a supplied field wins.
    *
    * A `502` response means the Project was saved, but an obsolete release pull request could not be
-   * retired.
+   * retired. Retrieve the Project and retry the same update to finish retiring reviews if that
+   * update is still desired.
    * `PATCH /projects/{project_id}`
    */
   async update(

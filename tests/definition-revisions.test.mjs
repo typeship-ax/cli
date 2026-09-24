@@ -64,3 +64,18 @@ test("definitionRevisions.retrieveDocumentContent GET /definition-revisions/{def
     mock.close();
   }
 });
+
+test("definitionRevisions.retrieveDocument GET /definition-documents/{definition_document_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"doc_8q2m5v1k9p4d7h3c\",\"object\":\"definition_document\",\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"role\":\"entrypoint\",\"coordinate\":\"example\",\"sha256\":\"example\",\"size_bytes\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.definitionRevisions.retrieveDocument("test-definition_document_id");
+    assert.equal(result.ok, true, JSON.stringify(result));
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/definition-documents/test-definition_document_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});

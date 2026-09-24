@@ -23,7 +23,7 @@ import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
 export const VERSION = "0.20.0";
-const USER_AGENT = "@typeship-ax/cli/0.20.0 (typeship)";
+const USER_AGENT = "@typeship-ax/cli/0.20.0";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */

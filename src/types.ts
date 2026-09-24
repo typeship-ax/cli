@@ -1079,6 +1079,51 @@ export type DeliveryRead = RepositoryDeliveryRead
   | Record<string, unknown> & { kind?: string };
 
 /**
+ * Repository fields are present for a repository Delivery; url is present for a hosted_mcp
+ * Delivery.
+ */
+export interface DeliveryResponse {
+  id: DeliveryId;
+  object: "delivery";
+  target_id: TargetId;
+  kind: "repository" | "hosted_mcp";
+  state: "active" | "disabled";
+  repository?: RepositoryReferenceResponse;
+  directory?: string | null;
+  package_name?: string | null;
+  module_path?: string | null;
+  publish_on_merge?: boolean;
+  /** Format: uri */
+  url?: string | null;
+  /** Format: date-time */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
+  request_id: RequestId;
+}
+
+/** Response shape for DeliveryResponse. */
+export interface DeliveryResponseRead {
+  id: DeliveryId;
+  object: "delivery" | (string & {});
+  target_id: TargetId;
+  kind: ("repository" | "hosted_mcp") | (string & {});
+  state: ("active" | "disabled") | (string & {});
+  repository?: RepositoryReferenceResponseRead;
+  directory?: string | null;
+  package_name?: string | null;
+  module_path?: string | null;
+  publish_on_merge?: boolean;
+  /** Format: uri */
+  url?: string | null;
+  /** Format: date-time */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
+  request_id: RequestId;
+}
+
+/**
  * One Target generated from a sibling Target. A go-cli Target carries kind go_sdk_module, naming
  * the Go SDK Target it is generated against.
  */
@@ -1549,6 +1594,17 @@ export interface PublicationRead {
   /** Format: date-time */
   updated_at: string;
 }
+
+export type PublicationResponse = Publication & {
+  /** Format: date-time */
+  created_at: string;
+} & ResponseMetadata;
+
+/** Response shape for PublicationResponse. */
+export type PublicationResponseRead = PublicationRead & {
+  /** Format: date-time */
+  created_at: string;
+} & ResponseMetadata;
 
 export type TargetDraftSelection = {
   mode: "automatic";
@@ -3251,6 +3307,35 @@ export interface DefinitionDocumentRead {
   coordinate: string;
   sha256: string;
   size_bytes: number;
+}
+
+export interface DefinitionDocumentResponse {
+  id: DefinitionDocumentId;
+  object: "definition_document";
+  definition_revision_id: DefinitionRevisionId;
+  role: "entrypoint" | "reference";
+  /** Repository-relative path or same-origin URL captured in this revision. */
+  coordinate: string;
+  sha256: string;
+  size_bytes: number;
+  /** Format: date-time */
+  created_at: string;
+  request_id: RequestId;
+}
+
+/** Response shape for DefinitionDocumentResponse. */
+export interface DefinitionDocumentResponseRead {
+  id: DefinitionDocumentId;
+  object: "definition_document" | (string & {});
+  definition_revision_id: DefinitionRevisionId;
+  role: ("entrypoint" | "reference") | (string & {});
+  /** Repository-relative path or same-origin URL captured in this revision. */
+  coordinate: string;
+  sha256: string;
+  size_bytes: number;
+  /** Format: date-time */
+  created_at: string;
+  request_id: RequestId;
 }
 
 export interface DefinitionRevision {

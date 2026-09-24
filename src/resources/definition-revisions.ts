@@ -17,6 +17,8 @@ import {
 } from "../errors.js";
 import type {
   DefinitionDocumentId,
+  DefinitionDocumentResponse,
+  DefinitionDocumentResponseRead,
   DefinitionId,
   DefinitionRevision,
   DefinitionRevisionId,
@@ -153,6 +155,35 @@ export class DefinitionRevisionsResource {
       options,
     });
   }
+
+  /**
+   * Retrieve a Definition Document
+   *
+   * Returns metadata for one source document captured in a Definition Revision. Retrieve its
+   * content through the revision's document content endpoint. A document in another organization
+   * returns 404 not_found.
+   * `GET /definition-documents/{definition_document_id}`
+   */
+  async retrieveDocument(
+    definitionDocumentId: DefinitionDocumentId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DefinitionDocumentResponseRead, DefinitionRevisionsRetrieveDocumentError>> {
+    return this._core.request<DefinitionDocumentResponseRead, DefinitionRevisionsRetrieveDocumentError>({
+      method: "GET",
+      path: `/definition-documents/${encodeURIComponent(String(definitionDocumentId))}`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "definitionRevisions.retrieveDocument",
+      options,
+    });
+  }
 }
 
 export interface DefinitionRevisionsListParams {
@@ -211,6 +242,18 @@ export type DefinitionRevisionsRetrieveContentError =
 
 /** Every error `retrieveDocumentContent` can produce, as a discriminated union. */
 export type DefinitionRevisionsRetrieveDocumentContentError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrieveDocument` can produce, as a discriminated union. */
+export type DefinitionRevisionsRetrieveDocumentError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError

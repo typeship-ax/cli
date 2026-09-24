@@ -244,3 +244,33 @@ test("targets.recoverDraftHistory POST /targets/{target_id}/draft/history/recove
     mock.close();
   }
 });
+
+test("targets.retrieveDelivery GET /deliveries/{delivery_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"url\":\"https://example.com\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.targets.retrieveDelivery("test-delivery_id");
+    assert.equal(result.ok, true, JSON.stringify(result));
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/deliveries/test-delivery_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("targets.retrievePublication GET /publications/{publication_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.targets.retrievePublication("test-publication_id");
+    assert.equal(result.ok, true, JSON.stringify(result));
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/publications/test-publication_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});

@@ -223,25 +223,22 @@ function out(value: unknown): void {
 let FIELDS: string[][] | null = null;
 
 /** Keep only FIELDS of a result: arrays item by item, objects by dotted path; scalars untouched. */
-function project(value: unknown): unknown {
-  if (FIELDS === null) return value;
-  if (Array.isArray(value)) return value.map(project);
+function project(value: unknown, paths: string[][] | null = FIELDS): unknown {
+  if (paths === null) return value;
+  if (Array.isArray(value)) return value.map((item) => project(item, paths));
   if (value === null || typeof value !== "object") return value;
+  const groups = new Map<string, string[][]>();
+  for (const [key, ...rest] of paths) {
+    if (key === undefined) continue;
+    const group = groups.get(key);
+    if (group) group.push(rest); else groups.set(key, [rest]);
+  }
   const out: Record<string, unknown> = {};
-  for (const path of FIELDS) {
-    let cursor: unknown = value;
-    for (const key of path) {
-      if (cursor === null || typeof cursor !== "object" || Array.isArray(cursor)) { cursor = undefined; break; }
-      cursor = (cursor as Record<string, unknown>)[key];
-    }
-    if (cursor === undefined) continue;
-    let target = out;
-    for (const key of path.slice(0, -1)) {
-      const next = target[key];
-      if (next === undefined || next === null || typeof next !== "object" || Array.isArray(next)) target[key] = {};
-      target = target[key] as Record<string, unknown>;
-    }
-    target[path[path.length - 1]!] = cursor;
+  for (const [key, rests] of groups) {
+    const child = (value as Record<string, unknown>)[key];
+    if (child === undefined) continue;
+    if (rests.some((rest) => rest.length === 0)) out[key] = child;
+    else if (child !== null && typeof child === "object") out[key] = project(child, rests);
   }
   return out;
 }
@@ -2392,18 +2389,16 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
   }
   LAST_CLIENT_HAD_CREDENTIAL = Object.keys(options.credentials ?? {}).length > 0 || AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
   requireOperationCredentials(op, options);
-  // Who is calling: the CLI, under which agent harness, and whether an
-  // agent is driving. "agent" means a harness was detected or the caller
-  // said so (--mode agent / env); a bare non-TTY run (CI, a pipeline) is
-  // "non-interactive", so usage by surface does not count CI as agents.
-  // The API can read it back; it carries no secrets.
+  // Identify the package and version. Optional harness and caller details
+  // let the API distinguish agent traffic from other non-interactive use.
   const harness = detectHarness();
   const explicitAgent = flags.get("mode") === "agent" || process.env["TYPESHIP_MODE"] === "agent";
   const behaving = agentMode({ flagMode: flags.get("mode"), envMode: process.env["TYPESHIP_MODE"], stdoutIsTTY: process.stdout.isTTY === true, stdinIsTTY: process.stdin.isTTY === true });
-  const caller = harness || explicitAgent ? "; agent" : behaving ? "; non-interactive" : "";
+  const caller = harness || explicitAgent ? "agent" : behaving ? "non-interactive" : null;
+  const details = [harness ? "harness=" + harness : null, caller].filter(Boolean).join("; ");
   options.defaultHeaders = {
     ...(options.defaultHeaders as Record<string, string> | undefined),
-    "User-Agent": PKG_NAME + "-cli/" + VERSION + " (typeship" + (harness ? "; harness=" + harness : "") + caller + ")",
+    "User-Agent": PKG_NAME + "-cli/" + VERSION + (details ? " (" + details + ")" : ""),
   };
   if (forIdentity) { options.fetch = identityFetch(baseUrl); options.maxRetries = 0; options.timeoutMs = 10_000; }
   return new TypeshipClient(options);

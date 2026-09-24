@@ -23,6 +23,9 @@ import {
 import type {
   DeletedTarget,
   DeletedTargetRead,
+  DeliveryId,
+  DeliveryResponse,
+  DeliveryResponseRead,
   DiscardDraftCustomizations,
   DraftConflictResolutionResponse,
   DraftConflictResolutionResponseRead,
@@ -38,6 +41,9 @@ import type {
   DraftHistoryRecoveryResponse,
   DraftHistoryRecoveryResponseRead,
   ProjectId,
+  PublicationId,
+  PublicationResponse,
+  PublicationResponseRead,
   RecoverDraftHistory,
   ResolveDraftConflicts,
   Target,
@@ -657,6 +663,62 @@ export class TargetsResource {
       options,
     });
   }
+
+  /**
+   * Retrieve a Delivery
+   *
+   * Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another
+   * organization returns 404 not_found.
+   * `GET /deliveries/{delivery_id}`
+   */
+  async retrieveDelivery(
+    deliveryId: DeliveryId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DeliveryResponseRead, TargetsRetrieveDeliveryError>> {
+    return this._core.request<DeliveryResponseRead, TargetsRetrieveDeliveryError>({
+      method: "GET",
+      path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveDelivery",
+      options,
+    });
+  }
+
+  /**
+   * Retrieve a Publication
+   *
+   * Returns the current registry publication state for a Target Release. A Publication in another
+   * organization returns 404 not_found.
+   * `GET /publications/{publication_id}`
+   */
+  async retrievePublication(
+    publicationId: PublicationId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<PublicationResponseRead, TargetsRetrievePublicationError>> {
+    return this._core.request<PublicationResponseRead, TargetsRetrievePublicationError>({
+      method: "GET",
+      path: `/publications/${encodeURIComponent(String(publicationId))}`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrievePublication",
+      options,
+    });
+  }
 }
 
 export interface TargetsListParams {
@@ -982,6 +1044,30 @@ export type TargetsRecoverDraftHistoryError =
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrieveDelivery` can produce, as a discriminated union. */
+export type TargetsRetrieveDeliveryError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrievePublication` can produce, as a discriminated union. */
+export type TargetsRetrievePublicationError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError

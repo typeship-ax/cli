@@ -133,6 +133,14 @@
         "recoverDraftHistory"
       ],
       [
+        "targets",
+        "retrieveDelivery"
+      ],
+      [
+        "targets",
+        "retrievePublication"
+      ],
+      [
         "generations",
         "retrieve"
       ],
@@ -155,6 +163,10 @@
       [
         "definitionRevisions",
         "retrieveDocumentContent"
+      ],
+      [
+        "definitionRevisions",
+        "retrieveDocument"
       ],
       [
         "account",
@@ -362,6 +374,18 @@
       },
       {
         "command": [
+          "targets",
+          "retrieve-delivery"
+        ]
+      },
+      {
+        "command": [
+          "targets",
+          "retrieve-publication"
+        ]
+      },
+      {
+        "command": [
           "generations",
           "retrieve"
         ]
@@ -394,6 +418,12 @@
         "command": [
           "definition-revisions",
           "retrieve-document-content"
+        ]
+      },
+      {
+        "command": [
+          "definition-revisions",
+          "retrieve-document"
         ]
       },
       {
@@ -759,6 +789,28 @@
         "path": "/targets/{target_id}/draft/history/recover"
       },
       {
+        "resource": "targets",
+        "method": "retrieveDelivery",
+        "command": [
+          "targets",
+          "retrieve-delivery"
+        ],
+        "tool": "targets_retrieve_delivery",
+        "httpMethod": "GET",
+        "path": "/deliveries/{delivery_id}"
+      },
+      {
+        "resource": "targets",
+        "method": "retrievePublication",
+        "command": [
+          "targets",
+          "retrieve-publication"
+        ],
+        "tool": "targets_retrieve_publication",
+        "httpMethod": "GET",
+        "path": "/publications/{publication_id}"
+      },
+      {
         "resource": "generations",
         "method": "retrieve",
         "command": [
@@ -823,6 +875,17 @@
         "tool": "definition_revisions_retrieve_document_content",
         "httpMethod": "GET",
         "path": "/definition-revisions/{definition_revision_id}/documents/{document_id}/content"
+      },
+      {
+        "resource": "definitionRevisions",
+        "method": "retrieveDocument",
+        "command": [
+          "definition-revisions",
+          "retrieve-document"
+        ],
+        "tool": "definition_revisions_retrieve_document",
+        "httpMethod": "GET",
+        "path": "/definition-documents/{definition_document_id}"
       },
       {
         "resource": "account",
@@ -12709,6 +12772,435 @@
       }
     },
     {
+      "operation": "targets.retrieveDelivery",
+      "signature": "typeship targets retrieve-delivery <delivery_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve-delivery"
+      ],
+      "parameters": [
+        {
+          "name": "delivery_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve-delivery dlv_4q8m2v7k1p9d5h6c",
+      "method": "GET",
+      "path": "/deliveries/{delivery_id}",
+      "summary": "Retrieve a Delivery",
+      "description": "Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 not_found.",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "delivery_id"
+        ]
+      },
+      "output_schema": {
+        "description": "Repository fields are present for a repository Delivery; url is present for a hosted_mcp Delivery.",
+        "properties": {
+          "id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "delivery",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "repository",
+              "hosted_mcp"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "active",
+              "disabled"
+            ],
+            "type": "string"
+          },
+          "repository": {
+            "properties": {
+              "provider": {
+                "enum": [
+                  "github"
+                ],
+                "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                "type": "string"
+              },
+              "identifier": {
+                "description": "Provider-native repository identity, opaque outside its adapter.",
+                "examples": [
+                  "parcel-example/api"
+                ],
+                "maxLength": 512,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "directory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "package_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "module_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publish_on_merge": {
+            "type": "boolean"
+          },
+          "url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "delivery_id": "dlv_4q8m2v7k1p9d5h6c"
+      }
+    },
+    {
+      "operation": "targets.retrievePublication",
+      "signature": "typeship targets retrieve-publication <publication_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "retrieve-publication"
+      ],
+      "parameters": [
+        {
+          "name": "publication_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship targets retrieve-publication pub_2m8q4v7k1p9d5h6c",
+      "method": "GET",
+      "path": "/publications/{publication_id}",
+      "summary": "Retrieve a Publication",
+      "description": "Returns the current registry publication state for a Target Release. A Publication in another organization returns 404 not_found.",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "publication_id": {
+            "examples": [
+              "pub_2m8q4v7k1p9d5h6c"
+            ],
+            "pattern": "^pub_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "publication_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "examples": [
+              "pub_2m8q4v7k1p9d5h6c"
+            ],
+            "pattern": "^pub_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "publication",
+            "type": "string"
+          },
+          "target_release_id": {
+            "examples": [
+              "rel_7m2q8v4k1p9d5h6c"
+            ],
+            "pattern": "^rel_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "destination": {
+            "enum": [
+              "github",
+              "npm",
+              "pypi",
+              "go",
+              "mcp"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "publishing",
+              "published",
+              "failed",
+              "disabled"
+            ],
+            "type": "string"
+          },
+          "attempt": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "run_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "registry_url": {
+            "format": "uri",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "artifact_digest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errors": {
+            "description": "Recorded failures. Empty when this resource has no recorded failure.",
+            "items": {
+              "properties": {
+                "type": {
+                  "enum": [
+                    "request_error",
+                    "authentication_error",
+                    "authorization_error",
+                    "plan_error",
+                    "source_error",
+                    "rate_limit_error",
+                    "api_error",
+                    "unknown_error"
+                  ],
+                  "description": "Stable category for deciding how to handle the error.",
+                  "type": "string"
+                },
+                "code": {
+                  "enum": [
+                    "invalid_request",
+                    "idempotency_key_reused",
+                    "unauthorized",
+                    "organization_required",
+                    "insufficient_scope",
+                    "forbidden",
+                    "not_found",
+                    "method_not_allowed",
+                    "spec_error",
+                    "fetch_error",
+                    "repository_provider_unsupported",
+                    "edition_unavailable",
+                    "target_busy",
+                    "no_draft",
+                    "stale_draft",
+                    "no_changes",
+                    "invalid_version",
+                    "precondition_failed",
+                    "definition_changed",
+                    "version_occupied",
+                    "version_too_low",
+                    "release_analysis_stale",
+                    "target_already_released",
+                    "adoption_unverified",
+                    "publication_disabled",
+                    "publication_not_retryable",
+                    "publication_recovery_unavailable",
+                    "publication_dispatch_failed",
+                    "repository_disconnected",
+                    "regeneration_failed",
+                    "delivery_conflict",
+                    "resource_has_dependencies",
+                    "plan_limit_reached",
+                    "payload_too_large",
+                    "rate_limited",
+                    "internal_error",
+                    "dependency_missing",
+                    "dependency_not_found",
+                    "dependency_self",
+                    "dependency_cycle",
+                    "dependency_cross_project",
+                    "dependency_cross_lineage",
+                    "dependency_wrong_generator",
+                    "dependency_disabled",
+                    "dependency_module_path_missing",
+                    "dependency_unreleased",
+                    "dependency_revision_mismatch",
+                    "dependency_edition_incompatible",
+                    "publication_failed",
+                    "customization_conflict",
+                    "history_recovery_required",
+                    "checks_unavailable",
+                    "generation_stale",
+                    "unclassified_error"
+                  ],
+                  "description": "Stable programmatic identifier. Do not branch on message.",
+                  "type": "string"
+                },
+                "phase": {
+                  "enum": [
+                    "definition",
+                    "generation",
+                    "delivery",
+                    "publication"
+                  ],
+                  "description": "The stage that failed. A delivery failure does not change a Generation's succeeded status.",
+                  "type": "string"
+                },
+                "target_id": {
+                  "description": "Stable identifier for one configured generated product.",
+                  "examples": [
+                    "tgt_5m8q2v7k1p9d4h6c"
+                  ],
+                  "pattern": "^tgt_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "field": {
+                  "description": "JSON Pointer to the invalid field within the request part named by in. When in is omitted, the pointer refers to the request body. Header pointers use lowercase header names, such as /idempotency-key.",
+                  "type": "string"
+                },
+                "in": {
+                  "enum": [
+                    "body",
+                    "query",
+                    "header"
+                  ],
+                  "description": "Request part containing field. Query-parameter errors use query; header errors use header. Body errors use body or omit in.",
+                  "type": "string"
+                },
+                "message": {
+                  "description": "Human-readable explanation. Its wording may change.",
+                  "type": "string"
+                },
+                "retryable": {
+                  "description": "Whether another attempt can succeed without correcting the inputs. For a recorded failure, start generation or publication again; retrieving the resource or replaying an idempotency key does not start another attempt.",
+                  "type": "boolean"
+                },
+                "suggested_action": {
+                  "description": "Stable, concise recovery instruction suitable for a person or agent.",
+                  "type": "string"
+                },
+                "docs_url": {
+                  "format": "uri",
+                  "description": "Documentation for this class of error.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "started_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "publication_id": "pub_2m8q4v7k1p9d5h6c"
+      }
+    },
+    {
       "operation": "generations.retrieve",
       "signature": "typeship generations retrieve <generation_id> [flags]",
       "command": [
@@ -13533,6 +14025,112 @@
       "example_arguments": {
         "definition_revision_id": "drev_6m1q8v4k2p9d7h3c",
         "document_id": "doc_8q2m5v1k9p4d7h3c"
+      }
+    },
+    {
+      "operation": "definitionRevisions.retrieveDocument",
+      "signature": "typeship definition-revisions retrieve-document <definition_document_id> [flags]",
+      "command": [
+        "typeship",
+        "definition-revisions",
+        "retrieve-document"
+      ],
+      "parameters": [
+        {
+          "name": "definition_document_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship definition-revisions retrieve-document doc_8q2m5v1k9p4d7h3c",
+      "method": "GET",
+      "path": "/definition-documents/{definition_document_id}",
+      "summary": "Retrieve a Definition Document",
+      "description": "Returns metadata for one source document captured in a Definition Revision. Retrieve its content through the revision's document content endpoint. A document in another organization returns 404 not_found.",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "definition_document_id": {
+            "description": "Unique identifier for a source document captured in a Definition Revision.",
+            "examples": [
+              "doc_8q2m5v1k9p4d7h3c"
+            ],
+            "pattern": "^doc_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition_document_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "description": "Unique identifier for a source document captured in a Definition Revision.",
+            "examples": [
+              "doc_8q2m5v1k9p4d7h3c"
+            ],
+            "pattern": "^doc_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "definition_document",
+            "type": "string"
+          },
+          "definition_revision_id": {
+            "description": "Unique identifier for an immutable resolved Definition Revision.",
+            "examples": [
+              "drev_6m1q8v4k2p9d7h3c"
+            ],
+            "pattern": "^drev_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "entrypoint",
+              "reference"
+            ],
+            "type": "string"
+          },
+          "coordinate": {
+            "description": "Repository-relative path or same-origin URL captured in this revision.",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "size_bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "definition_document_id": "doc_8q2m5v1k9p4d7h3c"
       }
     },
     {

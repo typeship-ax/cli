@@ -825,6 +825,50 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs targets recover-draft-history --json`.
 
+### `typeship targets retrieve-delivery <delivery_id> [flags]`
+
+Retrieve a Delivery
+
+`GET /deliveries/{delivery_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 not_found.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+
+```sh
+typeship targets retrieve-delivery dlv_4q8m2v7k1p9d5h6c
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs targets retrieve-delivery --json`.
+
+### `typeship targets retrieve-publication <publication_id> [flags]`
+
+Retrieve a Publication
+
+`GET /publications/{publication_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns the current registry publication state for a Target Release. A Publication in another organization returns 404 not_found.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<publication_id>` | path | `string` | yes | — |
+
+```sh
+typeship targets retrieve-publication pub_2m8q4v7k1p9d5h6c
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs targets retrieve-publication --json`.
+
 ## generations
 
 ### `typeship generations retrieve <generation_id> [flags]`
@@ -962,6 +1006,28 @@ typeship definition-revisions retrieve-document-content drev_6m1q8v4k2p9d7h3c do
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs definition-revisions retrieve-document-content --json`.
+
+### `typeship definition-revisions retrieve-document <definition_document_id> [flags]`
+
+Retrieve a Definition Document
+
+`GET /definition-documents/{definition_document_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns metadata for one source document captured in a Definition Revision. Retrieve its content through the revision's document content endpoint. A document in another organization returns 404 not_found.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<definition_document_id>` | path | `string` | yes | — |
+
+```sh
+typeship definition-revisions retrieve-document doc_8q2m5v1k9p4d7h3c
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs definition-revisions retrieve-document --json`.
 
 ## account
 

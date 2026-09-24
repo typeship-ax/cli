@@ -9768,9 +9768,82 @@
             ]
           },
           "readiness": {
-            "type": [
-              "object",
-              "null"
+            "anyOf": [
+              {
+                "description": "Readiness decision for the Draft's head_revision. Null readiness on the Draft means no candidate exists.",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "success",
+                      "failure",
+                      "error",
+                      "pending"
+                    ],
+                    "description": "success means required checks passed; failure means the Draft needs correction or review; error means assessment could not finish; pending means checks have not finished.",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Human-readable explanation of the current decision. Do not parse it for control flow.",
+                    "type": "string"
+                  },
+                  "api_compatibility": {
+                    "enum": [
+                      "compatible",
+                      "breaking",
+                      "unknown"
+                    ],
+                    "description": "API surface comparison against Current. unknown means analysis is unavailable.",
+                    "type": "string"
+                  },
+                  "package_compatibility": {
+                    "enum": [
+                      "compatible",
+                      "breaking",
+                      "unknown"
+                    ],
+                    "description": "Package and supported SDK source comparison against Current. unknown means analysis is incomplete or unavailable.",
+                    "type": "string"
+                  },
+                  "version_correct": {
+                    "description": "Whether the version satisfies the assessed change. Null when no verdict is available.",
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "required_bump": {
+                    "enum": [
+                      "major",
+                      "minor",
+                      "patch",
+                      null
+                    ],
+                    "description": "Minimum assessed version bump. Null when no bump has been determined.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "previous_version": {
+                    "description": "Version used for the comparison. Null when no comparison version is available.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title_error": {
+                    "description": "Draft title error that must be corrected before release. Null when none is recorded.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "changes": {
@@ -10027,9 +10100,82 @@
             ]
           },
           "readiness": {
-            "type": [
-              "object",
-              "null"
+            "anyOf": [
+              {
+                "description": "Readiness decision for the Draft's head_revision. Null readiness on the Draft means no candidate exists.",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "success",
+                      "failure",
+                      "error",
+                      "pending"
+                    ],
+                    "description": "success means required checks passed; failure means the Draft needs correction or review; error means assessment could not finish; pending means checks have not finished.",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Human-readable explanation of the current decision. Do not parse it for control flow.",
+                    "type": "string"
+                  },
+                  "api_compatibility": {
+                    "enum": [
+                      "compatible",
+                      "breaking",
+                      "unknown"
+                    ],
+                    "description": "API surface comparison against Current. unknown means analysis is unavailable.",
+                    "type": "string"
+                  },
+                  "package_compatibility": {
+                    "enum": [
+                      "compatible",
+                      "breaking",
+                      "unknown"
+                    ],
+                    "description": "Package and supported SDK source comparison against Current. unknown means analysis is incomplete or unavailable.",
+                    "type": "string"
+                  },
+                  "version_correct": {
+                    "description": "Whether the version satisfies the assessed change. Null when no verdict is available.",
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "required_bump": {
+                    "enum": [
+                      "major",
+                      "minor",
+                      "patch",
+                      null
+                    ],
+                    "description": "Minimum assessed version bump. Null when no bump has been determined.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "previous_version": {
+                    "description": "Version used for the comparison. Null when no comparison version is available.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title_error": {
+                    "description": "Draft title error that must be corrected before release. Null when none is recorded.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "changes": {

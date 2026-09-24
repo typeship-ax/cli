@@ -1580,6 +1580,61 @@ export type TargetDraftSelectionRead = {
       actor: string | null;
     };
 
+/**
+ * Readiness decision for the Draft's head_revision. Null readiness on the Draft means no candidate
+ * exists.
+ */
+export interface TargetDraftReadiness {
+  /**
+   * success means required checks passed; failure means the Draft needs correction or review; error
+   * means assessment could not finish; pending means checks have not finished.
+   */
+  state: "success" | "failure" | "error" | "pending";
+  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
+  description: string;
+  /** API surface comparison against Current. unknown means analysis is unavailable. */
+  api_compatibility: "compatible" | "breaking" | "unknown";
+  /**
+   * Package and supported SDK source comparison against Current. unknown means analysis is
+   * incomplete or unavailable.
+   */
+  package_compatibility: "compatible" | "breaking" | "unknown";
+  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
+  version_correct: boolean | null;
+  /** Minimum assessed version bump. Null when no bump has been determined. */
+  required_bump: "major" | "minor" | "patch" | null;
+  /** Version used for the comparison. Null when no comparison version is available. */
+  previous_version: string | null;
+  /** Draft title error that must be corrected before release. Null when none is recorded. */
+  title_error: string | null;
+}
+
+/** Response shape for TargetDraftReadiness. */
+export interface TargetDraftReadinessRead {
+  /**
+   * success means required checks passed; failure means the Draft needs correction or review; error
+   * means assessment could not finish; pending means checks have not finished.
+   */
+  state: ("success" | "failure" | "error" | "pending") | (string & {});
+  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
+  description: string;
+  /** API surface comparison against Current. unknown means analysis is unavailable. */
+  api_compatibility: ("compatible" | "breaking" | "unknown") | (string & {});
+  /**
+   * Package and supported SDK source comparison against Current. unknown means analysis is
+   * incomplete or unavailable.
+   */
+  package_compatibility: ("compatible" | "breaking" | "unknown") | (string & {});
+  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
+  version_correct: boolean | null;
+  /** Minimum assessed version bump. Null when no bump has been determined. */
+  required_bump: ("major" | "minor" | "patch" | null) | (string & {}) | null;
+  /** Version used for the comparison. Null when no comparison version is available. */
+  previous_version: string | null;
+  /** Draft title error that must be corrected before release. Null when none is recorded. */
+  title_error: string | null;
+}
+
 export interface TargetDraft {
   object: "target_draft";
   target_id: TargetId;
@@ -1587,7 +1642,7 @@ export interface TargetDraft {
   current_version: string | null;
   version: string | null;
   selection: TargetDraftSelection;
-  readiness: Record<string, unknown> | null;
+  readiness: TargetDraftReadiness | null;
   changes: {
     /** Cumulative changelog against Current. */
     changelog?: string | null;
@@ -1610,7 +1665,7 @@ export interface TargetDraftRead {
   current_version: string | null;
   version: string | null;
   selection: TargetDraftSelectionRead;
-  readiness: Record<string, unknown> | null;
+  readiness: TargetDraftReadinessRead | null;
   changes: {
     /** Cumulative changelog against Current. */
     changelog?: string | null;

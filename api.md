@@ -528,7 +528,7 @@ A `502` response means the update was saved, but retiring an obsolete review or 
 | `--state` | body | `string` | no | — |
 | `--edition` | body | `string` | no | — |
 | `--release-channel` | body | `string` | no | — |
-| `--proposed-version` | body | `string` | no | Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft endpoint for an optional revision precondition. |
+| `--proposed-version` | body | `string` | no | Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft endpoint for an optional If-Match precondition. |
 | `--checks` | body | `object` | no | Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list. |
 | `--config` | body | `json` | no | Replaces the complete stored override object. Send null or an empty object to resume Project inheritance. Effective values merge over Project.config; GraphQL settings belong to the Definition. |
 | `--deliveries` | body | `array` | no | Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and, for hosted_mcp, a new URL. |
@@ -573,7 +573,7 @@ Retrieve a Target's rolling Draft release
 
 Safety: **read** · Authentication: **required**
 
-Returns Current's version, the proposed Draft version, readiness, and commit. Pass `revision` as `expected_revision` when updating the Draft to avoid changing a newer candidate.
+Returns the Draft's status and its one next step, Current's version, the proposed version, readiness, checks, and conflict counts. Every status is described on `status`. The response carries an `ETag`; send it in `If-Match` when updating the Draft to avoid changing a newer version selection.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
@@ -597,21 +597,20 @@ Safety: **write** · Authentication: **required**
 
 Checks your version choice against the required version bump, then regenerates the existing Draft pull request.
 
-Send the last read revision as expected_revision to reject an intervening change with 409 stale_release_revision before saving or regenerating.
-The precondition is optional; omitting it applies the selection to the current Draft. Version is required; null restores automatic selection.
+Send the Draft's `ETag` in `If-Match` to reject an intervening change with 412 precondition_failed before saving or regenerating. Omitting `If-Match` applies the selection to the current Draft. Version is required; null restores automatic selection.
 
-A `502` response means the selected version was saved, but regeneration failed. Follow the error's retryable and suggested_action fields. Repeating an unfinished selection resumes generation; repeating a completed selection starts no new work. If using expected_revision, retrieve the Draft and confirm the saved selection before retrying with its current revision.
+A `502` response means the selected version was saved, but regeneration failed. Follow the error's retryable and suggested_action fields. Repeating an unfinished selection resumes generation; repeating a completed selection starts no new work. If using If-Match, retrieve the Draft and confirm the saved selection before retrying with its current ETag.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
 | `--body-version` | body | `string` | yes | Exact SemVer, or null to return to automatic selection. |
-| `--expected-revision` | body | `number` | no | Optional revision from the last Draft read. An intervening change returns 409 stale_release_revision without saving or regenerating. Omit to apply the selection without this precondition. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The update applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to update the current version. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship targets update-draft tgt_5m8q2v7k1p9d4h6c --body-version 1.1.0 --expected-revision 2
+typeship targets update-draft tgt_5m8q2v7k1p9d4h6c --body-version 1.1.0
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -690,53 +689,57 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs targets republish-release --json`.
 
-### `typeship targets retrieve-draft-customizations <target_id> [flags]`
+### `typeship targets list-draft-files <target_id> [flags]`
 
-Inspect customizations on a Draft
+List customized and conflicted files on a Draft
 
-`GET /targets/{target_id}/draft/customizations`
+`GET /targets/{target_id}/draft/files`
 
 Safety: **read** · Authentication: **required**
 
-Returns the changed file paths from the latest Draft inspection. Read conflicts for all three file versions, and read the Draft for package-check readiness.
+Lists the Draft's files that differ from the last accepted package or need a conflict decision, ordered by path, without file content. Each conflict names its kind, where the incoming version comes from, the saved decision, and the sides you can read with retrieveDraftFileContent. With `filter=history`, lists the files affected by a default-branch history rewrite instead; the list is empty when none is pending.
+
+Returns `409 stale_draft` while Typeship has not integrated the Draft's latest commit (Draft status generating or branch_changed), or when the Draft changes between pages.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
+| `--filter` | query | `string` | no | conflicted: conflicts only. customized: files that differ from the last accepted package. history: files affected by a default-branch history rewrite. Omit for conflicted and customized files. |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same account, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests. |
 
 ```sh
-typeship targets retrieve-draft-customizations tgt_5m8q2v7k1p9d4h6c
+typeship targets list-draft-files tgt_5m8q2v7k1p9d4h6c
 ```
 
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
 
-Read the full command contract with `typeship docs targets retrieve-draft-customizations --json`.
+Read the full command contract with `typeship docs targets list-draft-files --json`.
 
-### `typeship targets retrieve-draft-conflicts <target_id> [flags]`
+### `typeship targets retrieve-draft-file-content <target_id> [flags]`
 
-Inspect conflicts on a Draft
+Read one side of a Draft file
 
-`GET /targets/{target_id}/draft/conflicts`
+`GET /targets/{target_id}/draft/files/content`
 
 Safety: **read** · Authentication: **required**
 
-Returns every conflict with its base, repository, and incoming file bytes and modes in one response. An absent file is null. incoming_source distinguishes generated changes, default-branch changes, and recovered saved Draft code. Saved decisions require a separate Generate before conflicts clear.
+Returns up to 24 KiB of one side of a conflicted or history-affected file: text as UTF-8, binary content as base64. Follow `next_cursor` with the same path and side to read the rest, and concatenate the chunks in order. A side where the file is absent returns 404.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
-| `--path` | query | `string` | no | Inspect this conflict path only. |
-| `--after-path` | query | `string` | no | Continue after next_path. Requires expected_head_revision. |
-| `--content-offset` | query | `number` | no | Decoded byte offset for each side. Select one path and follow each side until next_offset is null. |
-| `--expected-head-revision` | query | `string` | no | Exact Draft head from the preceding response. Required when continuing a page or byte offset. |
+| `--path` | query | `string` | yes | File path from listDraftFiles. |
+| `--side` | query | `string` | yes | A side listed for the file. |
+| `--cursor` | query | `string` | no | next_cursor from the preceding chunk of the same path and side. |
 
 ```sh
-typeship targets retrieve-draft-conflicts tgt_5m8q2v7k1p9d4h6c
+typeship targets retrieve-draft-file-content tgt_5m8q2v7k1p9d4h6c --path src/index.ts --side base
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
-Read the full command contract with `typeship docs targets retrieve-draft-conflicts --json`.
+Read the full command contract with `typeship docs targets retrieve-draft-file-content --json`.
 
 ### `typeship targets resolve-draft-conflicts <target_id> [flags]`
 
@@ -746,21 +749,21 @@ Resolve selected Draft conflicts
 
 Safety: **write** · Authentication: **required**
 
-Save deliberate decisions for the exact inspected Draft. Keep the repository or incoming side, or submit final file content, including binary bytes. Decisions save atomically. Use dry_run to preview them, then generate the Target separately to apply saved decisions and run its checks.
+Saves decisions for conflicts on the Draft's head_revision: keep the repository or incoming version, or supply the final content as text or, for binary files, base64. Decisions save together or not at all, and a decision can be replaced until it is applied. Use `dry_run` to validate them first.
+
+Saving changes no files. When every conflict has a decision, `remaining_conflicts` is 0 and the Draft status becomes `needs_generation`: generate the Target to apply the decisions and run its checks. Applying them can report conflicts from the next merge stage.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
-| `--expected-head-revision` | body | `string` | yes | — |
+| `--expected-head-revision` | body | `string` | yes | The Draft's head_revision. A newer Draft commit returns 409 stale_draft without saving. |
 | `--resolutions` | body | `array` | yes | Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save together or not at all. |
-| `--dry-run` | body | `boolean` | no | Preview exact selected bytes and deletions without saving decisions. Default: false. |
-| `--preview-after` | body | `string` | no | Only with dry_run. Continue after the preceding preview next_path with the same selection and expected_head_revision. |
-| `--content-offset` | body | `number` | no | Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. |
+| `--dry-run` | body | `boolean` | no | Validate the decisions and return the planned files without saving. Default: false. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship targets resolve-draft-conflicts tgt_5m8q2v7k1p9d4h6c --expected-head-revision 0123456789abcdef0123456789abcdef01234567 --resolutions '[{"path":"src/index.ts","keep":"incoming"}]'
+typeship targets resolve-draft-conflicts tgt_5m8q2v7k1p9d4h6c --expected-head-revision 0123456789abcdef0123456789abcdef01234567 --resolutions '[{"path":"src/index.ts","keep":"content","mode":"100644","content":"export { ParcelClient } from \"./client.js\";\nexport type { Shipment, Label } from \"./types.js\";\nexport { createParcelClient } from \"./helper.js\";\n"}]'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -775,16 +778,16 @@ Discard selected Draft customizations
 
 Safety: **write** · Authentication: **required**
 
-Replace explicitly listed non-conflicting paths with generated files in one Draft commit. Listing a customer-only file deletes it. Use dry_run to inspect writes and deletions first. Resolve conflicts through the separate conflicts action. Generate afterward to refresh the Draft and its checks.
+Replaces the listed customized paths that are not conflicts with the generated files, in one commit on the Draft branch. A listed file that exists only on the Draft is deleted. Use `dry_run` to see the planned writes and deletions first. Resolve conflicts with resolveDraftConflicts.
+
+After the commit, the Draft status is `branch_changed` until Typeship integrates it from the repository's pull request event and reruns the checks; you do not need to generate the Target.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
-| `--expected-head-revision` | body | `string` | yes | — |
-| `--paths` | body | `array` | yes | Explicit non-conflicting customization paths to replace with generated files. A listed customer-only file is deleted. |
-| `--dry-run` | body | `boolean` | no | Preview exact writes and deletions before discarding customizations. Default: false. |
-| `--preview-after` | body | `string` | no | Only with dry_run. Continue after the preceding preview next_path with the same selection and expected_head_revision. |
-| `--content-offset` | body | `number` | no | Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. |
+| `--expected-head-revision` | body | `string` | yes | The Draft's head_revision. A newer Draft commit returns 409 stale_draft without committing. |
+| `--paths` | body | `array` | yes | Customized paths that are not conflicts, to replace with the generated files. A listed file that exists only on the Draft is deleted. |
+| `--dry-run` | body | `boolean` | no | Return the planned writes and deletions without committing. Default: false. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -798,28 +801,24 @@ Read the full command contract with `typeship docs targets discard-draft-customi
 
 ### `typeship targets recover-draft-history <target_id> [flags]`
 
-Review and recover rewritten repository history
+Approve recovery from rewritten default-branch history
 
 `POST /targets/{target_id}/draft/history/recover`
 
 Safety: **write** · Authentication: **required**
 
-Preview a rewritten default branch and the Draft code to preserve. Approve the exact inspected revisions with dry_run false, then Generate separately. Recovery preserves the previous Draft branch, opens a new Draft from the current default branch, and requires explicit decisions for overlapping code. A rewritten Draft alone recovers automatically during Generate.
+When the Draft status is `history_rewritten`, review the affected files with `listDraftFiles` and `filter=history`, then approve with the Draft's `history_recovery` revisions. Approval saves the recovery without changing Git, and the Draft status becomes `needs_generation`: generate the Target to open a new Draft from the rewritten default branch. The previous Draft branch stays available, and overlapping code comes back as conflicts to resolve. A rewritten Draft branch alone needs no approval.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
-| `--dry-run` | body | `boolean` | yes | Preview without saving when true. Set false with both inspected revisions to approve recovery. |
-| `--expected-default-revision` | body | `string` | no | — |
-| `--expected-draft-revision` | body | `string` | no | Exact inspected Draft commit; null when the branch is absent. |
-| `--after-path` | body | `string` | no | Continue after next_path from the preceding preview. Requires both inspected revisions and dry_run true. |
-| `--path` | body | `string` | no | Inspect one differing file. Requires both inspected revisions and dry_run true. |
-| `--content-offset` | body | `number` | no | Decoded byte offset for the next content chunk. Requires both inspected revisions and dry_run true. |
+| `--expected-default-revision` | body | `string` | yes | The Draft's history_recovery.default_revision. |
+| `--expected-head-revision` | body | `string` | yes | The Draft's history_recovery.head_revision; null when the Draft branch is absent. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship targets recover-draft-history tgt_5m8q2v7k1p9d4h6c --dry-run true
+typeship targets recover-draft-history tgt_5m8q2v7k1p9d4h6c --expected-default-revision 89abcdef0123456789abcdef0123456789abcdef --expected-head-revision 0123456789abcdef0123456789abcdef01234567
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.

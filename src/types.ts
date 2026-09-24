@@ -1210,7 +1210,7 @@ export interface TargetUpdateRequest {
   release_channel?: "stable" | "prerelease";
   /**
    * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
-   * endpoint for an optional revision precondition.
+   * endpoint for an optional If-Match precondition.
    */
   proposed_version?: string | null;
   checks?: TargetChecks;
@@ -1238,7 +1238,7 @@ export interface TargetUpdateRequestRead {
   release_channel?: ("stable" | "prerelease") | (string & {});
   /**
    * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
-   * endpoint for an optional revision precondition.
+   * endpoint for an optional If-Match precondition.
    */
   proposed_version?: string | null;
   checks?: TargetChecksRead;
@@ -1284,9 +1284,6 @@ export interface Target {
   current_version: string | null;
   proposed_version: string | null;
   proposed_version_source: "console" | "api" | "github" | null;
-  proposed_version_actor: string | null;
-  /** Optimistic concurrency revision for Draft selections. */
-  release_revision: number;
   checks: TargetChecksResponse;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
@@ -1324,9 +1321,6 @@ export interface TargetWrite {
   current_version: string | null;
   proposed_version: string | null;
   proposed_version_source: "console" | "api" | "github" | null;
-  proposed_version_actor: string | null;
-  /** Optimistic concurrency revision for Draft selections. */
-  release_revision: number;
   checks: TargetChecksResponse;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
@@ -1369,9 +1363,6 @@ export interface TargetRead {
   current_version: string | null;
   proposed_version: string | null;
   proposed_version_source: ("console" | "api" | "github" | null) | (string & {}) | null;
-  proposed_version_actor: string | null;
-  /** Optimistic concurrency revision for Draft selections. */
-  release_revision: number;
   checks: TargetChecksResponseRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
@@ -1565,8 +1556,8 @@ export type TargetDraftSelection = {
   | {
       mode: "exact";
       version: string;
+      /** Where the selection was made. */
       source: "console" | "api" | "github" | null;
-      actor: string | null;
     };
 
 /** Response shape for TargetDraftSelection. */
@@ -1576,9 +1567,53 @@ export type TargetDraftSelectionRead = {
   | {
       mode: "exact" | (string & {});
       version: string;
+      /** Where the selection was made. */
       source: ("console" | "api" | "github" | null) | (string & {}) | null;
-      actor: string | null;
     };
+
+/**
+ * The Draft's state and its one next step. no_draft: no Draft is open; generate the Target.
+ * generating: Typeship is updating the Draft branch; retrieve the Draft again. branch_changed: the
+ * Draft branch has a commit Typeship has not integrated, such as your push or a discard; Typeship
+ * starts that integration from the repository event, so retrieve the Draft again, and generate the
+ * Target only if the status persists. conflicted: some conflicts have no decision; list files with
+ * filter=conflicted and resolve them. needs_generation: saved conflict decisions, an approved
+ * history recovery, or a settings change are not applied yet; generate the Target.
+ * history_rewritten: the default branch no longer contains the accepted package; review files with
+ * filter=history and approve history recovery. checking: package checks are running on
+ * head_revision; retrieve the Draft again. failed: readiness failed or could not be assessed;
+ * inspect readiness and checks, fix the package or pull request, and push to the Draft. ready:
+ * every required check passed on head_revision; merge the pull request.
+ */
+export const DraftStatus = {
+  NO_DRAFT: "no_draft",
+  GENERATING: "generating",
+  BRANCH_CHANGED: "branch_changed",
+  CONFLICTED: "conflicted",
+  NEEDS_GENERATION: "needs_generation",
+  HISTORY_REWRITTEN: "history_rewritten",
+  CHECKING: "checking",
+  FAILED: "failed",
+  READY: "ready",
+} as const;
+export type DraftStatus = (typeof DraftStatus)[keyof typeof DraftStatus];
+
+export interface TargetDraftConflicts {
+  /** Conflicts in the current merge stage. */
+  total: number;
+  /** Conflicts with a saved decision for head_revision. */
+  decided: number;
+}
+
+/** The approval inputs for a default-branch history rewrite. */
+export interface TargetDraftHistoryRecovery {
+  /** Rewritten default-branch commit. Send it as expected_default_revision. */
+  default_revision: string;
+  /** Draft commit Typeship last observed. Send it as expected_head_revision. */
+  head_revision: string | null;
+  /** Existing Draft branch that stays available after recovery opens a new Draft. */
+  preserved_branch: string | null;
+}
 
 /**
  * Readiness decision for the Draft's head_revision. Null readiness on the Draft means no candidate
@@ -1638,7 +1673,8 @@ export interface TargetDraftReadinessRead {
 export interface TargetDraft {
   object: "target_draft";
   target_id: TargetId;
-  revision: number;
+  project_id: ProjectId;
+  status: DraftStatus;
   current_version: string | null;
   version: string | null;
   selection: TargetDraftSelection;
@@ -1650,9 +1686,24 @@ export interface TargetDraft {
     previous_version?: string | null;
   }
     | null;
+  /**
+   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_revision
+   * when resolving or discarding.
+   */
   head_revision: string | null;
   /** Format: uri */
   pull_request_url: string | null;
+  /** Generation whose package this Draft contains. */
+  generation_id: GenerationId | null;
+  /** Conflict counts for the current merge stage; null when the Draft has no conflicts. */
+  conflicts: TargetDraftConflicts | null;
+  /**
+   * Files where the Draft differs from the last accepted package; null until the Draft is
+   * integrated.
+   */
+  customized_files: number | null;
+  /** Present only while status is history_rewritten. */
+  history_recovery: TargetDraftHistoryRecovery | null;
   request_id?: RequestId;
   checks: PackageCheck[];
 }
@@ -1661,7 +1712,8 @@ export interface TargetDraft {
 export interface TargetDraftRead {
   object: "target_draft" | (string & {});
   target_id: TargetId;
-  revision: number;
+  project_id: ProjectId;
+  status: DraftStatus | (string & {});
   current_version: string | null;
   version: string | null;
   selection: TargetDraftSelectionRead;
@@ -1673,9 +1725,24 @@ export interface TargetDraftRead {
     previous_version?: string | null;
   }
     | null;
+  /**
+   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_revision
+   * when resolving or discarding.
+   */
   head_revision: string | null;
   /** Format: uri */
   pull_request_url: string | null;
+  /** Generation whose package this Draft contains. */
+  generation_id: GenerationId | null;
+  /** Conflict counts for the current merge stage; null when the Draft has no conflicts. */
+  conflicts: TargetDraftConflicts | null;
+  /**
+   * Files where the Draft differs from the last accepted package; null until the Draft is
+   * integrated.
+   */
+  customized_files: number | null;
+  /** Present only while status is history_rewritten. */
+  history_recovery: TargetDraftHistoryRecovery | null;
   request_id?: RequestId;
   checks: PackageCheckRead[];
 }
@@ -1688,12 +1755,6 @@ export type TargetDraftResponseRead = TargetDraftRead & ResponseMetadata;
 export interface TargetDraftUpdate {
   /** Exact SemVer, or null to return to automatic selection. */
   version: string | null;
-  /**
-   * Optional revision from the last Draft read. An intervening change returns 409
-   * stale_release_revision without saving or regenerating. Omit to apply the selection without this
-   * precondition.
-   */
-  expected_revision?: number;
 }
 
 export interface PackageCheck {
@@ -3395,7 +3456,7 @@ export const ErrorCode = {
   STALE_DRAFT: "stale_draft",
   NO_CHANGES: "no_changes",
   INVALID_VERSION: "invalid_version",
-  STALE_RELEASE_REVISION: "stale_release_revision",
+  PRECONDITION_FAILED: "precondition_failed",
   DEFINITION_CHANGED: "definition_changed",
   VERSION_OCCUPIED: "version_occupied",
   VERSION_TOO_LOW: "version_too_low",
@@ -4317,212 +4378,294 @@ export interface ErrorModelRead {
   request_id: RequestId;
 }
 
-export interface DraftFileVersion {
-  /**
-   * Up to 16 KiB of exact file bytes. Select this path and follow next_offset using content_offset
-   * to read the rest.
-   */
-  content_base64: string;
-  mode: "100644" | "100755" | "120000";
-  /** Full file size in bytes; null when absent. */
-  size_bytes: number | null;
-  content_offset: number;
-  /** Continue at this decoded byte offset until null. */
-  next_offset: number | null;
+/** Git file mode. 100755 is executable; 120000 is a symbolic link whose content is its target. */
+export const GitFileMode = {
+  V_100644: "100644",
+  V_100755: "100755",
+  V_120000: "120000",
+} as const;
+export type GitFileMode = (typeof GitFileMode)[keyof typeof GitFileMode];
+
+/**
+ * One side of a Draft file comparison. A conflict has base (the common version before both
+ * changes), repository (the file on the Draft), and incoming (the file the merge brings in). A
+ * default-branch history rewrite has accepted (the last accepted package), default (the rewritten
+ * default branch), and draft (the current Draft branch).
+ */
+export const DraftFileSide = {
+  BASE: "base",
+  REPOSITORY: "repository",
+  INCOMING: "incoming",
+  ACCEPTED: "accepted",
+  DEFAULT: "default",
+  DRAFT: "draft",
+} as const;
+export type DraftFileSide = (typeof DraftFileSide)[keyof typeof DraftFileSide];
+
+export interface DraftFileSideSummary {
+  side: DraftFileSide;
+  mode: GitFileMode;
+  size_bytes: number;
+  /** utf8 for text; base64 for binary content. */
+  encoding: "utf8" | "base64";
 }
 
-/** Response shape for DraftFileVersion. */
-export interface DraftFileVersionRead {
-  /**
-   * Up to 16 KiB of exact file bytes. Select this path and follow next_offset using content_offset
-   * to read the rest.
-   */
-  content_base64: string;
-  mode: ("100644" | "100755" | "120000") | (string & {});
-  /** Full file size in bytes; null when absent. */
-  size_bytes: number | null;
-  content_offset: number;
-  /** Continue at this decoded byte offset until null. */
-  next_offset: number | null;
+/** Response shape for DraftFileSideSummary. */
+export interface DraftFileSideSummaryRead {
+  side: DraftFileSide | (string & {});
+  mode: GitFileMode | (string & {});
+  size_bytes: number;
+  /** utf8 for text; base64 for binary content. */
+  encoding: ("utf8" | "base64") | (string & {});
 }
 
-export interface DraftConflict {
-  path: string;
-  kind: "missing_baseline"
+export interface DraftFileConflict {
+  /**
+   * Why the merge stopped. no_common_version: there is no earlier version to compare, such as the
+   * first Draft of an adopted package. file_ownership: generated output collides with a file you
+   * added. repository_deleted_incoming_changed and incoming_deleted_repository_changed: one side
+   * deleted a file the other changed. overlapping_text: both sides edited the same lines.
+   * too_large_to_merge: the file has too many changed lines to merge line by line. binary_changed
+   * and file_mode_changed: both sides changed binary content or the file mode.
+   */
+  kind: "no_common_version"
     | "file_ownership"
-    | "customer_deleted_generator_changed"
-    | "generator_deleted_customer_changed"
+    | "repository_deleted_incoming_changed"
+    | "incoming_deleted_repository_changed"
     | "overlapping_text"
     | "too_large_to_merge"
     | "binary_changed"
     | "file_mode_changed";
-  /** Common file version before the conflicting changes; null when absent. */
-  base: DraftFileVersion | null;
-  /** Preserved repository file; null when absent. */
-  repository: DraftFileVersion | null;
-  /** Incoming generated, default-branch, or saved Draft file; null when absent. */
-  incoming: DraftFileVersion | null;
-  /** Decision saved for this exact Draft and conflict. Generate the Target to apply it. */
-  pending_decision: "repository" | "incoming" | "content" | null;
+  /**
+   * Where the incoming version comes from: the new Generation, commits on the default branch, or
+   * the code of a Draft whose branch was rebased, reset, or deleted (its old branch is preserved).
+   * The merge applies previous_draft, then default_branch, then generation, and stops at the first
+   * stage with conflicts, so applying one stage's decisions can report conflicts from the next.
+   */
+  source: "generation" | "default_branch" | "previous_draft";
+  /**
+   * Decision saved for this conflict on head_revision; null when none. Saved decisions apply when
+   * the Target is generated.
+   */
+  decision: "repository" | "incoming" | "content" | null;
 }
 
-/** Response shape for DraftConflict. */
-export interface DraftConflictRead {
-  path: string;
-  kind: ("missing_baseline"
+/** Response shape for DraftFileConflict. */
+export interface DraftFileConflictRead {
+  /**
+   * Why the merge stopped. no_common_version: there is no earlier version to compare, such as the
+   * first Draft of an adopted package. file_ownership: generated output collides with a file you
+   * added. repository_deleted_incoming_changed and incoming_deleted_repository_changed: one side
+   * deleted a file the other changed. overlapping_text: both sides edited the same lines.
+   * too_large_to_merge: the file has too many changed lines to merge line by line. binary_changed
+   * and file_mode_changed: both sides changed binary content or the file mode.
+   */
+  kind: ("no_common_version"
     | "file_ownership"
-    | "customer_deleted_generator_changed"
-    | "generator_deleted_customer_changed"
+    | "repository_deleted_incoming_changed"
+    | "incoming_deleted_repository_changed"
     | "overlapping_text"
     | "too_large_to_merge"
     | "binary_changed"
     | "file_mode_changed") | (string & {});
-  /** Common file version before the conflicting changes; null when absent. */
-  base: DraftFileVersionRead | null;
-  /** Preserved repository file; null when absent. */
-  repository: DraftFileVersionRead | null;
-  /** Incoming generated, default-branch, or saved Draft file; null when absent. */
-  incoming: DraftFileVersionRead | null;
-  /** Decision saved for this exact Draft and conflict. Generate the Target to apply it. */
-  pending_decision: ("repository" | "incoming" | "content" | null) | (string & {}) | null;
+  /**
+   * Where the incoming version comes from: the new Generation, commits on the default branch, or
+   * the code of a Draft whose branch was rebased, reset, or deleted (its old branch is preserved).
+   * The merge applies previous_draft, then default_branch, then generation, and stops at the first
+   * stage with conflicts, so applying one stage's decisions can report conflicts from the next.
+   */
+  source: ("generation" | "default_branch" | "previous_draft") | (string & {});
+  /**
+   * Decision saved for this conflict on head_revision; null when none. Saved decisions apply when
+   * the Target is generated.
+   */
+  decision: ("repository" | "incoming" | "content" | null) | (string & {}) | null;
 }
 
-export interface DraftConflicts {
-  object: "draft_conflicts";
-  target_id: TargetId;
+export interface DraftFileHistory {
   /**
-   * pending_generation means every conflict has a saved decision; Generate this Target to apply
-   * them. Partial decisions are visible per conflict. Check Draft readiness separately.
+   * How the rewritten default branch differs from the last accepted package; null when only the
+   * Draft differs.
    */
-  status: "not_applicable"
-    | "no_draft"
-    | "outdated"
-    | "unresolved"
-    | "pending_generation"
-    | "clear";
-  head_revision: string | null;
-  incoming_source: "generation" | "default_branch" | "saved_draft" | null;
-  conflicts: DraftConflict[];
-  request_id?: RequestId;
+  change: "added" | "edited" | "deleted" | "mode_changed" | null;
+  /**
+   * The Draft branch has a different version than the rewritten default branch. Recovery carries
+   * the Draft version forward.
+   */
+  draft_differs: boolean;
+}
+
+/** Response shape for DraftFileHistory. */
+export interface DraftFileHistoryRead {
+  /**
+   * How the rewritten default branch differs from the last accepted package; null when only the
+   * Draft differs.
+   */
+  change: ("added" | "edited" | "deleted" | "mode_changed" | null) | (string & {}) | null;
+  /**
+   * The Draft branch has a different version than the rewritten default branch. Recovery carries
+   * the Draft version forward.
+   */
+  draft_differs: boolean;
+}
+
+export interface DraftFile {
+  object: "draft_file";
+  /** Path relative to the Target's package directory. */
+  path: string;
+  /** How the Draft differs from the last accepted package at this path; null when it does not. */
+  customization: "added" | "edited" | "deleted" | "mode_changed" | null;
+  conflict: DraftFileConflict | null;
+  history: DraftFileHistory | null;
+  /**
+   * Sides of the comparison to read with retrieveDraftFileContent. A missing side means the file is
+   * absent there. Listed for conflicts and history files.
+   */
+  sides: DraftFileSideSummary[];
+}
+
+/** Response shape for DraftFile. */
+export interface DraftFileRead {
+  object: "draft_file" | (string & {});
+  /** Path relative to the Target's package directory. */
+  path: string;
+  /** How the Draft differs from the last accepted package at this path; null when it does not. */
+  customization: ("added" | "edited" | "deleted" | "mode_changed" | null) | (string & {}) | null;
+  conflict: DraftFileConflictRead | null;
+  history: DraftFileHistoryRead | null;
+  /**
+   * Sides of the comparison to read with retrieveDraftFileContent. A missing side means the file is
+   * absent there. Listed for conflicts and history files.
+   */
+  sides: DraftFileSideSummaryRead[];
+}
+
+export interface DraftFileList {
+  object: ListObject;
+  data: DraftFile[];
   has_more: boolean;
-  next_path: string | null;
-  total_conflicts: number;
+  next_cursor: string | null;
+  request_id: RequestId;
 }
 
-/** Response shape for DraftConflicts. */
-export interface DraftConflictsRead {
-  object: "draft_conflicts" | (string & {});
-  target_id: TargetId;
-  /**
-   * pending_generation means every conflict has a saved decision; Generate this Target to apply
-   * them. Partial decisions are visible per conflict. Check Draft readiness separately.
-   */
-  status: ("not_applicable"
-    | "no_draft"
-    | "outdated"
-    | "unresolved"
-    | "pending_generation"
-    | "clear") | (string & {});
-  head_revision: string | null;
-  incoming_source: ("generation" | "default_branch" | "saved_draft" | null) | (string & {}) | null;
-  conflicts: DraftConflictRead[];
-  request_id?: RequestId;
+/** Response shape for DraftFileList. */
+export interface DraftFileListRead {
+  object: ListObject;
+  data: DraftFileRead[];
   has_more: boolean;
-  next_path: string | null;
-  total_conflicts: number;
+  next_cursor: string | null;
+  request_id: RequestId;
 }
 
-export type DraftConflictsResponse = DraftConflicts & ResponseMetadata;
-
-/** Response shape for DraftConflictsResponse. */
-export type DraftConflictsResponseRead = DraftConflictsRead & ResponseMetadata;
-
-export interface DraftCustomizations {
-  object: "draft_customizations";
+export interface DraftFileContent {
+  object: "draft_file_content";
   target_id: TargetId;
+  path: string;
+  side: DraftFileSide;
+  /** utf8 means content is text; base64 means content is base64-encoded binary bytes. */
+  encoding: "utf8" | "base64";
   /**
-   * Availability of the saved inspection. Targets without a repository Delivery are not_applicable.
-   * Check the Draft separately for readiness.
+   * At most 24 KiB of the file starting at offset. Text chunks never split a character; concatenate
+   * chunks in order.
    */
-  status: "not_applicable" | "no_draft" | "outdated" | "available";
-  head_revision: string | null;
-  changes: Array<{
-    path: string;
-    kind: "added" | "edited" | "deleted" | "mode_changed";
-  }>;
-  request_id?: RequestId;
+  content: string;
+  mode: GitFileMode;
+  /** Size of the whole file in bytes. */
+  size_bytes: number;
+  /** Byte offset of this chunk in the file. */
+  offset: number;
+  /**
+   * Pass as cursor, with the same path and side, to read the next chunk; null at the end of the
+   * file.
+   */
+  next_cursor: string | null;
 }
 
-/** Response shape for DraftCustomizations. */
-export interface DraftCustomizationsRead {
-  object: "draft_customizations" | (string & {});
+/** Response shape for DraftFileContent. */
+export interface DraftFileContentRead {
+  object: "draft_file_content" | (string & {});
   target_id: TargetId;
+  path: string;
+  side: DraftFileSide | (string & {});
+  /** utf8 means content is text; base64 means content is base64-encoded binary bytes. */
+  encoding: ("utf8" | "base64") | (string & {});
   /**
-   * Availability of the saved inspection. Targets without a repository Delivery are not_applicable.
-   * Check the Draft separately for readiness.
+   * At most 24 KiB of the file starting at offset. Text chunks never split a character; concatenate
+   * chunks in order.
    */
-  status: ("not_applicable" | "no_draft" | "outdated" | "available") | (string & {});
-  head_revision: string | null;
-  changes: Array<{
-    path: string;
-    kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
-  }>;
-  request_id?: RequestId;
+  content: string;
+  mode: GitFileMode | (string & {});
+  /** Size of the whole file in bytes. */
+  size_bytes: number;
+  /** Byte offset of this chunk in the file. */
+  offset: number;
+  /**
+   * Pass as cursor, with the same path and side, to read the next chunk; null at the end of the
+   * file.
+   */
+  next_cursor: string | null;
 }
 
-export type DraftCustomizationsResponse = DraftCustomizations & ResponseMetadata;
+export type DraftFileContentResponse = DraftFileContent & ResponseMetadata;
 
-/** Response shape for DraftCustomizationsResponse. */
-export type DraftCustomizationsResponseRead = DraftCustomizationsRead & ResponseMetadata;
+/** Response shape for DraftFileContentResponse. */
+export type DraftFileContentResponseRead = DraftFileContentRead & ResponseMetadata;
 
 export type DraftConflictDecision = {
   path: string;
-  /**
-   * Select the exact repository or incoming version from the inspection. Selecting an absent
-   * version deletes the path.
-   */
+  /** Keep that version of the file exactly. Keeping an absent version deletes the path. */
   keep: "repository" | "incoming";
 }
   | {
       path: string;
       keep: "content";
-      /** Final file bytes as canonical base64. Empty string creates an empty file. */
-      content_base64: string;
-      mode: "100644" | "100755" | "120000";
+      /** Final file text, stored as UTF-8. An empty string creates an empty file. */
+      content: string;
+      mode: GitFileMode;
     }
   | {
       path: string;
       keep: "content";
-      /** Explicitly delete this file. */
-      content_base64: null;
-      mode?: null;
+      /** Final file bytes as canonical base64, for binary files. */
+      content_base64: string;
+      mode: GitFileMode;
+    }
+  | {
+      path: string;
+      keep: "content";
+      /** Delete this file. */
+      content: null;
     };
 
 /** Response shape for DraftConflictDecision. */
 export type DraftConflictDecisionRead = {
   path: string;
-  /**
-   * Select the exact repository or incoming version from the inspection. Selecting an absent
-   * version deletes the path.
-   */
+  /** Keep that version of the file exactly. Keeping an absent version deletes the path. */
   keep: ("repository" | "incoming") | (string & {});
 }
   | {
       path: string;
       keep: "content" | (string & {});
-      /** Final file bytes as canonical base64. Empty string creates an empty file. */
-      content_base64: string;
-      mode: ("100644" | "100755" | "120000") | (string & {});
+      /** Final file text, stored as UTF-8. An empty string creates an empty file. */
+      content: string;
+      mode: GitFileMode | (string & {});
     }
   | {
       path: string;
       keep: "content" | (string & {});
-      /** Explicitly delete this file. */
-      content_base64: null;
-      mode?: null;
+      /** Final file bytes as canonical base64, for binary files. */
+      content_base64: string;
+      mode: GitFileMode | (string & {});
+    }
+  | {
+      path: string;
+      keep: "content" | (string & {});
+      /** Delete this file. */
+      content: null;
     };
 
 export interface ResolveDraftConflicts {
+  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without saving. */
   expected_head_revision: string;
   /**
    * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
@@ -4530,21 +4673,15 @@ export interface ResolveDraftConflicts {
    */
   resolutions: DraftConflictDecision[];
   /**
-   * Preview exact selected bytes and deletions without saving decisions.
+   * Validate the decisions and return the planned files without saving.
    * Default: false
    */
   dry_run?: boolean;
-  /**
-   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
-   * expected_head_revision.
-   */
-  preview_after?: string;
-  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
-  content_offset?: number;
 }
 
 /** Response shape for ResolveDraftConflicts. */
 export interface ResolveDraftConflictsRead {
+  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without saving. */
   expected_head_revision: string;
   /**
    * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
@@ -4552,107 +4689,119 @@ export interface ResolveDraftConflictsRead {
    */
   resolutions: DraftConflictDecisionRead[];
   /**
-   * Preview exact selected bytes and deletions without saving decisions.
+   * Validate the decisions and return the planned files without saving.
    * Default: false
    */
   dry_run?: boolean;
-  /**
-   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
-   * expected_head_revision.
-   */
-  preview_after?: string;
-  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
-  content_offset?: number;
 }
 
 export interface DiscardDraftCustomizations {
+  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without committing. */
   expected_head_revision: string;
   /**
-   * Explicit non-conflicting customization paths to replace with generated files. A listed
-   * customer-only file is deleted.
+   * Customized paths that are not conflicts, to replace with the generated files. A listed file
+   * that exists only on the Draft is deleted.
    */
   paths: string[];
   /**
-   * Preview exact writes and deletions before discarding customizations.
+   * Return the planned writes and deletions without committing.
    * Default: false
    */
   dry_run?: boolean;
-  /**
-   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
-   * expected_head_revision.
-   */
-  preview_after?: string;
-  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
-  content_offset?: number;
 }
 
-export interface DraftCodeUpdate {
-  request_id?: RequestId;
-  object: "draft_code_update";
+export interface DraftPlannedFile {
+  path: string;
+  /** keep: the Draft's version stays. write: the file gets new content. delete: the path is removed. */
+  action: "keep" | "write" | "delete";
+  mode: GitFileMode | null;
+  /** Size of the resulting file; null when it is deleted. */
+  size_bytes: number | null;
+}
+
+/** Response shape for DraftPlannedFile. */
+export interface DraftPlannedFileRead {
+  path: string;
+  /** keep: the Draft's version stays. write: the file gets new content. delete: the path is removed. */
+  action: ("keep" | "write" | "delete") | (string & {});
+  mode: GitFileMode | (string & {}) | null;
+  /** Size of the resulting file; null when it is deleted. */
+  size_bytes: number | null;
+}
+
+export interface DraftConflictResolution {
+  object: "draft_conflict_resolution";
   target_id: TargetId;
+  /** Draft commit the decisions belong to. */
   head_revision: string;
   /**
-   * A preview saves nothing. After a saved update, generate the Target to apply conflict decisions
-   * and refresh package checks.
+   * preview: nothing was saved. saved: the decisions are stored and apply when the Target is
+   * generated.
    */
-  status: "preview" | "pending_generation";
-  files: Array<{
-    path: string;
-    action: "keep" | "write" | "delete";
-    /**
-     * Up to 16 KiB of exact file bytes. null indicates deletion. Follow next_offset in a dry-run
-     * preview to read the rest.
-     */
-    content_base64: string | null;
-    mode: "100644" | "100755" | "120000" | null;
-    /** Full file size in bytes; null when absent. */
-    size_bytes: number | null;
-    content_offset: number;
-    /** Continue at this decoded byte offset until null. */
-    next_offset: number | null;
-  }>;
-  has_more: boolean;
-  next_path: string | null;
-  /** All selected paths affected by the decision, including paths beyond the first response page. */
-  total_files: number;
+  status: "preview" | "saved";
+  files: DraftPlannedFile[];
+  /**
+   * Conflicts without a decision once these are saved. At 0 the Draft status becomes
+   * needs_generation.
+   */
+  remaining_conflicts: number;
 }
 
-/** Response shape for DraftCodeUpdate. */
-export interface DraftCodeUpdateRead {
-  request_id?: RequestId;
-  object: "draft_code_update" | (string & {});
+/** Response shape for DraftConflictResolution. */
+export interface DraftConflictResolutionRead {
+  object: "draft_conflict_resolution" | (string & {});
   target_id: TargetId;
+  /** Draft commit the decisions belong to. */
   head_revision: string;
   /**
-   * A preview saves nothing. After a saved update, generate the Target to apply conflict decisions
-   * and refresh package checks.
+   * preview: nothing was saved. saved: the decisions are stored and apply when the Target is
+   * generated.
    */
-  status: ("preview" | "pending_generation") | (string & {});
-  files: Array<{
-    path: string;
-    action: ("keep" | "write" | "delete") | (string & {});
-    /**
-     * Up to 16 KiB of exact file bytes. null indicates deletion. Follow next_offset in a dry-run
-     * preview to read the rest.
-     */
-    content_base64: string | null;
-    mode: ("100644" | "100755" | "120000" | null) | (string & {}) | null;
-    /** Full file size in bytes; null when absent. */
-    size_bytes: number | null;
-    content_offset: number;
-    /** Continue at this decoded byte offset until null. */
-    next_offset: number | null;
-  }>;
-  has_more: boolean;
-  next_path: string | null;
-  /** All selected paths affected by the decision, including paths beyond the first response page. */
-  total_files: number;
+  status: ("preview" | "saved") | (string & {});
+  files: DraftPlannedFileRead[];
+  /**
+   * Conflicts without a decision once these are saved. At 0 the Draft status becomes
+   * needs_generation.
+   */
+  remaining_conflicts: number;
 }
 
-export type DraftCodeUpdateResponse = DraftCodeUpdate & ResponseMetadata;
+export type DraftConflictResolutionResponse = DraftConflictResolution & ResponseMetadata;
 
-/** Response shape for DraftCodeUpdateResponse. */
-export type DraftCodeUpdateResponseRead = DraftCodeUpdateRead & ResponseMetadata;
+/** Response shape for DraftConflictResolutionResponse. */
+export type DraftConflictResolutionResponseRead = DraftConflictResolutionRead & ResponseMetadata;
+
+export interface DraftCustomizationDiscard {
+  object: "draft_customization_discard";
+  target_id: TargetId;
+  /** preview: the inspected Draft commit. committed: the new Draft commit. */
+  head_revision: string;
+  /**
+   * preview: nothing was written. committed: one commit was added to the Draft branch; the Draft
+   * status is branch_changed until Typeship integrates it.
+   */
+  status: "preview" | "committed";
+  files: DraftPlannedFile[];
+}
+
+/** Response shape for DraftCustomizationDiscard. */
+export interface DraftCustomizationDiscardRead {
+  object: "draft_customization_discard" | (string & {});
+  target_id: TargetId;
+  /** preview: the inspected Draft commit. committed: the new Draft commit. */
+  head_revision: string;
+  /**
+   * preview: nothing was written. committed: one commit was added to the Draft branch; the Draft
+   * status is branch_changed until Typeship integrates it.
+   */
+  status: ("preview" | "committed") | (string & {});
+  files: DraftPlannedFileRead[];
+}
+
+export type DraftCustomizationDiscardResponse = DraftCustomizationDiscard & ResponseMetadata;
+
+/** Response shape for DraftCustomizationDiscardResponse. */
+export type DraftCustomizationDiscardResponseRead = DraftCustomizationDiscardRead & ResponseMetadata;
 
 export interface GenerateProjectRequest {
   /** Generate only this active Target. Omit to generate all active Targets in the Project. */
@@ -4678,104 +4827,39 @@ export type DomainErrorRead = ErrorDetailRead & {
 };
 
 export interface RecoverDraftHistory {
-  /** Preview without saving when true. Set false with both inspected revisions to approve recovery. */
-  dry_run: boolean;
-  expected_default_revision?: string;
-  /** Exact inspected Draft commit; null when the branch is absent. */
-  expected_draft_revision?: string | null;
-  /**
-   * Continue after next_path from the preceding preview. Requires both inspected revisions and
-   * dry_run true.
-   */
-  after_path?: string;
-  /** Inspect one differing file. Requires both inspected revisions and dry_run true. */
-  path?: string;
-  /**
-   * Decoded byte offset for the next content chunk. Requires both inspected revisions and dry_run
-   * true.
-   */
-  content_offset?: number;
+  /** The Draft's history_recovery.default_revision. */
+  expected_default_revision: string;
+  /** The Draft's history_recovery.head_revision; null when the Draft branch is absent. */
+  expected_head_revision: string | null;
 }
 
 export interface DraftHistoryRecovery {
-  request_id?: RequestId;
   object: "draft_history_recovery";
   target_id: TargetId;
   /**
-   * Approval saves a recovery plan. Generate separately to open the recovered Draft and run its
-   * checks.
+   * approved: recovery is saved and the Draft status is needs_generation. not_needed: the default
+   * branch still contains the accepted package.
    */
-  status: "not_needed" | "preview" | "pending_generation";
+  status: "approved" | "not_needed";
   default_revision: string;
-  draft_revision: string | null;
-  /** Existing Draft branch that remains available when Generate opens the recovered Draft. */
+  head_revision: string | null;
+  /** Existing Draft branch that stays available when Generate opens the recovered Draft. */
   preserved_branch: string | null;
-  /**
-   * New default-branch files that differ from the last accepted combined package. Pages contain at
-   * most 50 distinct paths across changes and draft_changes; each file side contains at most 16 KiB
-   * of decoded content. Follow next_path or request a path and content_offset, with both inspected
-   * revisions.
-   */
-  changes: Array<{
-    path: string;
-    kind: "added" | "edited" | "deleted" | "mode_changed";
-    repository: DraftFileVersion | null;
-    accepted: DraftFileVersion | null;
-  }>;
-  /**
-   * Differences between the rewritten default tree and the current Draft that Generate must
-   * reconcile.
-   */
-  draft_changes: Array<{
-    path: string;
-    repository: DraftFileVersion | null;
-    draft: DraftFileVersion | null;
-  }>;
-  total_changes: number;
-  total_draft_changes: number;
-  has_more: boolean;
-  next_path: string | null;
 }
 
 /** Response shape for DraftHistoryRecovery. */
 export interface DraftHistoryRecoveryRead {
-  request_id?: RequestId;
   object: "draft_history_recovery" | (string & {});
   target_id: TargetId;
   /**
-   * Approval saves a recovery plan. Generate separately to open the recovered Draft and run its
-   * checks.
+   * approved: recovery is saved and the Draft status is needs_generation. not_needed: the default
+   * branch still contains the accepted package.
    */
-  status: ("not_needed" | "preview" | "pending_generation") | (string & {});
+  status: ("approved" | "not_needed") | (string & {});
   default_revision: string;
-  draft_revision: string | null;
-  /** Existing Draft branch that remains available when Generate opens the recovered Draft. */
+  head_revision: string | null;
+  /** Existing Draft branch that stays available when Generate opens the recovered Draft. */
   preserved_branch: string | null;
-  /**
-   * New default-branch files that differ from the last accepted combined package. Pages contain at
-   * most 50 distinct paths across changes and draft_changes; each file side contains at most 16 KiB
-   * of decoded content. Follow next_path or request a path and content_offset, with both inspected
-   * revisions.
-   */
-  changes: Array<{
-    path: string;
-    kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
-    repository: DraftFileVersionRead | null;
-    accepted: DraftFileVersionRead | null;
-  }>;
-  /**
-   * Differences between the rewritten default tree and the current Draft that Generate must
-   * reconcile.
-   */
-  draft_changes: Array<{
-    path: string;
-    repository: DraftFileVersionRead | null;
-    draft: DraftFileVersionRead | null;
-  }>;
-  total_changes: number;
-  total_draft_changes: number;
-  has_more: boolean;
-  next_path: string | null;
 }
 
 export type DraftHistoryRecoveryResponse = DraftHistoryRecovery & ResponseMetadata;

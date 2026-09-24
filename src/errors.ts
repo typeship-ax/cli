@@ -126,3 +126,13 @@ export class BadGatewayError extends ApiError<502, ErrorModelRead> {
     super("Dependent work failed while completing the request.", 502, body, response);
   }
 }
+
+/**
+ * The Draft's version selection changed since the ETag in If-Match.
+ * Raised for HTTP 412 responses.
+ */
+export class PreconditionFailedError extends ApiError<412, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The Draft's version selection changed since the ETag in If-Match.", 412, body, response);
+  }
+}

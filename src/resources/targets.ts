@@ -15,6 +15,7 @@ import {
   InternalServerError,
   NotFoundError,
   PaymentRequiredError,
+  PreconditionFailedError,
   RateLimitedError,
   UnauthorizedError,
   UnprocessableEntityError,
@@ -23,12 +24,17 @@ import type {
   DeletedTarget,
   DeletedTargetRead,
   DiscardDraftCustomizations,
-  DraftCodeUpdateResponse,
-  DraftCodeUpdateResponseRead,
-  DraftConflictsResponse,
-  DraftConflictsResponseRead,
-  DraftCustomizationsResponse,
-  DraftCustomizationsResponseRead,
+  DraftConflictResolutionResponse,
+  DraftConflictResolutionResponseRead,
+  DraftCustomizationDiscardResponse,
+  DraftCustomizationDiscardResponseRead,
+  DraftFile,
+  DraftFileContentResponse,
+  DraftFileContentResponseRead,
+  DraftFileList,
+  DraftFileListRead,
+  DraftFileRead,
+  DraftFileSide,
   DraftHistoryRecoveryResponse,
   DraftHistoryRecoveryResponseRead,
   ProjectId,
@@ -278,8 +284,10 @@ export class TargetsResource {
   /**
    * Retrieve a Target's rolling Draft release
    *
-   * Returns Current's version, the proposed Draft version, readiness, and commit. Pass `revision`
-   * as `expected_revision` when updating the Draft to avoid changing a newer candidate.
+   * Returns the Draft's status and its one next step, Current's version, the proposed version,
+   * readiness, checks, and conflict counts. Every status is described on `status`. The response
+   * carries an `ETag`; send it in `If-Match` when updating the Draft to avoid changing a newer
+   * version selection.
    * `GET /targets/{target_id}/draft`
    */
   async retrieveDraft(
@@ -309,26 +317,29 @@ export class TargetsResource {
    * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
    *
-   * Send the last read revision as expected_revision to reject an intervening change with 409
-   * stale_release_revision before saving or regenerating.
-   * The precondition is optional; omitting it applies the selection to the current Draft. Version
-   * is required; null restores automatic selection.
+   * Send the Draft's `ETag` in `If-Match` to reject an intervening change with 412
+   * precondition_failed before saving or regenerating. Omitting `If-Match` applies the selection to
+   * the current Draft. Version is required; null restores automatic selection.
    *
    * A `502` response means the selected version was saved, but regeneration failed. Follow the
    * error's retryable and suggested_action fields. Repeating an unfinished selection resumes
-   * generation; repeating a completed selection starts no new work. If using expected_revision,
-   * retrieve the Draft and confirm the saved selection before retrying with its current revision.
+   * generation; repeating a completed selection starts no new work. If using If-Match, retrieve the
+   * Draft and confirm the saved selection before retrying with its current ETag.
    * `PATCH /targets/{target_id}/draft`
    */
   async updateDraft(
     targetId: TargetId,
     body: TargetDraftUpdate,
+    params?: TargetsUpdateDraftParams,
     options?: RequestOptions,
   ): Promise<ApiResult<TargetDraftResponseRead, TargetsUpdateDraftError>> {
     return this._core.request<TargetDraftResponseRead, TargetsUpdateDraftError>({
       method: "PATCH",
       path: `/targets/${encodeURIComponent(String(targetId))}/draft`,
       security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
       body,
       errors: {
         "400": BadRequestError,
@@ -336,6 +347,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
+        "412": PreconditionFailedError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
@@ -451,56 +463,33 @@ export class TargetsResource {
   }
 
   /**
-   * Inspect customizations on a Draft
+   * List customized and conflicted files on a Draft
    *
-   * Returns the changed file paths from the latest Draft inspection. Read conflicts for all three
-   * file versions, and read the Draft for package-check readiness.
-   * `GET /targets/{target_id}/draft/customizations`
-   */
-  async retrieveDraftCustomizations(
-    targetId: TargetId,
-    options?: RequestOptions,
-  ): Promise<ApiResult<DraftCustomizationsResponseRead, TargetsRetrieveDraftCustomizationsError>> {
-    return this._core.request<DraftCustomizationsResponseRead, TargetsRetrieveDraftCustomizationsError>({
-      method: "GET",
-      path: `/targets/${encodeURIComponent(String(targetId))}/draft/customizations`,
-      security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "targets.retrieveDraftCustomizations",
-      options,
-    });
-  }
-
-  /**
-   * Inspect conflicts on a Draft
+   * Lists the Draft's files that differ from the last accepted package or need a conflict decision,
+   * ordered by path, without file content. Each conflict names its kind, where the incoming version
+   * comes from, the saved decision, and the sides you can read with retrieveDraftFileContent. With
+   * `filter=history`, lists the files affected by a default-branch history rewrite instead; the
+   * list is empty when none is pending.
    *
-   * Returns every conflict with its base, repository, and incoming file bytes and modes in one
-   * response. An absent file is null. incoming_source distinguishes generated changes,
-   * default-branch changes, and recovered saved Draft code. Saved decisions require a separate
-   * Generate before conflicts clear.
-   * `GET /targets/{target_id}/draft/conflicts`
+   * Returns `409 stale_draft` while Typeship has not integrated the Draft's latest commit (Draft
+   * status generating or branch_changed), or when the Draft changes between pages.
+   *
+   * Auto-paginates: `for await (const item of …)` walks every page.
+   * `GET /targets/{target_id}/draft/files`
    */
-  async retrieveDraftConflicts(
+  listDraftFiles(
     targetId: TargetId,
-    params?: TargetsRetrieveDraftConflictsParams,
+    params?: TargetsListDraftFilesParams,
     options?: RequestOptions,
-  ): Promise<ApiResult<DraftConflictsResponseRead, TargetsRetrieveDraftConflictsError>> {
-    return this._core.request<DraftConflictsResponseRead, TargetsRetrieveDraftConflictsError>({
+  ): PagePromise<DraftFileRead, TargetsListDraftFilesError> {
+    return paginate<DraftFileRead, TargetsListDraftFilesError>(this._core, {
       method: "GET",
-      path: `/targets/${encodeURIComponent(String(targetId))}/draft/conflicts`,
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/files`,
       security: [{"apiKey":[]}],
       query: {
-        path: params?.path,
-        after_path: params?.afterPath,
-        content_offset: params?.contentOffset,
-        expected_head_revision: params?.expectedHeadRevision,
+        filter: params?.filter,
+        limit: params?.limit,
+        cursor: params?.cursor,
       },
       errors: {
         "400": BadRequestError,
@@ -512,7 +501,51 @@ export class TargetsResource {
         "500": InternalServerError,
       },
       idempotent: true,
-      schemaKey: "targets.retrieveDraftConflicts",
+      schemaKey: "targets.listDraftFiles",
+      options,
+    }, {
+      style: "cursor",
+      itemsField: "data",
+      cursorParam: "cursor",
+      nextCursorField: "next_cursor",
+      hasMoreField: "has_more",
+      limitParam: "limit",
+    });
+  }
+
+  /**
+   * Read one side of a Draft file
+   *
+   * Returns up to 24 KiB of one side of a conflicted or history-affected file: text as UTF-8,
+   * binary content as base64. Follow `next_cursor` with the same path and side to read the rest,
+   * and concatenate the chunks in order. A side where the file is absent returns 404.
+   * `GET /targets/{target_id}/draft/files/content`
+   */
+  async retrieveDraftFileContent(
+    targetId: TargetId,
+    params: TargetsRetrieveDraftFileContentParams,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftFileContentResponseRead, TargetsRetrieveDraftFileContentError>> {
+    return this._core.request<DraftFileContentResponseRead, TargetsRetrieveDraftFileContentError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/files/content`,
+      security: [{"apiKey":[]}],
+      query: {
+        path: params.path,
+        side: params.side,
+        cursor: params.cursor,
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveDraftFileContent",
       options,
     });
   }
@@ -520,17 +553,22 @@ export class TargetsResource {
   /**
    * Resolve selected Draft conflicts
    *
-   * Save deliberate decisions for the exact inspected Draft. Keep the repository or incoming side,
-   * or submit final file content, including binary bytes. Decisions save atomically. Use dry_run to
-   * preview them, then generate the Target separately to apply saved decisions and run its checks.
+   * Saves decisions for conflicts on the Draft's head_revision: keep the repository or incoming
+   * version, or supply the final content as text or, for binary files, base64. Decisions save
+   * together or not at all, and a decision can be replaced until it is applied. Use `dry_run` to
+   * validate them first.
+   *
+   * Saving changes no files. When every conflict has a decision, `remaining_conflicts` is 0 and the
+   * Draft status becomes `needs_generation`: generate the Target to apply the decisions and run its
+   * checks. Applying them can report conflicts from the next merge stage.
    * `POST /targets/{target_id}/draft/conflicts/resolve`
    */
   async resolveDraftConflicts(
     targetId: TargetId,
     body: ResolveDraftConflicts,
     options?: RequestOptions,
-  ): Promise<ApiResult<DraftCodeUpdateResponseRead, TargetsResolveDraftConflictsError>> {
-    return this._core.request<DraftCodeUpdateResponseRead, TargetsResolveDraftConflictsError>({
+  ): Promise<ApiResult<DraftConflictResolutionResponseRead, TargetsResolveDraftConflictsError>> {
+    return this._core.request<DraftConflictResolutionResponseRead, TargetsResolveDraftConflictsError>({
       method: "POST",
       path: `/targets/${encodeURIComponent(String(targetId))}/draft/conflicts/resolve`,
       security: [{"apiKey":[]}],
@@ -552,18 +590,21 @@ export class TargetsResource {
   /**
    * Discard selected Draft customizations
    *
-   * Replace explicitly listed non-conflicting paths with generated files in one Draft commit.
-   * Listing a customer-only file deletes it. Use dry_run to inspect writes and deletions first.
-   * Resolve conflicts through the separate conflicts action. Generate afterward to refresh the
-   * Draft and its checks.
+   * Replaces the listed customized paths that are not conflicts with the generated files, in one
+   * commit on the Draft branch. A listed file that exists only on the Draft is deleted. Use
+   * `dry_run` to see the planned writes and deletions first. Resolve conflicts with
+   * resolveDraftConflicts.
+   *
+   * After the commit, the Draft status is `branch_changed` until Typeship integrates it from the
+   * repository's pull request event and reruns the checks; you do not need to generate the Target.
    * `POST /targets/{target_id}/draft/customizations/discard`
    */
   async discardDraftCustomizations(
     targetId: TargetId,
     body: DiscardDraftCustomizations,
     options?: RequestOptions,
-  ): Promise<ApiResult<DraftCodeUpdateResponseRead, TargetsDiscardDraftCustomizationsError>> {
-    return this._core.request<DraftCodeUpdateResponseRead, TargetsDiscardDraftCustomizationsError>({
+  ): Promise<ApiResult<DraftCustomizationDiscardResponseRead, TargetsDiscardDraftCustomizationsError>> {
+    return this._core.request<DraftCustomizationDiscardResponseRead, TargetsDiscardDraftCustomizationsError>({
       method: "POST",
       path: `/targets/${encodeURIComponent(String(targetId))}/draft/customizations/discard`,
       security: [{"apiKey":[]}],
@@ -583,12 +624,14 @@ export class TargetsResource {
   }
 
   /**
-   * Review and recover rewritten repository history
+   * Approve recovery from rewritten default-branch history
    *
-   * Preview a rewritten default branch and the Draft code to preserve. Approve the exact inspected
-   * revisions with dry_run false, then Generate separately. Recovery preserves the previous Draft
-   * branch, opens a new Draft from the current default branch, and requires explicit decisions for
-   * overlapping code. A rewritten Draft alone recovers automatically during Generate.
+   * When the Draft status is `history_rewritten`, review the affected files with `listDraftFiles`
+   * and `filter=history`, then approve with the Draft's `history_recovery` revisions. Approval
+   * saves the recovery without changing Git, and the Draft status becomes `needs_generation`:
+   * generate the Target to open a new Draft from the rewritten default branch. The previous Draft
+   * branch stays available, and overlapping code comes back as conflicts to resolve. A rewritten
+   * Draft branch alone needs no approval.
    * `POST /targets/{target_id}/draft/history/recover`
    */
   async recoverDraftHistory(
@@ -756,6 +799,15 @@ export type TargetsRetrieveDraftError =
   | TransportError
   | ValidationError;
 
+export interface TargetsUpdateDraftParams {
+  /**
+   * ETag from a preceding response. The update applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to update the current
+   * version.
+   */
+  ifMatch?: string;
+}
+
 /** Every error `updateDraft` can produce, as a discriminated union. */
 export type TargetsUpdateDraftError =
   | BadRequestError
@@ -763,6 +815,7 @@ export type TargetsUpdateDraftError =
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | PreconditionFailedError
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
@@ -834,11 +887,36 @@ export type TargetsRepublishReleaseError =
   | TransportError
   | ValidationError;
 
-/** Every error `retrieveDraftCustomizations` can produce, as a discriminated union. */
-export type TargetsRetrieveDraftCustomizationsError =
+export interface TargetsListDraftFilesParams {
+  /**
+   * conflicted: conflicts only. customized: files that differ from the last accepted package.
+   * history: files affected by a default-branch history rewrite. Omit for conflicted and customized
+   * files.
+   */
+  filter?: "conflicted" | "customized" | "history";
+  /**
+   * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
+   * representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400
+   * invalid_request. List query parameters must appear only once; unrecognized parameters also
+   * return 400.
+   */
+  limit?: number;
+  /**
+   * Opaque cursor from the preceding page's next_cursor. Valid only for the same account,
+   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty,
+   * malformed, or repeated cursors return 400 invalid_request. The page limit may change between
+   * requests.
+   */
+  cursor?: string;
+}
+
+/** Every error `listDraftFiles` can produce, as a discriminated union. */
+export type TargetsListDraftFilesError =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
+  | ConflictError
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
@@ -846,22 +924,17 @@ export type TargetsRetrieveDraftCustomizationsError =
   | TransportError
   | ValidationError;
 
-export interface TargetsRetrieveDraftConflictsParams {
-  /** Inspect this conflict path only. */
-  path?: string;
-  /** Continue after next_path. Requires expected_head_revision. */
-  afterPath?: string;
-  /**
-   * Decoded byte offset for each side. Select one path and follow each side until next_offset is
-   * null.
-   */
-  contentOffset?: number;
-  /** Exact Draft head from the preceding response. Required when continuing a page or byte offset. */
-  expectedHeadRevision?: string;
+export interface TargetsRetrieveDraftFileContentParams {
+  /** File path from listDraftFiles. */
+  path: string;
+  /** A side listed for the file. */
+  side: DraftFileSide;
+  /** next_cursor from the preceding chunk of the same path and side. */
+  cursor?: string;
 }
 
-/** Every error `retrieveDraftConflicts` can produce, as a discriminated union. */
-export type TargetsRetrieveDraftConflictsError =
+/** Every error `retrieveDraftFileContent` can produce, as a discriminated union. */
+export type TargetsRetrieveDraftFileContentError =
   | BadRequestError
   | UnauthorizedError
   | ForbiddenError

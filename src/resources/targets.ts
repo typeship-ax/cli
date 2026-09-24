@@ -178,23 +178,33 @@ export class TargetsResource {
   /**
    * Delete an unused Target
    *
-   * Deletes a Target with no Generation history, release history, or active Draft. Disable a Target
-   * instead if it has any of these.
+   * Deletes a Target with no Generation history, release history, or active Draft. A `409
+   * resource_has_dependencies` means one of those resources still depends on it. Retrieve the
+   * Target, disable it instead, or resolve the dependency before retrying.
+   *
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
    * `DELETE /targets/{target_id}`
    */
   async delete(
     targetId: TargetId,
+    params?: TargetsDeleteParams,
     options?: RequestOptions,
   ): Promise<ApiResult<DeletedTargetRead, TargetsDeleteError>> {
     return this._core.request<DeletedTargetRead, TargetsDeleteError>({
       method: "DELETE",
       path: `/targets/${encodeURIComponent(String(targetId))}`,
       security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
       errors: {
+        "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
+        "412": PreconditionFailedError,
         "429": RateLimitedError,
         "500": InternalServerError,
       },
@@ -209,26 +219,34 @@ export class TargetsResource {
    *
    * Omitted fields keep their current values. Supplied config, checks, and deliveries replace their
    * complete stored values.
-   * Updates have no revision precondition. Concurrent updates preserve omitted fields, and the last
-   * saved update to a supplied field wins.
-   * Send proposed_version by itself; use the Draft endpoint for a version selection with an
-   * optional revision precondition.
+   * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
+   * returns 412 precondition_failed without saving.
+   * Send proposed_version by itself; use the Draft endpoint to select a version directly.
    *
+   * A `409 target_busy` means the Target is publishing; wait for it to finish. A `409
+   * delivery_conflict` means another Target owns the requested repository tree; retrieve both
+   * Targets, choose a free destination, and retry.
    * A `502` response means the update was saved, but retiring an obsolete review or regenerating a
    * version selection failed. Retrieve the Target and follow the error's retryable and
    * suggested_action fields. Repeating an unfinished version selection resumes generation;
    * repeating a completed selection starts no new work.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
    * `PATCH /targets/{target_id}`
    */
   async update(
     targetId: TargetId,
     body: TargetUpdateRequest,
+    params?: TargetsUpdateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<TargetResponseRead, TargetsUpdateError>> {
     return this._core.request<TargetResponseRead, TargetsUpdateError>({
       method: "PATCH",
       path: `/targets/${encodeURIComponent(String(targetId))}`,
       security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
       body,
       errors: {
         "400": BadRequestError,
@@ -237,6 +255,7 @@ export class TargetsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
+        "412": PreconditionFailedError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
@@ -331,6 +350,11 @@ export class TargetsResource {
    * error's retryable and suggested_action fields. Repeating an unfinished selection resumes
    * generation; repeating a completed selection starts no new work. If using If-Match, retrieve the
    * Draft and confirm the saved selection before retrying with its current ETag.
+   * A `409 target_busy` means the Target is publishing; wait and retry. A `409 version_occupied`
+   * means the version is already released; retrieve the Draft and releases, choose a new version,
+   * and retry.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
    * `PATCH /targets/{target_id}/draft`
    */
   async updateDraft(
@@ -755,8 +779,8 @@ export interface TargetsCreateParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -789,18 +813,38 @@ export type TargetsRetrieveError =
   | TransportError
   | ValidationError;
 
+export interface TargetsDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
 /** Every error `delete` can produce, as a discriminated union. */
 export type TargetsDeleteError =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | PreconditionFailedError
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
   | ValidationError;
+
+export interface TargetsUpdateParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
 
 /** Every error `update` can produce, as a discriminated union. */
 export type TargetsUpdateError =
@@ -810,6 +854,7 @@ export type TargetsUpdateError =
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | PreconditionFailedError
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
@@ -863,9 +908,9 @@ export type TargetsRetrieveDraftError =
 
 export interface TargetsUpdateDraftParams {
   /**
-   * ETag from a preceding response. The update applies only if the resource still has that version;
-   * otherwise it returns 412 precondition_failed without changes. Omit to update the current
-   * version.
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
    */
   ifMatch?: string;
 }
@@ -891,8 +936,8 @@ export interface TargetsAdoptReleaseParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -928,8 +973,8 @@ export interface TargetsRepublishReleaseParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }

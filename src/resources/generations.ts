@@ -80,6 +80,25 @@ export class GenerationsResource {
       options,
     });
   }
+
+/** Poll until files are generated or the Generation fails. */
+  async wait(
+    generationId: GenerationId,
+    options: RequestOptions & { intervalMs?: number; waitTimeoutMs?: number } = {},
+  ): Promise<ApiResult<GenerationResponseRead, GenerationsRetrieveError>> {
+    const { intervalMs = 1_000, waitTimeoutMs = 600_000, ...requestOptions } = options;
+    const deadline = Date.now() + waitTimeoutMs;
+    while (true) {
+      if (requestOptions.signal?.aborted) {
+        throw requestOptions.signal.reason ?? new Error("Generation wait aborted.");
+      }
+      const result = await this.retrieve(generationId, requestOptions);
+      if (!result.ok || (result.data.status !== "queued" && result.data.status !== "running")) return result;
+      if (Date.now() >= deadline) throw new Error("Timed out waiting for Generation " + generationId + ".");
+      await new Promise<void>((resolve) =>
+        setTimeout(resolve, Math.min(intervalMs, deadline - Date.now())));
+    }
+  }
 }
 
 /** Every error `retrieve` can produce, as a discriminated union. */

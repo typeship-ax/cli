@@ -2647,7 +2647,18 @@ async function main(): Promise<void> {
     }
   }
 
-  const result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
+  let result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
+  if (result.ok && op.httpMethod === "POST" && op.path === "/projects/{project_id}/generations") {
+    const batch = result.data as { data: Array<{ id: string }> };
+    const generations = (client as unknown as { generations: { wait(id: string): Promise<{ ok: boolean; data?: unknown; error?: unknown }> } }).generations;
+    const completed: unknown[] = [];
+    for (const generation of batch.data) {
+      const waited = await generations.wait(generation.id);
+      if (!waited.ok) failApi(waited.error, LAST_CLIENT_HAD_CREDENTIAL);
+      completed.push(waited.data);
+    }
+    result = { ...result, data: { ...batch, data: completed } };
+  }
   if (result.ok) {
     if (op.sse) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.

@@ -16,6 +16,7 @@ import {
   NotFoundError,
   PayloadTooLargeError,
   PaymentRequiredError,
+  PreconditionFailedError,
   RateLimitedError,
   UnauthorizedError,
   UnprocessableEntityError,
@@ -164,20 +165,28 @@ export class ProjectsResource {
    * A `502` response means the Project was not deleted because its release pull requests could not
    * be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed
    * deletion returns `404`.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
    * `DELETE /projects/{project_id}`
    */
   async delete(
     projectId: ProjectId,
+    params?: ProjectsDeleteParams,
     options?: RequestOptions,
   ): Promise<ApiResult<DeletedProjectRead, ProjectsDeleteError>> {
     return this._core.request<DeletedProjectRead, ProjectsDeleteError>({
       method: "DELETE",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
       errors: {
+        "400": BadRequestError,
         "401": UnauthorizedError,
         "403": ForbiddenError,
         "404": NotFoundError,
+        "412": PreconditionFailedError,
         "429": RateLimitedError,
         "500": InternalServerError,
         "502": BadGatewayError,
@@ -193,23 +202,31 @@ export class ProjectsResource {
    *
    * Omitted fields keep their current values. A supplied config replaces the entire stored object;
    * null or an empty object clears it.
-   * Updates have no revision precondition. Concurrent updates preserve omitted fields, and the last
-   * saved update to a supplied field wins.
+   * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
+   * returns 412 precondition_failed without saving.
    *
+   * A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publication to
+   * finish, reconcile your update, and retry.
    * A `502` response means the Project was saved, but an obsolete release pull request could not be
    * retired. Retrieve the Project and retry the same update to finish retiring reviews if that
    * update is still desired.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
    * `PATCH /projects/{project_id}`
    */
   async update(
     projectId: ProjectId,
     body: UpdateProjectRequest,
+    params?: ProjectsUpdateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<ProjectRead, ProjectsUpdateError>> {
     return this._core.request<ProjectRead, ProjectsUpdateError>({
       method: "PATCH",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
       body,
       errors: {
         "400": BadRequestError,
@@ -218,6 +235,7 @@ export class ProjectsResource {
         "403": ForbiddenError,
         "404": NotFoundError,
         "409": ConflictError,
+        "412": PreconditionFailedError,
         "422": UnprocessableEntityError,
         "429": RateLimitedError,
         "500": InternalServerError,
@@ -489,8 +507,8 @@ export interface ProjectsCreateParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -522,11 +540,22 @@ export type ProjectsRetrieveError =
   | TransportError
   | ValidationError;
 
+export interface ProjectsDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
 /** Every error `delete` can produce, as a discriminated union. */
 export type ProjectsDeleteError =
+  | BadRequestError
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
+  | PreconditionFailedError
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
@@ -534,6 +563,15 @@ export type ProjectsDeleteError =
   | ResponseParseError
   | TransportError
   | ValidationError;
+
+export interface ProjectsUpdateParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
 
 /** Every error `update` can produce, as a discriminated union. */
 export type ProjectsUpdateError =
@@ -543,6 +581,7 @@ export type ProjectsUpdateError =
   | ForbiddenError
   | NotFoundError
   | ConflictError
+  | PreconditionFailedError
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
@@ -568,8 +607,8 @@ export interface ProjectsRefreshDiagnosticsParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -593,8 +632,8 @@ export interface ProjectsRemediateDiagnosticsParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }
@@ -662,8 +701,8 @@ export interface ProjectsGenerateParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
    * operation; account-less generation uses a hashed network identity. Retrying the same method,
-   * path, query, and JSON body replays the original response. Reusing the key with changed intent
-   * returns 409. After expiry the key starts a new write.
+   * path, query, If-Match header, and JSON body replays the original response. Reusing the key with
+   * changed intent returns 409. After expiry the key starts a new write.
    */
   idempotencyKey?: string;
 }

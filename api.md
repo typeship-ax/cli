@@ -38,7 +38,7 @@ An anonymous URL request without source headers may return `claim.url`. Sign in 
 | `--module-path` | body | `string` | no | Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI outputs. Linked projects derive this from the Go destination repository by default. |
 | `--go-sdk` | body | `object` | no | The exact paired Go SDK a go-cli generation is built on. Required when target.generator is go-cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing. |
 | `--config` | body | `object` | no | Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Definition. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -117,7 +117,7 @@ Free includes one saved Project, all selected Targets, and the first 25 operatio
 | `--auto-generate` | body | `boolean` | no | Whether Typeship should regenerate automatically when the source changes. Default: false. |
 | `--relay-enabled` | body | `boolean` | no | Enable webhook relay sessions. Requires the CLI target and Pro. Default: false. |
 | `--config` | body | `json` | no | Shared defaults inherited by every Target. GraphQL settings belong in definition.graphql. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -160,10 +160,12 @@ Delete a project
 Safety: **destructive** · Authentication: **required**
 
 A `502` response means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 ```sh
 typeship projects delete prj_4f8k2m7x9q1v6b3n --force
@@ -182,9 +184,11 @@ Update a project
 Safety: **write** · Authentication: **required**
 
 Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.
-Updates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.
+Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.
 
+A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publication to finish, reconcile your update, and retry.
 A `502` response means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
@@ -193,6 +197,7 @@ A `502` response means the Project was saved, but an obsolete release pull reque
 | `--auto-generate` | body | `boolean` | no | — |
 | `--relay-enabled` | body | `boolean` | no | Enable webhook relay sessions. Requires the CLI target and Pro. |
 | `--config` | body | `json` | no | Replaces the Project's shared Target defaults. Send null to clear them. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -239,7 +244,7 @@ Fetches the configured source and returns updated Diagnostics. Creates a Definit
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 ```sh
 typeship projects refresh-diagnostics prj_4f8k2m7x9q1v6b3n
@@ -265,7 +270,7 @@ Findings that need an API-owner decision return `422`. Read the finding's `autho
 | --- | --- | --- | --- | --- |
 | `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
 | `--diagnostic-ids` | body | `array` | yes | Stable IDs of current diagnostics whose exact patches should be reviewed and applied. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -338,7 +343,7 @@ If the package already matches a destination and no Draft is open, delivery repo
 | --- | --- | --- | --- | --- |
 | `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
 | `--target-id` | body | `string` | no | Stable identifier for one configured generated product. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -382,10 +387,10 @@ Safety: **write** · Authentication: **required**
 
 Resolves the source documents before saving the update and records a new Definition Revision when the source changes.
 Omitted fields remain unchanged; supplied objects and arrays replace the whole field.
-No revision parameter or If-Match header is required. If the Definition or its Project
-configuration changes during validation, returns 409 definition_changed without saving
-the rejected update. Retrieve the current Definition and Project, reconcile your changes,
+If the Definition or its Project configuration changes during validation, returns 409 definition_changed without saving the rejected update. Retrieve the current Definition and Project, reconcile your changes,
 and submit a new request with a new Idempotency-Key if using one.
+
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
@@ -394,7 +399,8 @@ and submit a new request with a new Idempotency-Key if using one.
 | `--patches` | body | `array` | no | Replace all patches in order. An empty array removes every patch; null is invalid. |
 | `--graphql` | body | `json` | no | Replace all GraphQL settings. Null or an empty object clears them. |
 | `--diagnostic-policy` | body | `object` | no | Source pull-request enforcement threshold, new-versus-complete baseline, and explicitly reviewed rule or location exceptions. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -453,7 +459,7 @@ Creates a Target with its own configuration, Deliveries, and release history. Mu
 | `--checks` | body | `object` | no | Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list. |
 | `--config` | body | `json` | no | Target-specific overrides merged over Project.config. GraphQL settings are rejected here and belong to the Definition. |
 | `--deliveries` | body | `array` | no | — |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -493,11 +499,14 @@ Delete an unused Target
 
 Safety: **destructive** · Authentication: **required**
 
-Deletes a Target with no Generation history, release history, or active Draft. Disable a Target instead if it has any of these.
+Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.
+
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 ```sh
 typeship targets delete tgt_5m8q2v7k1p9d4h6c --force
@@ -516,10 +525,12 @@ Update a Target, its Deliveries, or its next reviewed version
 Safety: **write** · Authentication: **required**
 
 Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.
-Updates have no revision precondition. Concurrent updates preserve omitted fields, and the last saved update to a supplied field wins.
-Send proposed_version by itself; use the Draft endpoint for a version selection with an optional revision precondition.
+Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.
+Send proposed_version by itself; use the Draft endpoint to select a version directly.
 
+A `409 target_busy` means the Target is publishing; wait for it to finish. A `409 delivery_conflict` means another Target owns the requested repository tree; retrieve both Targets, choose a free destination, and retry.
 A `502` response means the update was saved, but retiring an obsolete review or regenerating a version selection failed. Retrieve the Target and follow the error's retryable and suggested_action fields. Repeating an unfinished version selection resumes generation; repeating a completed selection starts no new work.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
@@ -528,10 +539,11 @@ A `502` response means the update was saved, but retiring an obsolete review or 
 | `--state` | body | `string` | no | — |
 | `--edition` | body | `string` | no | — |
 | `--release-channel` | body | `string` | no | — |
-| `--proposed-version` | body | `string` | no | Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft endpoint for an optional If-Match precondition. |
+| `--proposed-version` | body | `string` | no | Send only this field to select an exact SemVer, or null for automatic selection. The Target and Draft endpoints both support an optional If-Match precondition. |
 | `--checks` | body | `object` | no | Required checks run against the complete combined package. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list. |
 | `--config` | body | `json` | no | Replaces the complete stored override object. Send null or an empty object to resume Project inheritance. Effective values merge over Project.config; GraphQL settings belong to the Definition. |
 | `--deliveries` | body | `array` | no | Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and, for hosted_mcp, a new URL. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -600,12 +612,14 @@ Checks your version choice against the required version bump, then regenerates t
 Send the Draft's `ETag` in `If-Match` to reject an intervening change with 412 precondition_failed before saving or regenerating. Omitting `If-Match` applies the selection to the current Draft. Version is required; null restores automatic selection.
 
 A `502` response means the selected version was saved, but regeneration failed. Follow the error's retryable and suggested_action fields. Repeating an unfinished selection resumes generation; repeating a completed selection starts no new work. If using If-Match, retrieve the Draft and confirm the saved selection before retrying with its current ETag.
+A `409 target_busy` means the Target is publishing; wait and retry. A `409 version_occupied` means the version is already released; retrieve the Draft and releases, choose a new version, and retry.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_id>` | path | `string` | yes | — |
 | `--body-version` | body | `string` | yes | Exact SemVer, or null to return to automatic selection. |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The update applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to update the current version. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -632,7 +646,7 @@ Checks the repository tag, package metadata, and registry artifact, then records
 | `<target_id>` | path | `string` | yes | — |
 | `--body-version` | body | `string` | yes | Exact already-published package version to make Current. |
 | `--tag` | body | `string` | yes | Immutable repository tag containing the matching package source. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
@@ -679,7 +693,7 @@ A `502` response means the repository publication workflow could not be dispatch
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<target_release_id>` | path | `string` | yes | — |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated account and operation; account-less generation uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 
 ```sh
 typeship targets republish-release rel_7m2q8v4k1p9d5h6c
@@ -1074,6 +1088,28 @@ Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` co
 
 Read the full command contract with `typeship docs api-keys list --json`.
 
+### `typeship api-keys retrieve <api_key_id> [flags]`
+
+Retrieve an API key
+
+`GET /api-keys/{api_key_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns the key summary and its ETag for conditional revocation.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<api_key_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via api_keys_list). IDs come from api_keys_list. |
+
+```sh
+typeship api-keys retrieve apikey_2nY8mR6pQ4vK9cH3
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs api-keys retrieve --json`.
+
 ### `typeship api-keys revoke <api_key_id> [flags]`
 
 Revoke an API key
@@ -1085,10 +1121,12 @@ Safety: **destructive** · Authentication: **required**
 Revokes a key. Repeating the request returns the same result.
 
 With OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their account.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<api_key_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via api_keys_list). IDs come from api_keys_list. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 ```sh
 typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3 --force

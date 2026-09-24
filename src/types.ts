@@ -1254,8 +1254,8 @@ export interface TargetUpdateRequest {
   edition?: string;
   release_channel?: "stable" | "prerelease";
   /**
-   * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
-   * endpoint for an optional If-Match precondition.
+   * Send only this field to select an exact SemVer, or null for automatic selection. The Target and
+   * Draft endpoints both support an optional If-Match precondition.
    */
   proposed_version?: string | null;
   checks?: TargetChecks;
@@ -1282,8 +1282,8 @@ export interface TargetUpdateRequestRead {
   edition?: string;
   release_channel?: ("stable" | "prerelease") | (string & {});
   /**
-   * Send only this field to select an exact SemVer, or null for automatic selection. Use the Draft
-   * endpoint for an optional If-Match precondition.
+   * Send only this field to select an exact SemVer, or null for automatic selection. The Target and
+   * Draft endpoints both support an optional If-Match precondition.
    */
   proposed_version?: string | null;
   checks?: TargetChecksRead;

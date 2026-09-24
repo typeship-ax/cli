@@ -118,21 +118,21 @@ export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
 }
 
 /**
+ * The resource changed since the ETag supplied in If-Match. No write was applied.
+ * Raised for HTTP 412 responses.
+ */
+export class PreconditionFailedError extends ApiError<412, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The resource changed since the ETag supplied in If-Match. No write was applied.", 412, body, response);
+  }
+}
+
+/**
  * Dependent work failed while completing the request.
  * Raised for HTTP 502 responses.
  */
 export class BadGatewayError extends ApiError<502, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("Dependent work failed while completing the request.", 502, body, response);
-  }
-}
-
-/**
- * The Draft's version selection changed since the ETag in If-Match.
- * Raised for HTTP 412 responses.
- */
-export class PreconditionFailedError extends ApiError<412, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Draft's version selection changed since the ETag in If-Match.", 412, body, response);
   }
 }

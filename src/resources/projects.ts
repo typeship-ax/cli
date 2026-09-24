@@ -406,12 +406,16 @@ export class ProjectsResource {
   }
 
   /**
-   * Generate targets and open pull requests
+   * Start generation for active Targets
    *
-   * Generates each active Target from the Project's source, saves the results, and attempts
-   * delivery to each configured destination.
+   * Queues one Generation per active Target and returns their IDs. Retrieve each Generation until
+   * its status moves from `queued` to `running` and then `succeeded` or `failed`. `succeeded` means
+   * generated files are saved; check Delivery and Draft status separately for repository delivery
+   * and pull requests. A Target already queued or running is returned without starting another
+   * Generation. A matching Idempotency-Key replay returns the same Generations with their current
+   * statuses.
    *
-   * If the package already matches a destination and no Draft is open, returns `pr_status:
+   * If the package already matches a destination and no Draft is open, delivery reports `pr_status:
    * no_changes` without creating a commit, branch, or pull request. An existing Draft stays open.
    * Automatic generation uses the same workflow.
    *

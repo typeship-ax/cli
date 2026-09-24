@@ -2968,7 +2968,13 @@ export interface FileStubRead {
   mode: ("100644" | "100755") | (string & {});
 }
 
+/**
+ * A Generation moves from queued to running, then succeeds when its files are saved or fails.
+ * Delivery and Draft status are separate.
+ */
 export const GenerationStatus = {
+  QUEUED: "queued",
+  RUNNING: "running",
   SUCCEEDED: "succeeded",
   FAILED: "failed",
 } as const;
@@ -3025,7 +3031,7 @@ export interface Generation {
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
   provenance: GenerationProvenance;
-  /** Null only for a failed or legacy generation that produced no metadata. */
+  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
@@ -3055,7 +3061,7 @@ export interface GenerationWrite {
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind;
   provenance: GenerationProvenance;
-  /** Null only for a failed or legacy generation that produced no metadata. */
+  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
   meta: GenerationMeta | null;
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
@@ -3086,7 +3092,7 @@ export interface GenerationRead {
   /** Resolved generator implementation; provenance rather than resource identity. */
   generator: GeneratorKind | (string & {});
   provenance: GenerationProvenanceRead;
-  /** Null only for a failed or legacy generation that produced no metadata. */
+  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
   meta: GenerationMetaRead | null;
   warnings: string[];
   /** Present on retrieve and create; omitted in lists. */
@@ -3193,23 +3199,23 @@ export interface GenerationFailureRead {
 }
 
 /**
- * Metadata for each Target generation attempted by a Project run. Retrieve one Generation
- * separately for generated files.
+ * One Generation per selected Target. Retrieve each Generation for current status and generated
+ * files.
  */
 export interface GenerationBatch {
-  data: Array<GenerationSummary | GenerationFailure>;
+  data: GenerationSummary[];
   request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
-  data: Array<GenerationSummaryWrite | GenerationFailure>;
+  data: GenerationSummaryWrite[];
   request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
-  data: Array<GenerationSummaryRead | GenerationFailureRead>;
+  data: GenerationSummaryRead[];
   request_id: RequestId;
 }
 

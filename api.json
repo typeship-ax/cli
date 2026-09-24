@@ -5317,9 +5317,12 @@
                 },
                 "status": {
                   "enum": [
+                    "queued",
+                    "running",
                     "succeeded",
                     "failed"
                   ],
+                  "description": "A Generation moves from queued to running, then succeeds when its files are saved or fails.",
                   "type": "string"
                 },
                 "trigger": {
@@ -5472,8 +5475,8 @@
       "example_command": "typeship projects generate prj_4f8k2m7x9q1v6b3n --target-id tgt_5m8q2v7k1p9d4h6c",
       "method": "POST",
       "path": "/projects/{project_id}/generations",
-      "summary": "Generate targets and open pull requests",
-      "description": "Generates each active Target from the Project's source, saves the results, and attempts delivery to each configured destination.\n\nIf the package already matches a destination and no Draft is open, returns `pr_status: no_changes` without creating a commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
+      "summary": "Start generation for active Targets",
+      "description": "Queues one Generation per active Target and returns their IDs. Retrieve each Generation until its status moves from `queued` to `running` and then `succeeded` or `failed`. `succeeded` means generated files are saved; check Delivery and Draft status separately for repository delivery and pull requests. A Target already queued or running is returned without starting another Generation. A matching Idempotency-Key replay returns the same Generations with their current statuses.\n\nIf the package already matches a destination and no Draft is open, delivery reports `pr_status: no_changes` without creating a commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5515,160 +5518,105 @@
         ]
       },
       "output_schema": {
-        "description": "Metadata for each Target generation attempted by a Project run. Retrieve one Generation separately for generated files.",
+        "description": "One Generation per selected Target. Retrieve each Generation for current status and generated files.",
         "properties": {
           "data": {
             "items": {
-              "anyOf": [
+              "description": "Generation metadata returned by collection endpoints. Generated file contents and file indexes are available only from retrieve and create operations.",
+              "examples": [
                 {
-                  "description": "Generation metadata returned by collection endpoints. Generated file contents and file indexes are available only from retrieve and create operations.",
-                  "examples": [
-                    {
-                      "id": "gen_7h2p5d9c3m8w1k6q",
-                      "object": "generation",
-                      "project_id": "prj_4f8k2m7x9q1v6b3n",
-                      "definition_revision_id": "drev_6m1q8v4k2p9d7h3c",
-                      "status": "succeeded",
-                      "trigger": "manual",
-                      "target_id": "tgt_5m8q2v7k1p9d4h6c",
-                      "generator": "cli",
-                      "provenance": {
-                        "generator_edition": "2026-08-24",
-                        "resolved_config": {
-                          "cli": {
-                            "command_name": "parcel"
-                          }
-                        },
-                        "package_version": "1.0.0"
-                      },
-                      "meta": {
-                        "title": "Parcel API",
-                        "api_version": "1.0.0",
-                        "version": "1.0.0",
-                        "oas_version": "3.1",
-                        "artifact_name": "parcel-client",
-                        "client_name": "ParcelClient",
-                        "generators": [
-                          "cli"
-                        ]
-                      },
-                      "warnings": [],
-                      "errors": [],
-                      "created_at": "2026-09-23T08:00:00Z"
-                    }
-                  ],
-                  "properties": {
-                    "id": {
-                      "description": "Unique identifier for a generation.",
-                      "examples": [
-                        "gen_7h2p5d9c3m8w1k6q"
-                      ],
-                      "pattern": "^gen_[a-z0-9]{16}$",
-                      "type": "string"
+                  "id": "gen_7h2p5d9c3m8w1k6q",
+                  "object": "generation",
+                  "project_id": "prj_4f8k2m7x9q1v6b3n",
+                  "definition_revision_id": "drev_6m1q8v4k2p9d7h3c",
+                  "status": "succeeded",
+                  "trigger": "manual",
+                  "target_id": "tgt_5m8q2v7k1p9d4h6c",
+                  "generator": "cli",
+                  "provenance": {
+                    "generator_edition": "2026-08-24",
+                    "resolved_config": {
+                      "cli": {
+                        "command_name": "parcel"
+                      }
                     },
-                    "object": {
-                      "const": "generation",
-                      "type": "string"
-                    },
-                    "project_id": {
-                      "description": "Unique identifier for a project.",
-                      "examples": [
-                        "prj_4f8k2m7x9q1v6b3n"
-                      ],
-                      "pattern": "^prj_[a-z0-9]{16}$",
-                      "type": "string"
-                    },
-                    "definition_revision_id": {
-                      "anyOf": [
-                        {
-                          "description": "Unique identifier for an immutable resolved Definition Revision.",
-                          "examples": [
-                            "drev_6m1q8v4k2p9d7h3c"
-                          ],
-                          "pattern": "^drev_[a-z0-9]{16}$",
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "status": {
-                      "enum": [
-                        "succeeded",
-                        "failed"
-                      ],
-                      "type": "string"
-                    },
-                    "trigger": {
-                      "enum": [
-                        "manual",
-                        "webhook",
-                        "poll",
-                        "preview"
-                      ],
-                      "type": "string"
-                    },
-                    "target_id": {
-                      "description": "Persisted Target identity. Null only for one-shot generation.",
-                      "anyOf": [
-                        {
-                          "description": "Stable identifier for one configured generated product.",
-                          "examples": [
-                            "tgt_5m8q2v7k1p9d4h6c"
-                          ],
-                          "pattern": "^tgt_[a-z0-9]{16}$",
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "generator": {
-                      "enum": [
-                        "typescript-sdk",
-                        "python-sdk",
-                        "go-sdk",
-                        "cli",
-                        "go-cli",
-                        "mcp"
-                      ],
-                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
-                      "type": "string"
-                    },
-                    "provenance": {
-                      "type": "object"
-                    },
-                    "meta": {
-                      "description": "Null only for a failed or legacy generation that produced no metadata.",
-                      "anyOf": [
-                        {
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "warnings": {
-                      "type": "array"
-                    },
-                    "errors": {
-                      "description": "Recorded failures. Empty when this resource has no recorded failure.",
-                      "type": "array"
-                    },
-                    "created_at": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
+                    "package_version": "1.0.0"
                   },
-                  "type": "object"
+                  "meta": {
+                    "title": "Parcel API",
+                    "api_version": "1.0.0",
+                    "version": "1.0.0",
+                    "oas_version": "3.1",
+                    "artifact_name": "parcel-client",
+                    "client_name": "ParcelClient",
+                    "generators": [
+                      "cli"
+                    ]
+                  },
+                  "warnings": [],
+                  "errors": [],
+                  "created_at": "2026-09-23T08:00:00Z"
+                }
+              ],
+              "properties": {
+                "id": {
+                  "description": "Unique identifier for a generation.",
+                  "examples": [
+                    "gen_7h2p5d9c3m8w1k6q"
+                  ],
+                  "pattern": "^gen_[a-z0-9]{16}$",
+                  "type": "string"
                 },
-                {
-                  "description": "A selected target that did not generate in a multi-target run.",
-                  "properties": {
-                    "target_id": {
+                "object": {
+                  "const": "generation",
+                  "type": "string"
+                },
+                "project_id": {
+                  "description": "Unique identifier for a project.",
+                  "examples": [
+                    "prj_4f8k2m7x9q1v6b3n"
+                  ],
+                  "pattern": "^prj_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "definition_revision_id": {
+                  "anyOf": [
+                    {
+                      "description": "Unique identifier for an immutable resolved Definition Revision.",
+                      "examples": [
+                        "drev_6m1q8v4k2p9d7h3c"
+                      ],
+                      "pattern": "^drev_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "queued",
+                    "running",
+                    "succeeded",
+                    "failed"
+                  ],
+                  "description": "A Generation moves from queued to running, then succeeds when its files are saved or fails. Delivery and Draft status are separate.",
+                  "type": "string"
+                },
+                "trigger": {
+                  "enum": [
+                    "manual",
+                    "webhook",
+                    "poll",
+                    "preview"
+                  ],
+                  "type": "string"
+                },
+                "target_id": {
+                  "description": "Persisted Target identity. Null only for one-shot generation.",
+                  "anyOf": [
+                    {
                       "description": "Stable identifier for one configured generated product.",
                       "examples": [
                         "tgt_5m8q2v7k1p9d4h6c"
@@ -5676,30 +5624,80 @@
                       "pattern": "^tgt_[a-z0-9]{16}$",
                       "type": "string"
                     },
-                    "generator": {
-                      "enum": [
-                        "typescript-sdk",
-                        "python-sdk",
-                        "go-sdk",
-                        "cli",
-                        "go-cli",
-                        "mcp"
-                      ],
-                      "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "generator": {
+                  "enum": [
+                    "typescript-sdk",
+                    "python-sdk",
+                    "go-sdk",
+                    "cli",
+                    "go-cli",
+                    "mcp"
+                  ],
+                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+                  "type": "string"
+                },
+                "provenance": {
+                  "properties": {
+                    "generator_edition": {
+                      "description": "Pinned generator contract edition.",
                       "type": "string"
                     },
-                    "status": {
-                      "const": "failed",
-                      "type": "string"
+                    "resolved_config": {
+                      "description": "Recorded configuration for this Generation in the public Config format, including inherited Project defaults and Target overrides. Later edits do not change it. Source credentials are never included. Null when no configuration was recorded.",
+                      "anyOf": [
+                        {
+                          "description": "Everything Typeship needs beyond the Definition, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Definition.",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
-                    "errors": {
-                      "description": "Recorded failures. Empty when this resource has no recorded failure.",
-                      "type": "array"
+                    "package_version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
                   "type": "object"
+                },
+                "meta": {
+                  "description": "Null only for a failed or legacy generation that produced no metadata.",
+                  "anyOf": [
+                    {
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "warnings": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "errors": {
+                  "description": "Recorded failures. Empty when this resource has no recorded failure.",
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "created_at": {
+                  "format": "date-time",
+                  "type": "string"
                 }
-              ]
+              },
+              "type": "object"
             },
             "type": "array"
           },
@@ -13221,7 +13219,7 @@
       "method": "GET",
       "path": "/generations/{generation_id}",
       "summary": "Retrieve a generation",
-      "description": "Returns the Generation result. Successful results include files, or a file index when the package is too large to inline.",
+      "description": "Returns the current Generation status. `queued` and `running` mean generation is still in progress. `succeeded` means generated files are saved, not that repository delivery or a Draft is complete. Successful results include files, or a file index when the package is too large to inline.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -13295,9 +13293,12 @@
           },
           "status": {
             "enum": [
+              "queued",
+              "running",
               "succeeded",
               "failed"
             ],
+            "description": "A Generation moves from queued to running, then succeeds when its files are saved or fails.",
             "type": "string"
           },
           "trigger": {
@@ -13365,7 +13366,7 @@
             "type": "object"
           },
           "meta": {
-            "description": "Null only for a failed or legacy generation that produced no metadata.",
+            "description": "Null while queued or running, or when a failed or legacy generation produced no metadata.",
             "anyOf": [
               {
                 "type": "object"

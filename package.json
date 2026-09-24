@@ -1,6 +1,6 @@
 {
   "name": "@typeship-ax/cli",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "description": "CLI for typeship.",
   "keywords": [
     "typeship",
@@ -35,7 +35,7 @@
     "prepublishOnly": "npm run build"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

@@ -42,7 +42,7 @@ const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.19.1";
+const VERSION = "0.20.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -223,25 +223,22 @@ function out(value: unknown): void {
 let FIELDS: string[][] | null = null;
 
 /** Keep only FIELDS of a result: arrays item by item, objects by dotted path; scalars untouched. */
-function project(value: unknown): unknown {
-  if (FIELDS === null) return value;
-  if (Array.isArray(value)) return value.map(project);
+function project(value: unknown, paths: string[][] | null = FIELDS): unknown {
+  if (paths === null) return value;
+  if (Array.isArray(value)) return value.map((item) => project(item, paths));
   if (value === null || typeof value !== "object") return value;
+  const groups = new Map<string, string[][]>();
+  for (const [key, ...rest] of paths) {
+    if (key === undefined) continue;
+    const group = groups.get(key);
+    if (group) group.push(rest); else groups.set(key, [rest]);
+  }
   const out: Record<string, unknown> = {};
-  for (const path of FIELDS) {
-    let cursor: unknown = value;
-    for (const key of path) {
-      if (cursor === null || typeof cursor !== "object" || Array.isArray(cursor)) { cursor = undefined; break; }
-      cursor = (cursor as Record<string, unknown>)[key];
-    }
-    if (cursor === undefined) continue;
-    let target = out;
-    for (const key of path.slice(0, -1)) {
-      const next = target[key];
-      if (next === undefined || next === null || typeof next !== "object" || Array.isArray(next)) target[key] = {};
-      target = target[key] as Record<string, unknown>;
-    }
-    target[path[path.length - 1]!] = cursor;
+  for (const [key, rests] of groups) {
+    const child = (value as Record<string, unknown>)[key];
+    if (child === undefined) continue;
+    if (rests.some((rest) => rest.length === 0)) out[key] = child;
+    else if (child !== null && typeof child === "object") out[key] = project(child, rests);
   }
   return out;
 }
@@ -954,12 +951,11 @@ async function cmdMcp(parsed: Parsed): Promise<void> {
       "  " + BIN + " mcp install --codex          Codex CLI (~/.codex/config.toml)",
       "  " + BIN + " mcp install --vscode         VS Code (./.vscode/mcp.json)",
       "  " + BIN + " mcp install --windsurf | --gemini | --opencode | --zed | --claude-desktop",
-      "  " + BIN + " mcp install --cursor         Cursor (./.cursor/mcp.json; see note below)",
+      "  " + BIN + " mcp install --cursor         Cursor (./.cursor/mcp.json)",
       "  " + BIN + " mcp --url <https://...>      use a remote MCP endpoint instead of the local server",
       "  " + BIN + " mcp install --claude --read-only   register a read-only server (writes are not callable)",
       "",
       (MCP_URL ? "Default entry: the hosted endpoint " + MCP_URL + " with the auth env var as a reference (never a literal key)." : "Default entry: this package's local stdio server, which reads credentials saved by '" + BIN + " login' or the CLI's auth env vars."),
-      "--all skips Cursor until it speaks MCP 2026-07-28.",
     ];
     process.stdout.write(lines.join("\n") + "\n");
     await flushExit(0);
@@ -1202,7 +1198,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
   }
   const checks: DoctorCheck[] = [];
   const nodeMajor = Number(process.versions.node.split(".")[0]);
-  checks.push({ name: "node", ok: nodeMajor >= 18, detail: process.version, ...(nodeMajor >= 18 ? {} : { fix: "Install Node 18 or newer." }) });
+  checks.push({ name: "node", ok: nodeMajor >= 20, detail: process.version, ...(nodeMajor >= 20 ? {} : { fix: "Install Node 20 or newer." }) });
   checks.push({ name: "cli", ok: true, detail: BIN + " " + VERSION + " (" + PKG_NAME + ")" });
   let source: string | null = null;
   let storageProblem: string | undefined;
@@ -1961,7 +1957,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.19.1");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.20.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -2393,18 +2389,16 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
   }
   LAST_CLIENT_HAD_CREDENTIAL = Object.keys(options.credentials ?? {}).length > 0 || AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
   requireOperationCredentials(op, options);
-  // Who is calling: the CLI, under which agent harness, and whether an
-  // agent is driving. "agent" means a harness was detected or the caller
-  // said so (--mode agent / env); a bare non-TTY run (CI, a pipeline) is
-  // "non-interactive", so usage by surface does not count CI as agents.
-  // The API can read it back; it carries no secrets.
+  // Identify the package and version. Optional harness and caller details
+  // let the API distinguish agent traffic from other non-interactive use.
   const harness = detectHarness();
   const explicitAgent = flags.get("mode") === "agent" || process.env["TYPESHIP_MODE"] === "agent";
   const behaving = agentMode({ flagMode: flags.get("mode"), envMode: process.env["TYPESHIP_MODE"], stdoutIsTTY: process.stdout.isTTY === true, stdinIsTTY: process.stdin.isTTY === true });
-  const caller = harness || explicitAgent ? "; agent" : behaving ? "; non-interactive" : "";
+  const caller = harness || explicitAgent ? "agent" : behaving ? "non-interactive" : null;
+  const details = [harness ? "harness=" + harness : null, caller].filter(Boolean).join("; ");
   options.defaultHeaders = {
     ...(options.defaultHeaders as Record<string, string> | undefined),
-    "User-Agent": PKG_NAME + "-cli/" + VERSION + " (typeship" + (harness ? "; harness=" + harness : "") + caller + ")",
+    "User-Agent": PKG_NAME + "-cli/" + VERSION + (details ? " (" + details + ")" : ""),
   };
   if (forIdentity) { options.fetch = identityFetch(baseUrl); options.maxRetries = 0; options.timeoutMs = 10_000; }
   return new TypeshipClient(options);
@@ -2653,7 +2647,18 @@ async function main(): Promise<void> {
     }
   }
 
-  const result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
+  let result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
+  if (result.ok && op.httpMethod === "POST" && op.path === "/projects/{project_id}/generations") {
+    const batch = result.data as { data: Array<{ id: string }> };
+    const generations = (client as unknown as { generations: { wait(id: string): Promise<{ ok: boolean; data?: unknown; error?: unknown }> } }).generations;
+    const completed: unknown[] = [];
+    for (const generation of batch.data) {
+      const waited = await generations.wait(generation.id);
+      if (!waited.ok) failApi(waited.error, LAST_CLIENT_HAD_CREDENTIAL);
+      completed.push(waited.data);
+    }
+    result = { ...result, data: { ...batch, data: completed } };
+  }
   if (result.ok) {
     if (op.sse) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.

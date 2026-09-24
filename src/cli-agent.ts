@@ -363,7 +363,6 @@ export const MCP_CLIENTS: McpClient[] = [
     file: (cwd) => join(cwd, ".cursor", "mcp.json"),
     detect: () => existsSync(join(home(), ".cursor")),
     write: (existing, name, entry) => jsonMerge(existing, ["mcpServers"], name, standardEntry(entry)),
-    incompatible: "Cursor does not yet speak MCP 2026-07-28, which is the only version this server serves; the entry is written but Cursor will not connect until it does.",
   },
 ];
 

@@ -29,6 +29,7 @@ import type {
   DiagnosticRemediationRequest,
   DiagnosticReport,
   DiagnosticReportRead,
+  GenerateProjectRequest,
   GenerationBatch,
   GenerationBatchRead,
   GenerationList,
@@ -417,6 +418,7 @@ export class ProjectsResource {
    */
   async generate(
     projectId: ProjectId,
+    body?: GenerateProjectRequest,
     params?: ProjectsGenerateParams,
     options?: RequestOptions,
   ): Promise<ApiResult<GenerationBatchRead, ProjectsGenerateError>> {
@@ -427,6 +429,7 @@ export class ProjectsResource {
       headers: {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
+      body,
       errors: {
         "400": BadRequestError,
         "401": UnauthorizedError,

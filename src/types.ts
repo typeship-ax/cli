@@ -30,12 +30,6 @@ export type ListObject = "list";
 /** Stable identifier for one configured generated product. */
 export type TargetId = string;
 
-/** Immutable identity for one exact three-way Target integration. */
-export type IntegrationAttemptId = string;
-
-/** Immutable exact-path, mode, and byte snapshot of Target code. */
-export type CodeSnapshotId = string;
-
 export type DeliveryId = string;
 
 export type TargetReleaseId = string;
@@ -273,7 +267,6 @@ export interface GenerationMeta {
   release_readiness_note?: string;
   /** The package version the destination had before this regeneration. */
   previous_version?: string;
-  integration_attempt_id?: IntegrationAttemptId;
   /** Files changed by the customer relative to the accepted combined baseline. */
   customer_change_count?: number;
   integration_state?: "conflicted"
@@ -282,7 +275,6 @@ export interface GenerationMeta {
     | "ready"
     | "accepted"
     | "outdated";
-  reused_resolution_count?: number;
   /** Separate compatibility result against the last published artifact. */
   published_compatibility?: "compatible" | "breaking" | "unknown" | "not_applicable";
   /** Version of the last published artifact used by published_compatibility. */
@@ -380,7 +372,6 @@ export interface GenerationMetaRead {
   release_readiness_note?: string;
   /** The package version the destination had before this regeneration. */
   previous_version?: string;
-  integration_attempt_id?: IntegrationAttemptId;
   /** Files changed by the customer relative to the accepted combined baseline. */
   customer_change_count?: number;
   integration_state?: ("conflicted"
@@ -389,7 +380,6 @@ export interface GenerationMetaRead {
     | "ready"
     | "accepted"
     | "outdated") | (string & {});
-  reused_resolution_count?: number;
   /** Separate compatibility result against the last published artifact. */
   published_compatibility?: ("compatible" | "breaking" | "unknown" | "not_applicable") | (string & {});
   /** Version of the last published artifact used by published_compatibility. */
@@ -1430,12 +1420,6 @@ export interface TargetRelease {
   delivery_revision: string;
   /** Digest of the exact accepted source tree used for publication. */
   source_digest: string | null;
-  previous_generation_id: GenerationId | null;
-  next_generation_id: GenerationId | null;
-  generated_output_hash: string | null;
-  accepted_combined_snapshot_id: CodeSnapshotId | null;
-  customer_diff_hash: string | null;
-  final_package_hash: string | null;
   checks: PackageCheck[];
   accepted_risks: AcceptedCompatibilityRisk[];
   import_provenance: {
@@ -1472,12 +1456,6 @@ export interface TargetReleaseRead {
   delivery_revision: string;
   /** Digest of the exact accepted source tree used for publication. */
   source_digest: string | null;
-  previous_generation_id: GenerationId | null;
-  next_generation_id: GenerationId | null;
-  generated_output_hash: string | null;
-  accepted_combined_snapshot_id: CodeSnapshotId | null;
-  customer_diff_hash: string | null;
-  final_package_hash: string | null;
   checks: PackageCheckRead[];
   accepted_risks: AcceptedCompatibilityRiskRead[];
   import_provenance: {
@@ -1602,6 +1580,7 @@ export interface TargetDraft {
   /** Format: uri */
   pull_request_url: string | null;
   request_id?: RequestId;
+  checks: PackageCheck[];
 }
 
 /** Response shape for TargetDraft. */
@@ -1624,6 +1603,7 @@ export interface TargetDraftRead {
   /** Format: uri */
   pull_request_url: string | null;
   request_id?: RequestId;
+  checks: PackageCheckRead[];
 }
 
 export type TargetDraftResponse = TargetDraft & ResponseMetadata;
@@ -1640,78 +1620,6 @@ export interface TargetDraftUpdate {
    * precondition.
    */
   expected_revision?: number;
-}
-
-export interface CodeFileSummary {
-  mode: "100644" | "100755" | "120000";
-  hash: string;
-}
-
-/** Response shape for CodeFileSummary. */
-export interface CodeFileSummaryRead {
-  mode: ("100644" | "100755" | "120000") | (string & {});
-  hash: string;
-}
-
-export interface CustomizationChange {
-  path: string;
-  kind: "added" | "edited" | "deleted" | "mode_changed";
-  previous: CodeFileSummary | null;
-  current: CodeFileSummary | null;
-  next: CodeFileSummary | null;
-}
-
-/** Response shape for CustomizationChange. */
-export interface CustomizationChangeRead {
-  path: string;
-  kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
-  previous: CodeFileSummaryRead | null;
-  current: CodeFileSummaryRead | null;
-  next: CodeFileSummaryRead | null;
-}
-
-export interface MergeSideSummary {
-  present: boolean;
-  mode: "100644" | "100755" | "120000" | null;
-  hash: string | null;
-}
-
-/** Response shape for MergeSideSummary. */
-export interface MergeSideSummaryRead {
-  present: boolean;
-  mode: ("100644" | "100755" | "120000" | null) | (string & {}) | null;
-  hash: string | null;
-}
-
-export interface TargetMergeConflict {
-  path: string;
-  kind: "missing_baseline"
-    | "file_ownership"
-    | "customer_deleted_generator_changed"
-    | "generator_deleted_customer_changed"
-    | "overlapping_text"
-    | "binary_changed"
-    | "file_mode_changed";
-  fingerprint: string;
-  previous: MergeSideSummary;
-  current: MergeSideSummary;
-  next: MergeSideSummary;
-}
-
-/** Response shape for TargetMergeConflict. */
-export interface TargetMergeConflictRead {
-  path: string;
-  kind: ("missing_baseline"
-    | "file_ownership"
-    | "customer_deleted_generator_changed"
-    | "generator_deleted_customer_changed"
-    | "overlapping_text"
-    | "binary_changed"
-    | "file_mode_changed") | (string & {});
-  fingerprint: string;
-  previous: MergeSideSummaryRead;
-  current: MergeSideSummaryRead;
-  next: MergeSideSummaryRead;
 }
 
 export interface PackageCheck {
@@ -1759,209 +1667,6 @@ export interface AcceptedCompatibilityRiskRead {
   /** Format: date-time */
   approved_at: string;
 }
-
-export interface TargetCustomizations {
-  object: "target_customizations";
-  target_id: TargetId;
-  status: "not_generated"
-    | "conflicted"
-    | "checking"
-    | "checks_failed"
-    | "ready"
-    | "accepted"
-    | "outdated";
-  attempt_id: IntegrationAttemptId | null;
-  /** False for an adopted package until its first explicit integration is accepted. */
-  baseline_available: boolean;
-  input: {
-    current_release_id: TargetReleaseId | null;
-    previous_generation_id: GenerationId | null;
-    previous_generated_snapshot_id: CodeSnapshotId | null;
-    /** Exact accepted combined code used to calculate customer changes. */
-    previous_combined_snapshot_id: CodeSnapshotId | null;
-    current_snapshot_id: CodeSnapshotId;
-    current_revision: string;
-    next_generation_id: GenerationId;
-    next_generated_snapshot_id: CodeSnapshotId;
-    default_revision: string;
-    draft_revision: string | null;
-  }
-    | null;
-  output: {
-    combined_snapshot_id: CodeSnapshotId;
-    generated_hash: string;
-    customer_diff_hash: string | null;
-    final_package_hash: string | null;
-    /**
-     * False when the exact combined change only affects tests or check infrastructure and must not
-     * create a versioned release.
-     */
-    publication_required: boolean;
-    candidate_revision: string | null;
-  }
-    | null;
-  changes: CustomizationChange[];
-  conflicts: TargetMergeConflict[];
-  /**
-   * Identifies whether conflicts arose while reconciling the rolling Draft with the default branch
-   * or while applying the next Generation.
-   */
-  conflict_stage: "default_sync" | "generation" | null;
-  reused_resolutions: Array<{
-    path: string;
-    fingerprint: string;
-    choice: "current" | "generated" | "resolved";
-    approved_revision: string;
-    approved_by: string;
-    /** Format: date-time */
-    approved_at: string;
-  }>;
-  checks: PackageCheck[];
-  /** Format: uri */
-  pull_request_url: string | null;
-  /** Exact rolling Draft head to send as expected_head_revision when resolving this attempt. */
-  head_revision: string | null;
-  request_id?: RequestId;
-}
-
-/** Response shape for TargetCustomizations. */
-export interface TargetCustomizationsRead {
-  object: "target_customizations" | (string & {});
-  target_id: TargetId;
-  status: ("not_generated"
-    | "conflicted"
-    | "checking"
-    | "checks_failed"
-    | "ready"
-    | "accepted"
-    | "outdated") | (string & {});
-  attempt_id: IntegrationAttemptId | null;
-  /** False for an adopted package until its first explicit integration is accepted. */
-  baseline_available: boolean;
-  input: {
-    current_release_id: TargetReleaseId | null;
-    previous_generation_id: GenerationId | null;
-    previous_generated_snapshot_id: CodeSnapshotId | null;
-    /** Exact accepted combined code used to calculate customer changes. */
-    previous_combined_snapshot_id: CodeSnapshotId | null;
-    current_snapshot_id: CodeSnapshotId;
-    current_revision: string;
-    next_generation_id: GenerationId;
-    next_generated_snapshot_id: CodeSnapshotId;
-    default_revision: string;
-    draft_revision: string | null;
-  }
-    | null;
-  output: {
-    combined_snapshot_id: CodeSnapshotId;
-    generated_hash: string;
-    customer_diff_hash: string | null;
-    final_package_hash: string | null;
-    /**
-     * False when the exact combined change only affects tests or check infrastructure and must not
-     * create a versioned release.
-     */
-    publication_required: boolean;
-    candidate_revision: string | null;
-  }
-    | null;
-  changes: CustomizationChangeRead[];
-  conflicts: TargetMergeConflictRead[];
-  /**
-   * Identifies whether conflicts arose while reconciling the rolling Draft with the default branch
-   * or while applying the next Generation.
-   */
-  conflict_stage: ("default_sync" | "generation" | null) | (string & {}) | null;
-  reused_resolutions: Array<{
-    path: string;
-    fingerprint: string;
-    choice: ("current" | "generated" | "resolved") | (string & {});
-    approved_revision: string;
-    approved_by: string;
-    /** Format: date-time */
-    approved_at: string;
-  }>;
-  checks: PackageCheckRead[];
-  /** Format: uri */
-  pull_request_url: string | null;
-  /** Exact rolling Draft head to send as expected_head_revision when resolving this attempt. */
-  head_revision: string | null;
-  request_id?: RequestId;
-}
-
-export type TargetCustomizationsResponse = TargetCustomizations & ResponseMetadata;
-
-/** Response shape for TargetCustomizationsResponse. */
-export type TargetCustomizationsResponseRead = TargetCustomizationsRead & ResponseMetadata;
-
-/**
- * Resolve an explicit bounded conflict batch, or reset or adopt all current customizations in one
- * call.
- */
-export type ResetTargetCustomizations = {
-  /**
-   * For conflicts, select the incoming side (default branch during default sync, next Generation
-   * during generation) or explicitly keep the current side. Non-conflict paths reset to the next
-   * Generation.
-   * Default: "generated"
-   */
-  choice?: "generated" | "current";
-  /**
-   * Current customization or conflict paths to resolve. The generated choice removes a path absent
-   * from the incoming side; current choice is valid only for conflicts.
-   */
-  paths: string[];
-  /** Exact Draft head returned by the preceding inspection. */
-  expected_head_revision: string;
-}
-  | {
-      /**
-       * Generated resets every customization to the incoming side. Current keeps the current side of
-       * every conflict and leaves non-conflicting customizations unchanged.
-       * Default: "generated"
-       */
-      choice?: "generated" | "current";
-      /**
-       * Apply the selected side to every current conflict and, for generated, reset every
-       * non-conflicting customization without the explicit-path batch limit.
-       */
-      reset_all: true;
-      /** Exact Draft head returned by the preceding inspection. */
-      expected_head_revision: string;
-    };
-
-/** Response shape for ResetTargetCustomizations. */
-export type ResetTargetCustomizationsRead = {
-  /**
-   * For conflicts, select the incoming side (default branch during default sync, next Generation
-   * during generation) or explicitly keep the current side. Non-conflict paths reset to the next
-   * Generation.
-   * Default: "generated"
-   */
-  choice?: ("generated" | "current") | (string & {});
-  /**
-   * Current customization or conflict paths to resolve. The generated choice removes a path absent
-   * from the incoming side; current choice is valid only for conflicts.
-   */
-  paths: string[];
-  /** Exact Draft head returned by the preceding inspection. */
-  expected_head_revision: string;
-}
-  | {
-      /**
-       * Generated resets every customization to the incoming side. Current keeps the current side of
-       * every conflict and leaves non-conflicting customizations unchanged.
-       * Default: "generated"
-       */
-      choice?: ("generated" | "current") | (string & {});
-      /**
-       * Apply the selected side to every current conflict and, for generated, reset every
-       * non-conflicting customization without the explicit-path batch limit.
-       */
-      reset_all: true;
-      /** Exact Draft head returned by the preceding inspection. */
-      expected_head_revision: string;
-    };
 
 export interface TargetAdoption {
   /** Exact already-published package version to make Current. */
@@ -2746,6 +2451,7 @@ export interface Config {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -2779,6 +2485,7 @@ export interface ConfigRead {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -2816,6 +2523,7 @@ export interface ProjectConfig {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -2848,6 +2556,7 @@ export interface ProjectConfigRead {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -2863,33 +2572,67 @@ export interface ProjectConfigRead {
  * Self-hosted MCP access may be overridden for a Target-specific deployment.
  */
 export interface TargetConfig {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
   globals?: string[];
   retries?: RetryTuning;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
   pagination?: Record<string, PaginationRule | boolean>;
   auth?: TargetAuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehavior;
   readme?: ReadmeBehavior;
   package?: PackageBehavior;
-  /** Format: uri */
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   * Format: uri
+   */
   docs_url?: string | null;
-  /** Format: uri */
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
   docs_index_url?: string | null;
 }
 
 /** Response shape for TargetConfig. */
 export interface TargetConfigRead {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
   globals?: string[];
   retries?: RetryTuning;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
   pagination?: Record<string, PaginationRuleRead | boolean>;
   auth?: TargetAuthenticationConfig;
   cli?: CliBehavior;
   mcp?: McpBehaviorRead;
   readme?: ReadmeBehavior;
   package?: PackageBehavior;
-  /** Format: uri */
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   * Format: uri
+   */
   docs_url?: string | null;
-  /** Format: uri */
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
   docs_index_url?: string | null;
 }
 
@@ -3611,29 +3354,12 @@ export const ErrorCode = {
   DEPENDENCY_EDITION_INCOMPATIBLE: "dependency_edition_incompatible",
   PUBLICATION_FAILED: "publication_failed",
   CUSTOMIZATION_CONFLICT: "customization_conflict",
+  HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
   CHECKS_UNAVAILABLE: "checks_unavailable",
   GENERATION_STALE: "generation_stale",
   UNCLASSIFIED_ERROR: "unclassified_error",
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
-
-/** The stage that failed. A delivery failure does not change a Generation's succeeded status. */
-export const FailurePhase = {
-  DEFINITION: "definition",
-  GENERATION: "generation",
-  DELIVERY: "delivery",
-  PUBLICATION: "publication",
-} as const;
-export type FailurePhase = (typeof FailurePhase)[keyof typeof FailurePhase];
-
-export type DomainError = ErrorDetail & {
-  phase: FailurePhase;
-};
-
-/** Response shape for DomainError. */
-export type DomainErrorRead = ErrorDetailRead & {
-  phase: FailurePhase | (string & {});
-};
 
 export interface ErrorDetail {
   type: ErrorType;
@@ -4193,6 +3919,7 @@ export interface ConfigResponse {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -4226,6 +3953,7 @@ export interface ConfigResponseRead {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -4263,6 +3991,7 @@ export interface ProjectConfigResponse {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -4295,6 +4024,7 @@ export interface ProjectConfigResponseRead {
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
    * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
    * externalDocs URL.
+   * Format: uri
    */
   docs_url?: string | null;
   /**
@@ -4310,33 +4040,67 @@ export interface ProjectConfigResponseRead {
  * Self-hosted MCP access may be overridden for a Target-specific deployment.
  */
 export interface TargetConfigResponse {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
   globals?: string[];
   retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
   pagination?: Record<string, PaginationRuleResponse | boolean>;
   auth?: TargetAuthenticationConfigResponse;
   cli?: CliBehaviorResponse;
   mcp?: McpBehaviorResponse;
   readme?: ReadmeBehaviorResponse;
   package?: PackageBehaviorResponse;
-  /** Format: uri */
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   * Format: uri
+   */
   docs_url?: string | null;
-  /** Format: uri */
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
   docs_index_url?: string | null;
 }
 
 /** Response shape for TargetConfigResponse. */
 export interface TargetConfigResponseRead {
+  /**
+   * Wire names of query/header parameters that become settable once on the generated client and
+   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
+   * are reported as generation warnings.
+   */
   globals?: string[];
   retries?: RetryTuningResponse;
+  /**
+   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
+   * reported as generation warnings.
+   */
   pagination?: Record<string, PaginationRuleResponseRead | boolean>;
   auth?: TargetAuthenticationConfigResponse;
   cli?: CliBehaviorResponse;
   mcp?: McpBehaviorResponseRead;
   readme?: ReadmeBehaviorResponse;
   package?: PackageBehaviorResponse;
-  /** Format: uri */
+  /**
+   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
+   * externalDocs URL.
+   * Format: uri
+   */
   docs_url?: string | null;
-  /** Format: uri */
+  /**
+   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
+   * Format: uri
+   */
   docs_index_url?: string | null;
 }
 
@@ -4478,3 +4242,469 @@ export interface ErrorModelRead {
   errors: ErrorDetailRead[];
   request_id: RequestId;
 }
+
+export interface DraftFileVersion {
+  /**
+   * Up to 16 KiB of exact file bytes. Select this path and follow next_offset using content_offset
+   * to read the rest.
+   */
+  content_base64: string;
+  mode: "100644" | "100755" | "120000";
+  /** Full file size in bytes; null when absent. */
+  size_bytes: number | null;
+  content_offset: number;
+  /** Continue at this decoded byte offset until null. */
+  next_offset: number | null;
+}
+
+/** Response shape for DraftFileVersion. */
+export interface DraftFileVersionRead {
+  /**
+   * Up to 16 KiB of exact file bytes. Select this path and follow next_offset using content_offset
+   * to read the rest.
+   */
+  content_base64: string;
+  mode: ("100644" | "100755" | "120000") | (string & {});
+  /** Full file size in bytes; null when absent. */
+  size_bytes: number | null;
+  content_offset: number;
+  /** Continue at this decoded byte offset until null. */
+  next_offset: number | null;
+}
+
+export interface DraftConflict {
+  path: string;
+  kind: "missing_baseline"
+    | "file_ownership"
+    | "customer_deleted_generator_changed"
+    | "generator_deleted_customer_changed"
+    | "overlapping_text"
+    | "too_large_to_merge"
+    | "binary_changed"
+    | "file_mode_changed";
+  /** Common file version before the conflicting changes; null when absent. */
+  base: DraftFileVersion | null;
+  /** Preserved repository file; null when absent. */
+  repository: DraftFileVersion | null;
+  /** Incoming generated, default-branch, or saved Draft file; null when absent. */
+  incoming: DraftFileVersion | null;
+  /** Decision saved for this exact Draft and conflict. Generate the Target to apply it. */
+  pending_decision: "repository" | "incoming" | "content" | null;
+}
+
+/** Response shape for DraftConflict. */
+export interface DraftConflictRead {
+  path: string;
+  kind: ("missing_baseline"
+    | "file_ownership"
+    | "customer_deleted_generator_changed"
+    | "generator_deleted_customer_changed"
+    | "overlapping_text"
+    | "too_large_to_merge"
+    | "binary_changed"
+    | "file_mode_changed") | (string & {});
+  /** Common file version before the conflicting changes; null when absent. */
+  base: DraftFileVersionRead | null;
+  /** Preserved repository file; null when absent. */
+  repository: DraftFileVersionRead | null;
+  /** Incoming generated, default-branch, or saved Draft file; null when absent. */
+  incoming: DraftFileVersionRead | null;
+  /** Decision saved for this exact Draft and conflict. Generate the Target to apply it. */
+  pending_decision: ("repository" | "incoming" | "content" | null) | (string & {}) | null;
+}
+
+export interface DraftConflicts {
+  object: "draft_conflicts";
+  target_id: TargetId;
+  /**
+   * pending_generation means every conflict has a saved decision; Generate this Target to apply
+   * them. Partial decisions are visible per conflict. Check Draft readiness separately.
+   */
+  status: "not_applicable"
+    | "no_draft"
+    | "outdated"
+    | "unresolved"
+    | "pending_generation"
+    | "clear";
+  head_revision: string | null;
+  incoming_source: "generation" | "default_branch" | "saved_draft" | null;
+  conflicts: DraftConflict[];
+  request_id?: RequestId;
+  has_more: boolean;
+  next_path: string | null;
+  total_conflicts: number;
+}
+
+/** Response shape for DraftConflicts. */
+export interface DraftConflictsRead {
+  object: "draft_conflicts" | (string & {});
+  target_id: TargetId;
+  /**
+   * pending_generation means every conflict has a saved decision; Generate this Target to apply
+   * them. Partial decisions are visible per conflict. Check Draft readiness separately.
+   */
+  status: ("not_applicable"
+    | "no_draft"
+    | "outdated"
+    | "unresolved"
+    | "pending_generation"
+    | "clear") | (string & {});
+  head_revision: string | null;
+  incoming_source: ("generation" | "default_branch" | "saved_draft" | null) | (string & {}) | null;
+  conflicts: DraftConflictRead[];
+  request_id?: RequestId;
+  has_more: boolean;
+  next_path: string | null;
+  total_conflicts: number;
+}
+
+export type DraftConflictsResponse = DraftConflicts & ResponseMetadata;
+
+/** Response shape for DraftConflictsResponse. */
+export type DraftConflictsResponseRead = DraftConflictsRead & ResponseMetadata;
+
+export interface DraftCustomizations {
+  object: "draft_customizations";
+  target_id: TargetId;
+  /**
+   * Availability of the saved inspection. Targets without a repository Delivery are not_applicable.
+   * Check the Draft separately for readiness.
+   */
+  status: "not_applicable" | "no_draft" | "outdated" | "available";
+  head_revision: string | null;
+  changes: Array<{
+    path: string;
+    kind: "added" | "edited" | "deleted" | "mode_changed";
+  }>;
+  request_id?: RequestId;
+}
+
+/** Response shape for DraftCustomizations. */
+export interface DraftCustomizationsRead {
+  object: "draft_customizations" | (string & {});
+  target_id: TargetId;
+  /**
+   * Availability of the saved inspection. Targets without a repository Delivery are not_applicable.
+   * Check the Draft separately for readiness.
+   */
+  status: ("not_applicable" | "no_draft" | "outdated" | "available") | (string & {});
+  head_revision: string | null;
+  changes: Array<{
+    path: string;
+    kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
+  }>;
+  request_id?: RequestId;
+}
+
+export type DraftCustomizationsResponse = DraftCustomizations & ResponseMetadata;
+
+/** Response shape for DraftCustomizationsResponse. */
+export type DraftCustomizationsResponseRead = DraftCustomizationsRead & ResponseMetadata;
+
+export type DraftConflictDecision = {
+  path: string;
+  /**
+   * Select the exact repository or incoming version from the inspection. Selecting an absent
+   * version deletes the path.
+   */
+  keep: "repository" | "incoming";
+}
+  | {
+      path: string;
+      keep: "content";
+      /** Final file bytes as canonical base64. Empty string creates an empty file. */
+      content_base64: string;
+      mode: "100644" | "100755" | "120000";
+    }
+  | {
+      path: string;
+      keep: "content";
+      /** Explicitly delete this file. */
+      content_base64: null;
+      mode?: null;
+    };
+
+/** Response shape for DraftConflictDecision. */
+export type DraftConflictDecisionRead = {
+  path: string;
+  /**
+   * Select the exact repository or incoming version from the inspection. Selecting an absent
+   * version deletes the path.
+   */
+  keep: ("repository" | "incoming") | (string & {});
+}
+  | {
+      path: string;
+      keep: "content" | (string & {});
+      /** Final file bytes as canonical base64. Empty string creates an empty file. */
+      content_base64: string;
+      mode: ("100644" | "100755" | "120000") | (string & {});
+    }
+  | {
+      path: string;
+      keep: "content" | (string & {});
+      /** Explicitly delete this file. */
+      content_base64: null;
+      mode?: null;
+    };
+
+export interface ResolveDraftConflicts {
+  expected_head_revision: string;
+  /**
+   * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
+   * together or not at all.
+   */
+  resolutions: DraftConflictDecision[];
+  /**
+   * Preview exact selected bytes and deletions without saving decisions.
+   * Default: false
+   */
+  dry_run?: boolean;
+  /**
+   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
+   * expected_head_revision.
+   */
+  preview_after?: string;
+  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
+  content_offset?: number;
+}
+
+/** Response shape for ResolveDraftConflicts. */
+export interface ResolveDraftConflictsRead {
+  expected_head_revision: string;
+  /**
+   * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
+   * together or not at all.
+   */
+  resolutions: DraftConflictDecisionRead[];
+  /**
+   * Preview exact selected bytes and deletions without saving decisions.
+   * Default: false
+   */
+  dry_run?: boolean;
+  /**
+   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
+   * expected_head_revision.
+   */
+  preview_after?: string;
+  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
+  content_offset?: number;
+}
+
+export interface DiscardDraftCustomizations {
+  expected_head_revision: string;
+  /**
+   * Explicit non-conflicting customization paths to replace with generated files. A listed
+   * customer-only file is deleted.
+   */
+  paths: string[];
+  /**
+   * Preview exact writes and deletions before discarding customizations.
+   * Default: false
+   */
+  dry_run?: boolean;
+  /**
+   * Only with dry_run. Continue after the preceding preview next_path with the same selection and
+   * expected_head_revision.
+   */
+  preview_after?: string;
+  /** Only with dry_run. Select one path and follow its next_offset to read subsequent file bytes. */
+  content_offset?: number;
+}
+
+export interface DraftCodeUpdate {
+  request_id?: RequestId;
+  object: "draft_code_update";
+  target_id: TargetId;
+  head_revision: string;
+  /**
+   * A preview saves nothing. After a saved update, generate the Target to apply conflict decisions
+   * and refresh package checks.
+   */
+  status: "preview" | "pending_generation";
+  files: Array<{
+    path: string;
+    action: "keep" | "write" | "delete";
+    /**
+     * Up to 16 KiB of exact file bytes. null indicates deletion. Follow next_offset in a dry-run
+     * preview to read the rest.
+     */
+    content_base64: string | null;
+    mode: "100644" | "100755" | "120000" | null;
+    /** Full file size in bytes; null when absent. */
+    size_bytes: number | null;
+    content_offset: number;
+    /** Continue at this decoded byte offset until null. */
+    next_offset: number | null;
+  }>;
+  has_more: boolean;
+  next_path: string | null;
+  /** All selected paths affected by the decision, including paths beyond the first response page. */
+  total_files: number;
+}
+
+/** Response shape for DraftCodeUpdate. */
+export interface DraftCodeUpdateRead {
+  request_id?: RequestId;
+  object: "draft_code_update" | (string & {});
+  target_id: TargetId;
+  head_revision: string;
+  /**
+   * A preview saves nothing. After a saved update, generate the Target to apply conflict decisions
+   * and refresh package checks.
+   */
+  status: ("preview" | "pending_generation") | (string & {});
+  files: Array<{
+    path: string;
+    action: ("keep" | "write" | "delete") | (string & {});
+    /**
+     * Up to 16 KiB of exact file bytes. null indicates deletion. Follow next_offset in a dry-run
+     * preview to read the rest.
+     */
+    content_base64: string | null;
+    mode: ("100644" | "100755" | "120000" | null) | (string & {}) | null;
+    /** Full file size in bytes; null when absent. */
+    size_bytes: number | null;
+    content_offset: number;
+    /** Continue at this decoded byte offset until null. */
+    next_offset: number | null;
+  }>;
+  has_more: boolean;
+  next_path: string | null;
+  /** All selected paths affected by the decision, including paths beyond the first response page. */
+  total_files: number;
+}
+
+export type DraftCodeUpdateResponse = DraftCodeUpdate & ResponseMetadata;
+
+/** Response shape for DraftCodeUpdateResponse. */
+export type DraftCodeUpdateResponseRead = DraftCodeUpdateRead & ResponseMetadata;
+
+export interface GenerateProjectRequest {
+  /** Generate only this active Target. Omit to generate all active Targets in the Project. */
+  target_id?: TargetId;
+}
+
+/** The stage that failed. A delivery failure does not change a Generation's succeeded status. */
+export const FailurePhase = {
+  DEFINITION: "definition",
+  GENERATION: "generation",
+  DELIVERY: "delivery",
+  PUBLICATION: "publication",
+} as const;
+export type FailurePhase = (typeof FailurePhase)[keyof typeof FailurePhase];
+
+export type DomainError = ErrorDetail & {
+  phase: FailurePhase;
+};
+
+/** Response shape for DomainError. */
+export type DomainErrorRead = ErrorDetailRead & {
+  phase: FailurePhase | (string & {});
+};
+
+export interface RecoverDraftHistory {
+  /** Preview without saving when true. Set false with both inspected revisions to approve recovery. */
+  dry_run: boolean;
+  expected_default_revision?: string;
+  /** Exact inspected Draft commit; null when the branch is absent. */
+  expected_draft_revision?: string | null;
+  /**
+   * Continue after next_path from the preceding preview. Requires both inspected revisions and
+   * dry_run true.
+   */
+  after_path?: string;
+  /** Inspect one differing file. Requires both inspected revisions and dry_run true. */
+  path?: string;
+  /**
+   * Decoded byte offset for the next content chunk. Requires both inspected revisions and dry_run
+   * true.
+   */
+  content_offset?: number;
+}
+
+export interface DraftHistoryRecovery {
+  request_id?: RequestId;
+  object: "draft_history_recovery";
+  target_id: TargetId;
+  /**
+   * Approval saves a recovery plan. Generate separately to open the recovered Draft and run its
+   * checks.
+   */
+  status: "not_needed" | "preview" | "pending_generation";
+  default_revision: string;
+  draft_revision: string | null;
+  /** Existing Draft branch that remains available when Generate opens the recovered Draft. */
+  preserved_branch: string | null;
+  /**
+   * New default-branch files that differ from the last accepted combined package. Pages contain at
+   * most 50 distinct paths across changes and draft_changes; each file side contains at most 16 KiB
+   * of decoded content. Follow next_path or request a path and content_offset, with both inspected
+   * revisions.
+   */
+  changes: Array<{
+    path: string;
+    kind: "added" | "edited" | "deleted" | "mode_changed";
+    repository: DraftFileVersion | null;
+    accepted: DraftFileVersion | null;
+  }>;
+  /**
+   * Differences between the rewritten default tree and the current Draft that Generate must
+   * reconcile.
+   */
+  draft_changes: Array<{
+    path: string;
+    repository: DraftFileVersion | null;
+    draft: DraftFileVersion | null;
+  }>;
+  total_changes: number;
+  total_draft_changes: number;
+  has_more: boolean;
+  next_path: string | null;
+}
+
+/** Response shape for DraftHistoryRecovery. */
+export interface DraftHistoryRecoveryRead {
+  request_id?: RequestId;
+  object: "draft_history_recovery" | (string & {});
+  target_id: TargetId;
+  /**
+   * Approval saves a recovery plan. Generate separately to open the recovered Draft and run its
+   * checks.
+   */
+  status: ("not_needed" | "preview" | "pending_generation") | (string & {});
+  default_revision: string;
+  draft_revision: string | null;
+  /** Existing Draft branch that remains available when Generate opens the recovered Draft. */
+  preserved_branch: string | null;
+  /**
+   * New default-branch files that differ from the last accepted combined package. Pages contain at
+   * most 50 distinct paths across changes and draft_changes; each file side contains at most 16 KiB
+   * of decoded content. Follow next_path or request a path and content_offset, with both inspected
+   * revisions.
+   */
+  changes: Array<{
+    path: string;
+    kind: ("added" | "edited" | "deleted" | "mode_changed") | (string & {});
+    repository: DraftFileVersionRead | null;
+    accepted: DraftFileVersionRead | null;
+  }>;
+  /**
+   * Differences between the rewritten default tree and the current Draft that Generate must
+   * reconcile.
+   */
+  draft_changes: Array<{
+    path: string;
+    repository: DraftFileVersionRead | null;
+    draft: DraftFileVersionRead | null;
+  }>;
+  total_changes: number;
+  total_draft_changes: number;
+  has_more: boolean;
+  next_path: string | null;
+}
+
+export type DraftHistoryRecoveryResponse = DraftHistoryRecovery & ResponseMetadata;
+
+/** Response shape for DraftHistoryRecoveryResponse. */
+export type DraftHistoryRecoveryResponseRead = DraftHistoryRecoveryRead & ResponseMetadata;

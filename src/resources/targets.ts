@@ -22,12 +22,20 @@ import {
 import type {
   DeletedTarget,
   DeletedTargetRead,
+  DiscardDraftCustomizations,
+  DraftCodeUpdateResponse,
+  DraftCodeUpdateResponseRead,
+  DraftConflictsResponse,
+  DraftConflictsResponseRead,
+  DraftCustomizationsResponse,
+  DraftCustomizationsResponseRead,
+  DraftHistoryRecoveryResponse,
+  DraftHistoryRecoveryResponseRead,
   ProjectId,
-  ResetTargetCustomizations,
+  RecoverDraftHistory,
+  ResolveDraftConflicts,
   Target,
   TargetAdoption,
-  TargetCustomizationsResponse,
-  TargetCustomizationsResponseRead,
   TargetDraftResponse,
   TargetDraftResponseRead,
   TargetDraftUpdate,
@@ -333,70 +341,6 @@ export class TargetsResource {
   }
 
   /**
-   * Inspect preserved custom code for a Target Draft
-   *
-   * Returns preserved changes, conflicts, reused resolutions, and check results for the Draft.
-   * Includes the input and package identifiers needed to compare attempts. Does not include file
-   * contents.
-   * `GET /targets/{target_id}/customizations`
-   */
-  async retrieveCustomizations(
-    targetId: TargetId,
-    options?: RequestOptions,
-  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>> {
-    return this._core.request<TargetCustomizationsResponseRead, TargetsRetrieveCustomizationsError>({
-      method: "GET",
-      path: `/targets/${encodeURIComponent(String(targetId))}/customizations`,
-      security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "targets.retrieveCustomizations",
-      options,
-    });
-  }
-
-  /**
-   * Resolve or reset custom code on the rolling Draft
-   *
-   * Keeps the current or generated side of selected conflicts, or resets all customizations. Reruns
-   * integration and checks on the same Draft. Supply the expected head revision to prevent a stale
-   * choice from changing a newer Draft.
-   *
-   * A `502` response means regeneration failed after the reset commit.
-   * `POST /targets/{target_id}/customizations/reset`
-   */
-  async resetCustomizations(
-    targetId: TargetId,
-    body: ResetTargetCustomizations,
-    options?: RequestOptions,
-  ): Promise<ApiResult<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>> {
-    return this._core.request<TargetCustomizationsResponseRead, TargetsResetCustomizationsError>({
-      method: "POST",
-      path: `/targets/${encodeURIComponent(String(targetId))}/customizations/reset`,
-      security: [{"apiKey":[]}],
-      body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
-      schemaKey: "targets.resetCustomizations",
-      options,
-    });
-  }
-
-  /**
    * Adopt a verified existing package as Current
    *
    * Checks the repository tag, package metadata, and registry artifact, then records the package as
@@ -496,6 +440,171 @@ export class TargetsResource {
       },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.republishRelease",
+      options,
+    });
+  }
+
+  /**
+   * Inspect customizations on a Draft
+   *
+   * Returns the changed file paths from the latest Draft inspection. Read conflicts for all three
+   * file versions, and read the Draft for package-check readiness.
+   * `GET /targets/{target_id}/draft/customizations`
+   */
+  async retrieveDraftCustomizations(
+    targetId: TargetId,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftCustomizationsResponseRead, TargetsRetrieveDraftCustomizationsError>> {
+    return this._core.request<DraftCustomizationsResponseRead, TargetsRetrieveDraftCustomizationsError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/customizations`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveDraftCustomizations",
+      options,
+    });
+  }
+
+  /**
+   * Inspect conflicts on a Draft
+   *
+   * Returns every conflict with its base, repository, and incoming file bytes and modes in one
+   * response. An absent file is null. incoming_source distinguishes generated changes,
+   * default-branch changes, and recovered saved Draft code. Saved decisions require a separate
+   * Generate before conflicts clear.
+   * `GET /targets/{target_id}/draft/conflicts`
+   */
+  async retrieveDraftConflicts(
+    targetId: TargetId,
+    params?: TargetsRetrieveDraftConflictsParams,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftConflictsResponseRead, TargetsRetrieveDraftConflictsError>> {
+    return this._core.request<DraftConflictsResponseRead, TargetsRetrieveDraftConflictsError>({
+      method: "GET",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/conflicts`,
+      security: [{"apiKey":[]}],
+      query: {
+        path: params?.path,
+        after_path: params?.afterPath,
+        content_offset: params?.contentOffset,
+        expected_head_revision: params?.expectedHeadRevision,
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.retrieveDraftConflicts",
+      options,
+    });
+  }
+
+  /**
+   * Resolve selected Draft conflicts
+   *
+   * Save deliberate decisions for the exact inspected Draft. Keep the repository or incoming side,
+   * or submit final file content, including binary bytes. Decisions save atomically. Use dry_run to
+   * preview them, then generate the Target separately to apply saved decisions and run its checks.
+   * `POST /targets/{target_id}/draft/conflicts/resolve`
+   */
+  async resolveDraftConflicts(
+    targetId: TargetId,
+    body: ResolveDraftConflicts,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftCodeUpdateResponseRead, TargetsResolveDraftConflictsError>> {
+    return this._core.request<DraftCodeUpdateResponseRead, TargetsResolveDraftConflictsError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/conflicts/resolve`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      schemaKey: "targets.resolveDraftConflicts",
+      options,
+    });
+  }
+
+  /**
+   * Discard selected Draft customizations
+   *
+   * Replace explicitly listed non-conflicting paths with generated files in one Draft commit.
+   * Listing a customer-only file deletes it. Use dry_run to inspect writes and deletions first.
+   * Resolve conflicts through the separate conflicts action. Generate afterward to refresh the
+   * Draft and its checks.
+   * `POST /targets/{target_id}/draft/customizations/discard`
+   */
+  async discardDraftCustomizations(
+    targetId: TargetId,
+    body: DiscardDraftCustomizations,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftCodeUpdateResponseRead, TargetsDiscardDraftCustomizationsError>> {
+    return this._core.request<DraftCodeUpdateResponseRead, TargetsDiscardDraftCustomizationsError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/customizations/discard`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      schemaKey: "targets.discardDraftCustomizations",
+      options,
+    });
+  }
+
+  /**
+   * Review and recover rewritten repository history
+   *
+   * Preview a rewritten default branch and the Draft code to preserve. Approve the exact inspected
+   * revisions with dry_run false, then Generate separately. Recovery preserves the previous Draft
+   * branch, opens a new Draft from the current default branch, and requires explicit decisions for
+   * overlapping code. A rewritten Draft alone recovers automatically during Generate.
+   * `POST /targets/{target_id}/draft/history/recover`
+   */
+  async recoverDraftHistory(
+    targetId: TargetId,
+    body: RecoverDraftHistory,
+    options?: RequestOptions,
+  ): Promise<ApiResult<DraftHistoryRecoveryResponseRead, TargetsRecoverDraftHistoryError>> {
+    return this._core.request<DraftHistoryRecoveryResponseRead, TargetsRecoverDraftHistoryError>({
+      method: "POST",
+      path: `/targets/${encodeURIComponent(String(targetId))}/draft/history/recover`,
+      security: [{"apiKey":[]}],
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      schemaKey: "targets.recoverDraftHistory",
       options,
     });
   }
@@ -657,33 +766,6 @@ export type TargetsUpdateDraftError =
   | TransportError
   | ValidationError;
 
-/** Every error `retrieveCustomizations` can produce, as a discriminated union. */
-export type TargetsRetrieveCustomizationsError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-/** Every error `resetCustomizations` can produce, as a discriminated union. */
-export type TargetsResetCustomizationsError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
 export interface TargetsAdoptReleaseParams {
   /**
    * Identifies one logical write for 24 hours. The key is scoped to the authenticated account and
@@ -741,6 +823,88 @@ export type TargetsRepublishReleaseError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `retrieveDraftCustomizations` can produce, as a discriminated union. */
+export type TargetsRetrieveDraftCustomizationsError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface TargetsRetrieveDraftConflictsParams {
+  /** Inspect this conflict path only. */
+  path?: string;
+  /** Continue after next_path. Requires expected_head_revision. */
+  afterPath?: string;
+  /**
+   * Decoded byte offset for each side. Select one path and follow each side until next_offset is
+   * null.
+   */
+  contentOffset?: number;
+  /** Exact Draft head from the preceding response. Required when continuing a page or byte offset. */
+  expectedHeadRevision?: string;
+}
+
+/** Every error `retrieveDraftConflicts` can produce, as a discriminated union. */
+export type TargetsRetrieveDraftConflictsError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `resolveDraftConflicts` can produce, as a discriminated union. */
+export type TargetsResolveDraftConflictsError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `discardDraftCustomizations` can produce, as a discriminated union. */
+export type TargetsDiscardDraftCustomizationsError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+/** Every error `recoverDraftHistory` can produce, as a discriminated union. */
+export type TargetsRecoverDraftHistoryError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

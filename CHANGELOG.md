@@ -1,5 +1,319 @@
 # Changelog
 
+## 0.19.0 (2026-09-24) (36 breaking)
+
+### Added
+- `targets.retrieveDraftCustomizations()`: GET `/targets/{target_id}/draft/customizations`
+- `targets.retrieveDraftConflicts()`: GET `/targets/{target_id}/draft/conflicts`
+- `targets.resolveDraftConflicts()`: POST `/targets/{target_id}/draft/conflicts/resolve`
+- `targets.discardDraftCustomizations()`: POST `/targets/{target_id}/draft/customizations/discard`
+- `targets.recoverDraftHistory()`: POST `/targets/{target_id}/draft/history/recover`
+
+### Removed (breaking)
+- `targets.retrieveCustomizations()`: GET `/targets/{target_id}/customizations`
+- `targets.resetCustomizations()`: POST `/targets/{target_id}/customizations/reset`
+
+### Changed
+- `generate.run()`
+  - **breaking** `return-type-changed`: response.meta.integration\_attempt\_id removed \(was IntegrationAttemptId\)
+  - **breaking** `return-type-changed`: response.meta.reused\_resolution\_count removed \(was number\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error default.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.create()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.update()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.retrieveDiagnostics()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.refreshDiagnostics()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.remediateDiagnostics()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.retrieveIntegrationHealth()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.listGenerations()`
+  - **breaking** `return-type-changed`: response.data\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `return-type-changed`: response.data\[\].meta.integration\_attempt\_id removed \(was IntegrationAttemptId\)
+  - **breaking** `return-type-changed`: response.data\[\].meta.reused\_resolution\_count removed \(was number\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `projects.generate()`
+  - `body-field-added`: request body.target\_id added: TargetId \(optional\)
+  - **breaking** `return-type-changed`: response.data\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `return-type-changed`: response.data\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `return-type-changed`: response.data\[\].meta.integration\_attempt\_id removed \(was IntegrationAttemptId\)
+  - **breaking** `return-type-changed`: response.data\[\].meta.reused\_resolution\_count removed \(was number\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 413.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitions.update()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.create()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.delete()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.update()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 402.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.listReleases()`
+  - **breaking** `return-type-changed`: response.data\[\].accepted\_combined\_snapshot\_id removed \(was CodeSnapshotId \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].customer\_diff\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].final\_package\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].generated\_output\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].next\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].previous\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.data\[\].publications\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.retrieveDraft()`
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.updateDraft()`
+  - `return-type-changed`: response.checks added: PackageCheck\[\] \(required\)
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.adoptRelease()`
+  - **breaking** `return-type-changed`: response.accepted\_combined\_snapshot\_id removed \(was CodeSnapshotId \| null\)
+  - **breaking** `return-type-changed`: response.customer\_diff\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.final\_package\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.generated\_output\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.next\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.previous\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.publications\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 422.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.retrieveRelease()`
+  - **breaking** `return-type-changed`: response.accepted\_combined\_snapshot\_id removed \(was CodeSnapshotId \| null\)
+  - **breaking** `return-type-changed`: response.customer\_diff\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.final\_package\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.generated\_output\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.next\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.previous\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.publications\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `targets.republishRelease()`
+  - **breaking** `return-type-changed`: response.accepted\_combined\_snapshot\_id removed \(was CodeSnapshotId \| null\)
+  - **breaking** `return-type-changed`: response.customer\_diff\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.final\_package\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.generated\_output\_hash removed \(was string \| null\)
+  - **breaking** `return-type-changed`: response.next\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.previous\_generation\_id removed \(was GenerationId \| null\)
+  - **breaking** `return-type-changed`: response.publications\[\].errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 409.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 502.errors\[\].code enum value added: "history\_recovery\_required"
+- `generations.retrieve()`
+  - **breaking** `return-type-changed`: response.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `return-type-changed`: response.meta.integration\_attempt\_id removed \(was IntegrationAttemptId\)
+  - **breaking** `return-type-changed`: response.meta.reused\_resolution\_count removed \(was number\)
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `generations.retrieveFile()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitionRevisions.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitionRevisions.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitionRevisions.retrieveContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `definitionRevisions.retrieveDocumentContent()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `account.retrieve()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `apiKeys.list()`
+  - **breaking** `error-schema-changed`: error 400.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+- `apiKeys.revoke()`
+  - **breaking** `error-schema-changed`: error 401.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 403.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 404.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 429.errors\[\].code enum value added: "history\_recovery\_required"
+  - **breaking** `error-schema-changed`: error 500.errors\[\].code enum value added: "history\_recovery\_required"
+
 ## 0.18.1 (2026-09-23)
 
 ### Changed

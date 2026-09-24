@@ -2,9 +2,9 @@
 
 CLI for typeship. [API reference](./api.md)
 
-Generated from the OpenAPI spec by [typeship](https://typeship.dev). Change the spec or generation settings, then regenerate; generated files are not hand-edited.
+Generated from the OpenAPI spec by [typeship](https://typeship.dev).
 
-- **Zero runtime dependencies** — built on the platform `fetch` in Node 18+
+- **Zero runtime dependencies** — built on the platform `fetch` in Node 20+
 - **Spec-native CLI** — every operation is a command with typed flags, stable JSON, help, and exit codes
 
 ## Build from source
@@ -17,14 +17,14 @@ npm run build
 node dist/cli.js --help
 ```
 
-Requires Node.js 18+. The package is ESM.
+Requires Node.js 20+. The package is ESM.
 
 ## Install a published package
 
 Generation does not publish a package. Before using the registry command below, confirm `name` and `version` in `package.json`, publish under a name you control, and verify that release is available on npm.
 
 ```sh
-npm install --global @typeship-ax/cli@0.19.1
+npm install --global @typeship-ax/cli@0.20.0
 ```
 
 ## CLI

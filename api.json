@@ -13,6 +13,10 @@
         "run"
       ],
       [
+        "generate",
+        "downloadPackage"
+      ],
+      [
         "projects",
         "list"
       ],
@@ -174,6 +178,12 @@
         "command": [
           "generate",
           "run"
+        ]
+      },
+      {
+        "command": [
+          "generate",
+          "download-package"
         ]
       },
       {
@@ -417,6 +427,17 @@
         "tool": "generate_run",
         "httpMethod": "POST",
         "path": "/generate"
+      },
+      {
+        "resource": "generate",
+        "method": "downloadPackage",
+        "command": [
+          "generate",
+          "download-package"
+        ],
+        "tool": "generate_download_package",
+        "httpMethod": "GET",
+        "path": "/generate/download"
       },
       {
         "resource": "projects",
@@ -902,7 +923,7 @@
       "method": "POST",
       "path": "/generate",
       "summary": "Generate one package from a Definition",
-      "description": "Returns one generated package without creating a Project.\n\nSupports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
+      "description": "Returns one generated package without creating a Project.\n\nSupports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.\n\nUse `download.url` to save the complete ZIP, verify `download.sha256`, and extract it into an empty directory. The link expires at `download.expires_at` and grants access to anyone who has it. CLI, MCP, and SDK calls supply an idempotency key automatically. Agents should request `fields=[\"download\",\"meta\",\"warnings\",\"limits\",\"claim\"]` to keep the MCP result compact; files can exceed the response limit. Download the ZIP instead of repeating generation to retrieve omitted files.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `limits` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
       "safety": "write",
       "auth": "optional",
       "security": [
@@ -1711,6 +1732,33 @@
             },
             "type": "array"
           },
+          "download": {
+            "description": "Complete package ZIP from this exact result.",
+            "properties": {
+              "url": {
+                "format": "uri",
+                "type": "string"
+              },
+              "expires_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "sha256": {
+                "description": "SHA-256 of the downloaded ZIP bytes.",
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "size_bytes": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "file_count": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
           "warnings": {
             "items": {
               "type": "string"
@@ -1972,6 +2020,54 @@
         "target": {
           "generator": "cli"
         }
+      }
+    },
+    {
+      "operation": "generate.downloadPackage",
+      "signature": "typeship generate download-package [flags]",
+      "command": [
+        "typeship",
+        "generate",
+        "download-package"
+      ],
+      "parameters": [
+        {
+          "name": "token",
+          "flag": "--query-token",
+          "in": "query",
+          "type": "string",
+          "required": true
+        }
+      ],
+      "example_command": "typeship generate download-package --query-token parcel_download_example_token_1234567890123",
+      "method": "GET",
+      "path": "/generate/download",
+      "summary": "Download a generated package",
+      "description": "Download the complete ZIP referenced by `generate_run`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.\n\nThe local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.",
+      "safety": "read",
+      "auth": "none",
+      "security": [
+        {}
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "minLength": 43,
+            "maxLength": 43,
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "type": "string",
+            "example": "parcel_download_example_token_1234567890123",
+            "description": "Private download token from download.url in the generation result."
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "example_arguments": {
+        "token": "parcel_download_example_token_1234567890123"
       }
     },
     {

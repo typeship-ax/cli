@@ -1,6 +1,6 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.19.1).
+This package contains the generated CLI for **typeship** (API v1.0.0, package v0.20.0).
 
 Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.
@@ -17,9 +17,9 @@ repository names, and resource identifiers with your own. The hosted
 petstore Definition is a runnable sample.
 
 ## Ground rules
-- For a linked repository Delivery, commit package customizations to the rolling Draft. Typeship three-way merges those commits with the next unmodified Generation, preserves exact bytes and file modes, and stops for explicit review when both sides touch the same region or file ownership is ambiguous.
-- A preserved file participates in the combined package only when the package manifest, exports, build, and tests include it. Configure Target checks for every custom build or test requirement; do not assume a file is published merely because it survives regeneration.
-- Zero runtime dependencies; the program runs on Node.js 18+ and platform `fetch`.
+- Maintaining this package: when its repository receives reviewed regeneration pull requests, committed customizations are preserved and edits that overlap a generated change stop for review. Regenerating into a directory replaces its files.
+- A custom file ships only when the package manifest, exports, build, and tests include it. Add a package check for every custom build or test step.
+- Zero runtime dependencies; the program runs on Node.js 20+ and platform `fetch`.
 - `api.md` is the command and flag reference; `api.json` is the machine-readable operation, schema, safety, and example contract. Read them before guessing.
 - Start with the local build or installation instructions in `README.md`. Generation does not publish a registry package.
 

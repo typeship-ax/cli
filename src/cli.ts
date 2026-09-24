@@ -42,7 +42,7 @@ const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.19.1";
+const VERSION = "0.20.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -954,12 +954,11 @@ async function cmdMcp(parsed: Parsed): Promise<void> {
       "  " + BIN + " mcp install --codex          Codex CLI (~/.codex/config.toml)",
       "  " + BIN + " mcp install --vscode         VS Code (./.vscode/mcp.json)",
       "  " + BIN + " mcp install --windsurf | --gemini | --opencode | --zed | --claude-desktop",
-      "  " + BIN + " mcp install --cursor         Cursor (./.cursor/mcp.json; see note below)",
+      "  " + BIN + " mcp install --cursor         Cursor (./.cursor/mcp.json)",
       "  " + BIN + " mcp --url <https://...>      use a remote MCP endpoint instead of the local server",
       "  " + BIN + " mcp install --claude --read-only   register a read-only server (writes are not callable)",
       "",
       (MCP_URL ? "Default entry: the hosted endpoint " + MCP_URL + " with the auth env var as a reference (never a literal key)." : "Default entry: this package's local stdio server, which reads credentials saved by '" + BIN + " login' or the CLI's auth env vars."),
-      "--all skips Cursor until it speaks MCP 2026-07-28.",
     ];
     process.stdout.write(lines.join("\n") + "\n");
     await flushExit(0);
@@ -1202,7 +1201,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
   }
   const checks: DoctorCheck[] = [];
   const nodeMajor = Number(process.versions.node.split(".")[0]);
-  checks.push({ name: "node", ok: nodeMajor >= 18, detail: process.version, ...(nodeMajor >= 18 ? {} : { fix: "Install Node 18 or newer." }) });
+  checks.push({ name: "node", ok: nodeMajor >= 20, detail: process.version, ...(nodeMajor >= 20 ? {} : { fix: "Install Node 20 or newer." }) });
   checks.push({ name: "cli", ok: true, detail: BIN + " " + VERSION + " (" + PKG_NAME + ")" });
   let source: string | null = null;
   let storageProblem: string | undefined;
@@ -1961,7 +1960,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.19.1");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.20.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");

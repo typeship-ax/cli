@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.20.0 (2026-09-24) (1 breaking)
+
+### Added
+- `generate.downloadPackage()`: GET `/generate/download`
+
+### Changed
+- `generate.run()`
+  - `return-type-changed`: response.download added: GenerationDownload \(optional\)
+  - `documentation-changed`: summary or description changed
+
+### Package contract (breaking)
+- **Breaking:** Node.js requirement changed: `>=18` -> `>=20`
+
 ## 0.19.1 (2026-09-24)
 
 ### Changed

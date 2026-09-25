@@ -72,7 +72,7 @@ export class PublicationsResource {
    * Get publishing status
    *
    * Returns the registry publishing status for a release. A status in another organization returns
-   * 404 not_found.
+   * 404 resource_not_found.
    * `GET /publications/{publication_id}`
    */
   async get(publicationId: PublicationId, options?: RequestOptions): Promise<PublicationResponseRead> {
@@ -98,15 +98,16 @@ export interface PublicationsListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
    * representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400
-   * invalid_request. List query parameters must appear only once; unrecognized parameters also
-   * return 400.
+   * input_invalid. List query parameters must appear only once; repeated or unrecognized parameters
+   * return 400 query_param_invalid.
    */
   limit?: number;
   /**
    * Opaque cursor from the preceding page's next_cursor. Valid only for the same organization,
-   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty,
-   * malformed, or repeated cursors return 400 invalid_request. The page limit may change between
-   * requests.
+   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty or
+   * malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start
+   * again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may
+   * change between requests.
    */
   cursor?: string;
   /** Only publications of this release. */

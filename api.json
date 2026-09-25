@@ -122,7 +122,7 @@
       ],
       [
         "releases",
-        "republish"
+        "retry"
       ],
       [
         "deliveries",
@@ -349,7 +349,7 @@
       {
         "command": [
           "releases",
-          "republish"
+          "retry"
         ]
       },
       {
@@ -737,14 +737,14 @@
       },
       {
         "resource": "releases",
-        "method": "republish",
+        "method": "retry",
         "command": [
           "releases",
-          "republish"
+          "retry"
         ],
-        "tool": "releases_republish",
+        "tool": "releases_retry",
         "httpMethod": "POST",
-        "path": "/releases/{release_id}/republish"
+        "path": "/releases/{release_id}/retry"
       },
       {
         "resource": "deliveries",
@@ -8935,11 +8935,12 @@
             "description": "Immutable package version released from this Target.",
             "type": "string"
           },
-          "channel": {
+          "release_channel": {
             "enum": [
               "stable",
               "prerelease"
             ],
+            "description": "The Target's release_channel when this version was released.",
             "type": "string"
           },
           "repository": {
@@ -9106,6 +9107,7 @@
             ]
           },
           "publications": {
+            "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
               "properties": {
                 "id": {
@@ -9126,7 +9128,7 @@
                   "pattern": "^rel_[a-z0-9]{16}$",
                   "type": "string"
                 },
-                "destination": {
+                "type": {
                   "enum": [
                     "github",
                     "npm",
@@ -9134,16 +9136,17 @@
                     "go",
                     "mcp"
                   ],
+                  "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
                   "type": "string"
                 },
                 "status": {
                   "enum": [
-                    "pending",
-                    "publishing",
-                    "published",
-                    "failed",
-                    "disabled"
+                    "queued",
+                    "running",
+                    "completed",
+                    "failed"
                   ],
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -9214,6 +9217,11 @@
           },
           "created_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "description": "When a Publication of this release last changed. The version, commit, and checks never change after the release is created.",
             "type": "string"
           },
           "request_id": {
@@ -12031,11 +12039,12 @@
                   "description": "Immutable package version released from this Target.",
                   "type": "string"
                 },
-                "channel": {
+                "release_channel": {
                   "enum": [
                     "stable",
                     "prerelease"
                   ],
+                  "description": "The Target's release_channel when this version was released.",
                   "type": "string"
                 },
                 "repository": {
@@ -12202,6 +12211,7 @@
                   ]
                 },
                 "publications": {
+                  "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
                   "items": {
                     "properties": {
                       "id": {
@@ -12222,7 +12232,7 @@
                         "pattern": "^rel_[a-z0-9]{16}$",
                         "type": "string"
                       },
-                      "destination": {
+                      "type": {
                         "enum": [
                           "github",
                           "npm",
@@ -12230,16 +12240,17 @@
                           "go",
                           "mcp"
                         ],
+                        "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
                         "type": "string"
                       },
                       "status": {
                         "enum": [
-                          "pending",
-                          "publishing",
-                          "published",
-                          "failed",
-                          "disabled"
+                          "queued",
+                          "running",
+                          "completed",
+                          "failed"
                         ],
+                        "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                         "type": "string"
                       },
                       "attempt": {
@@ -12309,6 +12320,11 @@
                   "format": "date-time",
                   "type": "string"
                 },
+                "updated_at": {
+                  "format": "date-time",
+                  "description": "When a Publication of this release last changed. The version, commit, and checks never change after the release is created.",
+                  "type": "string"
+                },
                 "request_id": {
                   "description": "Server-generated identifier used to correlate this response with Typeship logs.",
                   "examples": [
@@ -12359,7 +12375,7 @@
       "example_command": "typeship releases get rel_7m2q8v4k1p9d5h6c",
       "method": "GET",
       "path": "/releases/{release_id}",
-      "summary": "Get an immutable release",
+      "summary": "Get a release",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -12431,11 +12447,12 @@
             "description": "Immutable package version released from this Target.",
             "type": "string"
           },
-          "channel": {
+          "release_channel": {
             "enum": [
               "stable",
               "prerelease"
             ],
+            "description": "The Target's release_channel when this version was released.",
             "type": "string"
           },
           "repository": {
@@ -12602,6 +12619,7 @@
             ]
           },
           "publications": {
+            "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
               "properties": {
                 "id": {
@@ -12622,7 +12640,7 @@
                   "pattern": "^rel_[a-z0-9]{16}$",
                   "type": "string"
                 },
-                "destination": {
+                "type": {
                   "enum": [
                     "github",
                     "npm",
@@ -12630,16 +12648,17 @@
                     "go",
                     "mcp"
                   ],
+                  "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
                   "type": "string"
                 },
                 "status": {
                   "enum": [
-                    "pending",
-                    "publishing",
-                    "published",
-                    "failed",
-                    "disabled"
+                    "queued",
+                    "running",
+                    "completed",
+                    "failed"
                   ],
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -12712,6 +12731,11 @@
             "format": "date-time",
             "type": "string"
           },
+          "updated_at": {
+            "format": "date-time",
+            "description": "When a Publication of this release last changed. The version, commit, and checks never change after the release is created.",
+            "type": "string"
+          },
           "request_id": {
             "description": "Server-generated identifier used to correlate this response with Typeship logs.",
             "examples": [
@@ -12728,12 +12752,12 @@
       }
     },
     {
-      "operation": "releases.republish",
-      "signature": "typeship releases republish <release_id> [flags]",
+      "operation": "releases.retry",
+      "signature": "typeship releases retry <release_id> [flags]",
       "command": [
         "typeship",
         "releases",
-        "republish"
+        "retry"
       ],
       "parameters": [
         {
@@ -12751,11 +12775,11 @@
           "required": false
         }
       ],
-      "example_command": "typeship releases republish rel_7m2q8v4k1p9d5h6c",
+      "example_command": "typeship releases retry rel_7m2q8v4k1p9d5h6c",
       "method": "POST",
-      "path": "/releases/{release_id}/republish",
-      "summary": "Retry publishing an exact release",
-      "description": "Retries publishing the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.\n\nA `502 repository_unavailable` means the repository publishing workflow could not be dispatched, and nothing was changed.",
+      "path": "/releases/{release_id}/retry",
+      "summary": "Retry publishing a release",
+      "description": "Queues every failed or queued Publication of the release and starts its repository publishing workflow again. Publishing uses that release's version and accepted commit, even if a newer Draft or release exists. Completed Publications are not repeated.\n\nReturns `202` with the Release. Get the Release until each Publication reaches `completed` or `failed`.\n\nA `409 publication_not_retryable` means no Publication is queued or failed. A `502 repository_unavailable` means the repository publishing workflow could not be dispatched, and nothing was changed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -12834,11 +12858,12 @@
             "description": "Immutable package version released from this Target.",
             "type": "string"
           },
-          "channel": {
+          "release_channel": {
             "enum": [
               "stable",
               "prerelease"
             ],
+            "description": "The Target's release_channel when this version was released.",
             "type": "string"
           },
           "repository": {
@@ -13005,6 +13030,7 @@
             ]
           },
           "publications": {
+            "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
               "properties": {
                 "id": {
@@ -13025,7 +13051,7 @@
                   "pattern": "^rel_[a-z0-9]{16}$",
                   "type": "string"
                 },
-                "destination": {
+                "type": {
                   "enum": [
                     "github",
                     "npm",
@@ -13033,16 +13059,17 @@
                     "go",
                     "mcp"
                   ],
+                  "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
                   "type": "string"
                 },
                 "status": {
                   "enum": [
-                    "pending",
-                    "publishing",
-                    "published",
-                    "failed",
-                    "disabled"
+                    "queued",
+                    "running",
+                    "completed",
+                    "failed"
                   ],
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -13113,6 +13140,11 @@
           },
           "created_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "description": "When a Publication of this release last changed. The version, commit, and checks never change after the release is created.",
             "type": "string"
           },
           "request_id": {
@@ -13644,6 +13676,13 @@
           "in": "query",
           "type": "string",
           "required": false
+        },
+        {
+          "name": "status",
+          "flag": "--status",
+          "in": "query",
+          "type": "string",
+          "required": false
         }
       ],
       "example_command": "typeship publications list",
@@ -13682,6 +13721,16 @@
             "pattern": "^rel_[a-z0-9]{16}$",
             "type": "string",
             "description": "Only publications of this release."
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "type": "string",
+            "description": "Only publications with this status."
           }
         }
       },
@@ -13710,7 +13759,7 @@
                   "pattern": "^rel_[a-z0-9]{16}$",
                   "type": "string"
                 },
-                "destination": {
+                "type": {
                   "enum": [
                     "github",
                     "npm",
@@ -13718,16 +13767,17 @@
                     "go",
                     "mcp"
                   ],
+                  "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
                   "type": "string"
                 },
                 "status": {
                   "enum": [
-                    "pending",
-                    "publishing",
-                    "published",
-                    "failed",
-                    "disabled"
+                    "queued",
+                    "running",
+                    "completed",
+                    "failed"
                   ],
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -13958,7 +14008,7 @@
       "example_command": "typeship publications get pub_2m8q4v7k1p9d5h6c",
       "method": "GET",
       "path": "/publications/{publication_id}",
-      "summary": "Get publishing status",
+      "summary": "Get a publication",
       "description": "Returns the registry publishing status for a release. A status in another organization returns 404 resource_not_found.",
       "safety": "read",
       "auth": "required",
@@ -14003,7 +14053,7 @@
             "pattern": "^rel_[a-z0-9]{16}$",
             "type": "string"
           },
-          "destination": {
+          "type": {
             "enum": [
               "github",
               "npm",
@@ -14011,16 +14061,17 @@
               "go",
               "mcp"
             ],
+            "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
             "type": "string"
           },
           "status": {
             "enum": [
-              "pending",
-              "publishing",
-              "published",
-              "failed",
-              "disabled"
+              "queued",
+              "running",
+              "completed",
+              "failed"
             ],
+            "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
             "type": "string"
           },
           "attempt": {

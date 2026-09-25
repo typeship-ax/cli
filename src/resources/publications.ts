@@ -46,6 +46,7 @@ export class PublicationsResource {
         limit: params?.limit,
         cursor: params?.cursor,
         release_id: params?.releaseId,
+        status: params?.status,
       },
       errors: {
         "400": BadRequestError,
@@ -69,7 +70,7 @@ export class PublicationsResource {
   }
 
   /**
-   * Get publishing status
+   * Get a publication
    *
    * Returns the registry publishing status for a release. A status in another organization returns
    * 404 resource_not_found.
@@ -112,6 +113,8 @@ export interface PublicationsListParams {
   cursor?: string;
   /** Only publications of this release. */
   releaseId?: ReleaseId;
+  /** Only publications with this status. */
+  status?: "queued" | "running" | "completed" | "failed";
 }
 
 /** Typed errors `list` can throw. */

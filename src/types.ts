@@ -1453,7 +1453,8 @@ export interface Release {
   origin: "typeship" | "imported";
   /** Immutable package version released from this Target. */
   version: string;
-  channel: "stable" | "prerelease";
+  /** The Target's release_channel when this version was released. */
+  release_channel: "stable" | "prerelease";
   repository: RepositoryReferenceResponse | null;
   spec_revision_id: SpecRevisionId | null;
   /**
@@ -1484,9 +1485,19 @@ export interface Release {
     imported_at: string | null;
   }
     | null;
+  /**
+   * One entry per destination Typeship has attempted to publish. Empty when publishing is off for
+   * the Target's repository Delivery.
+   */
   publications: Publication[];
   /** Format: date-time */
   created_at: string;
+  /**
+   * When a Publication of this release last changed. The version, commit, and checks never change
+   * after the release is created.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -1500,7 +1511,8 @@ export interface ReleaseRead {
   origin: ("typeship" | "imported") | (string & {});
   /** Immutable package version released from this Target. */
   version: string;
-  channel: ("stable" | "prerelease") | (string & {});
+  /** The Target's release_channel when this version was released. */
+  release_channel: ("stable" | "prerelease") | (string & {});
   repository: RepositoryReferenceResponseRead | null;
   spec_revision_id: SpecRevisionId | null;
   /**
@@ -1531,9 +1543,19 @@ export interface ReleaseRead {
     imported_at: string | null;
   }
     | null;
+  /**
+   * One entry per destination Typeship has attempted to publish. Empty when publishing is off for
+   * the Target's repository Delivery.
+   */
   publications: PublicationRead[];
   /** Format: date-time */
   created_at: string;
+  /**
+   * When a Publication of this release last changed. The version, commit, and checks never change
+   * after the release is created.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -1563,8 +1585,19 @@ export interface Publication {
   id: PublicationId;
   object: "publication";
   release_id: ReleaseId;
-  destination: "github" | "npm" | "pypi" | "go" | "mcp";
-  status: "pending" | "publishing" | "published" | "failed" | "disabled";
+  /**
+   * Where the release is published. github is the repository's GitHub Release; the others are
+   * package registries.
+   */
+  type: "github" | "npm" | "pypi" | "go" | "mcp";
+  /**
+   * queued: the repository workflow has not started this destination; get the Publication or its
+   * Release again. running: the workflow is publishing; get it again. completed: the package is
+   * published at registry_url. failed: read errors, correct the cause, then call retryRelease on
+   * release_id. Lifecycle events are publication.running, publication.completed, and
+   * publication.failed.
+   */
+  status: "queued" | "running" | "completed" | "failed";
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1590,8 +1623,19 @@ export interface PublicationRead {
   id: PublicationId;
   object: "publication" | (string & {});
   release_id: ReleaseId;
-  destination: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
-  status: ("pending" | "publishing" | "published" | "failed" | "disabled") | (string & {});
+  /**
+   * Where the release is published. github is the repository's GitHub Release; the others are
+   * package registries.
+   */
+  type: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
+  /**
+   * queued: the repository workflow has not started this destination; get the Publication or its
+   * Release again. running: the workflow is publishing; get it again. completed: the package is
+   * published at registry_url. failed: read errors, correct the cause, then call retryRelease on
+   * release_id. Lifecycle events are publication.running, publication.completed, and
+   * publication.failed.
+   */
+  status: ("queued" | "running" | "completed" | "failed") | (string & {});
   attempt: number;
   /** Format: uri */
   run_url: string | null;

@@ -98,7 +98,8 @@ export class SpecsResource {
    *
    * Fetches the configured source now and creates a new Spec Revision only when its content
    * changes. Diagnostics then reads that revision. If automatic generation is enabled, refresh
-   * queues generation for active Targets even when the source is unchanged.
+   * queues generation for active Targets even when the source is unchanged. A `502
+   * follow_up_failed` means the new Spec Revision was recorded but generation could not be queued.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /specs/{spec_id}/refresh`

@@ -105,7 +105,7 @@ export interface GoSdkDescriptor {
   version: string;
   /**
    * SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the
-   * request fails with spec_error.
+   * request fails with spec_invalid.
    */
   spec_digest: string;
   /**
@@ -3380,37 +3380,54 @@ export interface DeletedTargetRead {
   request_id: RequestId;
 }
 
-/** Stable category for deciding how to handle the error. */
+/**
+ * Who can resolve the error. request: change the request. auth: fix the credential or its grant.
+ * idempotency: change or wait on the Idempotency-Key. rate_limit: wait before retrying.
+ * organization: the organization's plan must change. source: a system you own failed, such as the
+ * Spec URL, repository, or package registry. api: Typeship failed.
+ */
 export const ErrorType = {
-  REQUEST_ERROR: "request_error",
-  AUTHENTICATION_ERROR: "authentication_error",
-  AUTHORIZATION_ERROR: "authorization_error",
-  PLAN_ERROR: "plan_error",
-  SOURCE_ERROR: "source_error",
-  RATE_LIMIT_ERROR: "rate_limit_error",
-  API_ERROR: "api_error",
+  REQUEST: "request",
+  AUTH: "auth",
+  IDEMPOTENCY: "idempotency",
+  RATE_LIMIT: "rate_limit",
+  ORGANIZATION: "organization",
+  SOURCE: "source",
+  API: "api",
 } as const;
 export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
 /** Stable programmatic identifier. Do not branch on message. */
 export const ErrorCode = {
-  INVALID_REQUEST: "invalid_request",
+  INPUT_INVALID: "input_invalid",
+  QUERY_PARAM_INVALID: "query_param_invalid",
+  CURSOR_INVALID: "cursor_invalid",
+  METHOD_NOT_ALLOWED: "method_not_allowed",
+  RESOURCE_NOT_FOUND: "resource_not_found",
+  IDEMPOTENCY_KEY_INVALID: "idempotency_key_invalid",
   IDEMPOTENCY_KEY_REUSED: "idempotency_key_reused",
-  UNAUTHORIZED: "unauthorized",
+  IDEMPOTENCY_KEY_IN_USE: "idempotency_key_in_use",
+  AUTH_REQUIRED: "auth_required",
+  API_KEY_INVALID: "api_key_invalid",
+  TOKEN_INVALID: "token_invalid",
   ORGANIZATION_REQUIRED: "organization_required",
   INSUFFICIENT_SCOPE: "insufficient_scope",
-  FORBIDDEN: "forbidden",
-  NOT_FOUND: "not_found",
-  METHOD_NOT_ALLOWED: "method_not_allowed",
-  SPEC_ERROR: "spec_error",
-  FETCH_ERROR: "fetch_error",
+  ROLE_INSUFFICIENT: "role_insufficient",
+  RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",
+  PLAN_LIMIT_REACHED: "plan_limit_reached",
+  SPEC_INVALID: "spec_invalid",
+  SPEC_TOO_LARGE: "spec_too_large",
+  SPEC_UNREACHABLE: "spec_unreachable",
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
+  REPOSITORY_DISCONNECTED: "repository_disconnected",
+  REPOSITORY_UNAVAILABLE: "repository_unavailable",
   TARGET_BUSY: "target_busy",
+  TARGETS_INACTIVE: "targets_inactive",
   NO_DRAFT: "no_draft",
   DRAFT_MERGED: "draft_merged",
   RESOURCE_CHANGED: "resource_changed",
-  INVALID_VERSION: "invalid_version",
   PRECONDITION_FAILED: "precondition_failed",
+  VERSION_INVALID: "version_invalid",
   VERSION_OCCUPIED: "version_occupied",
   VERSION_TOO_LOW: "version_too_low",
   TARGET_ALREADY_RELEASED: "target_already_released",
@@ -3418,15 +3435,12 @@ export const ErrorCode = {
   PUBLICATION_DISABLED: "publication_disabled",
   PUBLICATION_NOT_RETRYABLE: "publication_not_retryable",
   PUBLICATION_RECOVERY_UNAVAILABLE: "publication_recovery_unavailable",
-  PUBLICATION_DISPATCH_FAILED: "publication_dispatch_failed",
-  REPOSITORY_DISCONNECTED: "repository_disconnected",
-  REGENERATION_FAILED: "regeneration_failed",
+  PUBLICATION_FAILED: "publication_failed",
   DELIVERY_CONFLICT: "delivery_conflict",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
-  PLAN_LIMIT_REACHED: "plan_limit_reached",
-  PAYLOAD_TOO_LARGE: "payload_too_large",
-  RATE_LIMITED: "rate_limited",
-  INTERNAL_ERROR: "internal_error",
+  CUSTOMIZATION_CONFLICT: "customization_conflict",
+  HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
+  CHECKS_UNAVAILABLE: "checks_unavailable",
   DEPENDENCY_MISSING: "dependency_missing",
   DEPENDENCY_NOT_FOUND: "dependency_not_found",
   DEPENDENCY_SELF: "dependency_self",
@@ -3438,10 +3452,9 @@ export const ErrorCode = {
   DEPENDENCY_MODULE_PATH_MISSING: "dependency_module_path_missing",
   DEPENDENCY_UNRELEASED: "dependency_unreleased",
   DEPENDENCY_REVISION_MISMATCH: "dependency_revision_mismatch",
-  PUBLICATION_FAILED: "publication_failed",
-  CUSTOMIZATION_CONFLICT: "customization_conflict",
-  HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
-  CHECKS_UNAVAILABLE: "checks_unavailable",
+  REGENERATION_FAILED: "regeneration_failed",
+  FOLLOW_UP_FAILED: "follow_up_failed",
+  API_ERROR: "api_error",
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 

@@ -1053,7 +1053,7 @@
                 "type": "string"
               },
               "spec_digest": {
-                "description": "SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the request fails with spec_error.",
+                "description": "SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the request fails with spec_invalid.",
                 "pattern": "^[a-f0-9]{64}$",
                 "type": "string"
               },
@@ -1987,14 +1987,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           }
         }
       },
@@ -3306,7 +3306,7 @@
       "method": "DELETE",
       "path": "/projects/{project_id}",
       "summary": "Delete a project",
-      "description": "A `502` response means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "description": "A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "destructive",
       "auth": "required",
       "security": [
@@ -3419,7 +3419,7 @@
       "method": "PATCH",
       "path": "/projects/{project_id}",
       "summary": "Update a project",
-      "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nWith auto_generate enabled, changing shared config queues a Generation for each Target whose effective config changes. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\n\nA `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to finish, reconcile your update, and retry.\nA `502` response means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nWith auto_generate enabled, changing shared config queues a Generation for each Target whose effective config changes. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\n\nA `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to finish, reconcile your update, and retry.\nA `502 follow_up_failed` means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -3965,7 +3965,7 @@
       "method": "POST",
       "path": "/projects/{project_id}/generate",
       "summary": "Start generation for active Targets",
-      "description": "Queues one Generation per active Target and returns their IDs. Retrieve each Generation until its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means generated files are saved; check Delivery and Draft status separately for repository delivery and pull requests. A Target already queued or running is returned without starting another Generation. A matching Idempotency-Key replay returns the same Generations with their current statuses.\n\nIf the package already matches a destination and no Draft is open, delivery creates no commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
+      "description": "Queues one Generation per active Target and returns their IDs. Retrieve each Generation until its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means generated files are saved; check Delivery and Draft status separately for repository delivery and pull requests. A Target already queued or running is returned without starting another Generation. A `409 targets_inactive` means the Project has no active Target to generate. A matching Idempotency-Key replay returns the same Generations with their current statuses.\n\nIf the package already matches a destination and no Draft is open, delivery creates no commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5208,7 +5208,7 @@
       "method": "POST",
       "path": "/specs/{spec_id}/refresh",
       "summary": "Refresh a Spec from its configured source",
-      "description": "Fetches the configured source now and creates a new Spec Revision only when its content changes. Diagnostics then reads that revision. If automatic generation is enabled, refresh queues generation for active Targets even when the source is unchanged.",
+      "description": "Fetches the configured source now and creates a new Spec Revision only when its content changes. Diagnostics then reads that revision. If automatic generation is enabled, refresh queues generation for active Targets even when the source is unchanged. A `502 follow_up_failed` means the new Spec Revision was recorded but generation could not be queued.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5579,14 +5579,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "spec_id": {
             "description": "Unique identifier for a project's logical API Spec.",
@@ -6271,14 +6271,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           }
         },
         "required": [
@@ -6431,14 +6431,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "project_id": {
             "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
@@ -8053,7 +8053,7 @@
       "method": "PATCH",
       "path": "/targets/{target_id}",
       "summary": "Update a Target or its Deliveries",
-      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nWith Project auto_generate enabled, changing Target config, checks, or Deliveries queues that Target's Generation. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\nSelect the next version through PATCH /drafts/{draft_id} on the Target's draft_id.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `409 delivery_conflict` means another Target owns the requested repository tree; retrieve both Targets, choose a free destination, and retry.\nA `502` response means the update was saved, but retiring an obsolete review or regenerating the Target failed. Retrieve the Target and follow the error's retryable and suggested_action fields.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nWith Project auto_generate enabled, changing Target config, checks, or Deliveries queues that Target's Generation. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\nSelect the next version through PATCH /drafts/{draft_id} on the Target's draft_id.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `409 delivery_conflict` means another Target owns the requested repository tree; retrieve both Targets, choose a free destination, and retry.\nA `502 follow_up_failed` means the update was saved, but retiring an obsolete review or regenerating the Target failed. Retrieve the Target and follow the error's retryable and suggested_action fields.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -9292,14 +9292,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "target_id": {
             "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
@@ -10666,14 +10666,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           }
         },
         "required": [
@@ -11959,14 +11959,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "target_id": {
             "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
@@ -12755,7 +12755,7 @@
       "method": "POST",
       "path": "/releases/{release_id}/republish",
       "summary": "Retry publishing an exact release",
-      "description": "Retries publishing the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.\n\nA `502` response means the repository publishing workflow could not be dispatched.",
+      "description": "Retries publishing the specified release through its repository workflow. Uses that release's version and accepted commit, even if a newer Draft or release exists.\n\nA `502 repository_unavailable` means the repository publishing workflow could not be dispatched, and nothing was changed.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -13181,14 +13181,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "target_id": {
             "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
@@ -13416,7 +13416,7 @@
       "method": "GET",
       "path": "/deliveries/{delivery_id}",
       "summary": "Get a Delivery",
-      "description": "Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 not_found.",
+      "description": "Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 resource_not_found.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -13666,14 +13666,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "release_id": {
             "examples": [
@@ -13760,36 +13760,48 @@
                     "properties": {
                       "type": {
                         "enum": [
-                          "request_error",
-                          "authentication_error",
-                          "authorization_error",
-                          "plan_error",
-                          "source_error",
-                          "rate_limit_error",
-                          "api_error"
+                          "request",
+                          "auth",
+                          "idempotency",
+                          "rate_limit",
+                          "organization",
+                          "source",
+                          "api"
                         ],
-                        "description": "Stable category for deciding how to handle the error.",
+                        "description": "Who can resolve the error. request: change the request. auth: fix the credential or its grant. idempotency: change or wait on the Idempotency-Key. rate_limit: wait before retrying. organization: the organization's plan must change. source: a system you own failed, such as the Spec URL, repository, or package registry. api: Typeship failed.",
                         "type": "string"
                       },
                       "code": {
                         "enum": [
-                          "invalid_request",
+                          "input_invalid",
+                          "query_param_invalid",
+                          "cursor_invalid",
+                          "method_not_allowed",
+                          "resource_not_found",
+                          "idempotency_key_invalid",
                           "idempotency_key_reused",
-                          "unauthorized",
+                          "idempotency_key_in_use",
+                          "auth_required",
+                          "api_key_invalid",
+                          "token_invalid",
                           "organization_required",
                           "insufficient_scope",
-                          "forbidden",
-                          "not_found",
-                          "method_not_allowed",
-                          "spec_error",
-                          "fetch_error",
+                          "role_insufficient",
+                          "rate_limit_exceeded",
+                          "plan_limit_reached",
+                          "spec_invalid",
+                          "spec_too_large",
+                          "spec_unreachable",
                           "repository_provider_unsupported",
+                          "repository_disconnected",
+                          "repository_unavailable",
                           "target_busy",
+                          "targets_inactive",
                           "no_draft",
                           "draft_merged",
                           "resource_changed",
-                          "invalid_version",
                           "precondition_failed",
+                          "version_invalid",
                           "version_occupied",
                           "version_too_low",
                           "target_already_released",
@@ -13797,15 +13809,12 @@
                           "publication_disabled",
                           "publication_not_retryable",
                           "publication_recovery_unavailable",
-                          "publication_dispatch_failed",
-                          "repository_disconnected",
-                          "regeneration_failed",
+                          "publication_failed",
                           "delivery_conflict",
                           "resource_has_dependencies",
-                          "plan_limit_reached",
-                          "payload_too_large",
-                          "rate_limited",
-                          "internal_error",
+                          "customization_conflict",
+                          "history_recovery_required",
+                          "checks_unavailable",
                           "dependency_missing",
                           "dependency_not_found",
                           "dependency_self",
@@ -13817,10 +13826,9 @@
                           "dependency_module_path_missing",
                           "dependency_unreleased",
                           "dependency_revision_mismatch",
-                          "publication_failed",
-                          "customization_conflict",
-                          "history_recovery_required",
-                          "checks_unavailable"
+                          "regeneration_failed",
+                          "follow_up_failed",
+                          "api_error"
                         ],
                         "description": "Stable programmatic identifier. Do not branch on message.",
                         "type": "string"
@@ -13951,7 +13959,7 @@
       "method": "GET",
       "path": "/publications/{publication_id}",
       "summary": "Get publishing status",
-      "description": "Returns the registry publishing status for a release. A status in another organization returns 404 not_found.",
+      "description": "Returns the registry publishing status for a release. A status in another organization returns 404 resource_not_found.",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -14045,36 +14053,48 @@
               "properties": {
                 "type": {
                   "enum": [
-                    "request_error",
-                    "authentication_error",
-                    "authorization_error",
-                    "plan_error",
-                    "source_error",
-                    "rate_limit_error",
-                    "api_error"
+                    "request",
+                    "auth",
+                    "idempotency",
+                    "rate_limit",
+                    "organization",
+                    "source",
+                    "api"
                   ],
-                  "description": "Stable category for deciding how to handle the error.",
+                  "description": "Who can resolve the error. request: change the request. auth: fix the credential or its grant. idempotency: change or wait on the Idempotency-Key. rate_limit: wait before retrying. organization: the organization's plan must change. source: a system you own failed, such as the Spec URL, repository, or package registry. api: Typeship failed.",
                   "type": "string"
                 },
                 "code": {
                   "enum": [
-                    "invalid_request",
+                    "input_invalid",
+                    "query_param_invalid",
+                    "cursor_invalid",
+                    "method_not_allowed",
+                    "resource_not_found",
+                    "idempotency_key_invalid",
                     "idempotency_key_reused",
-                    "unauthorized",
+                    "idempotency_key_in_use",
+                    "auth_required",
+                    "api_key_invalid",
+                    "token_invalid",
                     "organization_required",
                     "insufficient_scope",
-                    "forbidden",
-                    "not_found",
-                    "method_not_allowed",
-                    "spec_error",
-                    "fetch_error",
+                    "role_insufficient",
+                    "rate_limit_exceeded",
+                    "plan_limit_reached",
+                    "spec_invalid",
+                    "spec_too_large",
+                    "spec_unreachable",
                     "repository_provider_unsupported",
+                    "repository_disconnected",
+                    "repository_unavailable",
                     "target_busy",
+                    "targets_inactive",
                     "no_draft",
                     "draft_merged",
                     "resource_changed",
-                    "invalid_version",
                     "precondition_failed",
+                    "version_invalid",
                     "version_occupied",
                     "version_too_low",
                     "target_already_released",
@@ -14082,15 +14102,12 @@
                     "publication_disabled",
                     "publication_not_retryable",
                     "publication_recovery_unavailable",
-                    "publication_dispatch_failed",
-                    "repository_disconnected",
-                    "regeneration_failed",
+                    "publication_failed",
                     "delivery_conflict",
                     "resource_has_dependencies",
-                    "plan_limit_reached",
-                    "payload_too_large",
-                    "rate_limited",
-                    "internal_error",
+                    "customization_conflict",
+                    "history_recovery_required",
+                    "checks_unavailable",
                     "dependency_missing",
                     "dependency_not_found",
                     "dependency_self",
@@ -14102,10 +14119,9 @@
                     "dependency_module_path_missing",
                     "dependency_unreleased",
                     "dependency_revision_mismatch",
-                    "publication_failed",
-                    "customization_conflict",
-                    "history_recovery_required",
-                    "checks_unavailable"
+                    "regeneration_failed",
+                    "follow_up_failed",
+                    "api_error"
                   ],
                   "description": "Stable programmatic identifier. Do not branch on message.",
                   "type": "string"
@@ -14273,14 +14289,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           },
           "project_id": {
             "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
@@ -14490,36 +14506,48 @@
                     "properties": {
                       "type": {
                         "enum": [
-                          "request_error",
-                          "authentication_error",
-                          "authorization_error",
-                          "plan_error",
-                          "source_error",
-                          "rate_limit_error",
-                          "api_error"
+                          "request",
+                          "auth",
+                          "idempotency",
+                          "rate_limit",
+                          "organization",
+                          "source",
+                          "api"
                         ],
-                        "description": "Stable category for deciding how to handle the error.",
+                        "description": "Who can resolve the error.",
                         "type": "string"
                       },
                       "code": {
                         "enum": [
-                          "invalid_request",
+                          "input_invalid",
+                          "query_param_invalid",
+                          "cursor_invalid",
+                          "method_not_allowed",
+                          "resource_not_found",
+                          "idempotency_key_invalid",
                           "idempotency_key_reused",
-                          "unauthorized",
+                          "idempotency_key_in_use",
+                          "auth_required",
+                          "api_key_invalid",
+                          "token_invalid",
                           "organization_required",
                           "insufficient_scope",
-                          "forbidden",
-                          "not_found",
-                          "method_not_allowed",
-                          "spec_error",
-                          "fetch_error",
+                          "role_insufficient",
+                          "rate_limit_exceeded",
+                          "plan_limit_reached",
+                          "spec_invalid",
+                          "spec_too_large",
+                          "spec_unreachable",
                           "repository_provider_unsupported",
+                          "repository_disconnected",
+                          "repository_unavailable",
                           "target_busy",
+                          "targets_inactive",
                           "no_draft",
                           "draft_merged",
                           "resource_changed",
-                          "invalid_version",
                           "precondition_failed",
+                          "version_invalid",
                           "version_occupied",
                           "version_too_low",
                           "target_already_released",
@@ -14527,15 +14555,12 @@
                           "publication_disabled",
                           "publication_not_retryable",
                           "publication_recovery_unavailable",
-                          "publication_dispatch_failed",
-                          "repository_disconnected",
-                          "regeneration_failed",
+                          "publication_failed",
                           "delivery_conflict",
                           "resource_has_dependencies",
-                          "plan_limit_reached",
-                          "payload_too_large",
-                          "rate_limited",
-                          "internal_error",
+                          "customization_conflict",
+                          "history_recovery_required",
+                          "checks_unavailable",
                           "dependency_missing",
                           "dependency_not_found",
                           "dependency_self",
@@ -14547,10 +14572,9 @@
                           "dependency_module_path_missing",
                           "dependency_unreleased",
                           "dependency_revision_mismatch",
-                          "publication_failed",
-                          "customization_conflict",
-                          "history_recovery_required",
-                          "checks_unavailable"
+                          "regeneration_failed",
+                          "follow_up_failed",
+                          "api_error"
                         ],
                         "description": "Stable programmatic identifier.",
                         "type": "string"
@@ -14869,36 +14893,48 @@
               "properties": {
                 "type": {
                   "enum": [
-                    "request_error",
-                    "authentication_error",
-                    "authorization_error",
-                    "plan_error",
-                    "source_error",
-                    "rate_limit_error",
-                    "api_error"
+                    "request",
+                    "auth",
+                    "idempotency",
+                    "rate_limit",
+                    "organization",
+                    "source",
+                    "api"
                   ],
-                  "description": "Stable category for deciding how to handle the error.",
+                  "description": "Who can resolve the error.",
                   "type": "string"
                 },
                 "code": {
                   "enum": [
-                    "invalid_request",
+                    "input_invalid",
+                    "query_param_invalid",
+                    "cursor_invalid",
+                    "method_not_allowed",
+                    "resource_not_found",
+                    "idempotency_key_invalid",
                     "idempotency_key_reused",
-                    "unauthorized",
+                    "idempotency_key_in_use",
+                    "auth_required",
+                    "api_key_invalid",
+                    "token_invalid",
                     "organization_required",
                     "insufficient_scope",
-                    "forbidden",
-                    "not_found",
-                    "method_not_allowed",
-                    "spec_error",
-                    "fetch_error",
+                    "role_insufficient",
+                    "rate_limit_exceeded",
+                    "plan_limit_reached",
+                    "spec_invalid",
+                    "spec_too_large",
+                    "spec_unreachable",
                     "repository_provider_unsupported",
+                    "repository_disconnected",
+                    "repository_unavailable",
                     "target_busy",
+                    "targets_inactive",
                     "no_draft",
                     "draft_merged",
                     "resource_changed",
-                    "invalid_version",
                     "precondition_failed",
+                    "version_invalid",
                     "version_occupied",
                     "version_too_low",
                     "target_already_released",
@@ -14906,15 +14942,12 @@
                     "publication_disabled",
                     "publication_not_retryable",
                     "publication_recovery_unavailable",
-                    "publication_dispatch_failed",
-                    "repository_disconnected",
-                    "regeneration_failed",
+                    "publication_failed",
                     "delivery_conflict",
                     "resource_has_dependencies",
-                    "plan_limit_reached",
-                    "payload_too_large",
-                    "rate_limited",
-                    "internal_error",
+                    "customization_conflict",
+                    "history_recovery_required",
+                    "checks_unavailable",
                     "dependency_missing",
                     "dependency_not_found",
                     "dependency_self",
@@ -14926,10 +14959,9 @@
                     "dependency_module_path_missing",
                     "dependency_unreleased",
                     "dependency_revision_mismatch",
-                    "publication_failed",
-                    "customization_conflict",
-                    "history_recovery_required",
-                    "checks_unavailable"
+                    "regeneration_failed",
+                    "follow_up_failed",
+                    "api_error"
                   ],
                   "description": "Stable programmatic identifier.",
                   "type": "string"
@@ -15078,14 +15110,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           }
         },
         "required": [
@@ -15441,14 +15473,14 @@
             "minimum": 1,
             "maximum": 100,
             "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 invalid_request. List query parameters must appear only once; unrecognized parameters also return 400. Default: 20."
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
           },
           "cursor": {
             "minLength": 1,
             "maxLength": 2048,
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty, malformed, or repeated cursors return 400 invalid_request. The page limit may change between requests."
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
           }
         }
       },

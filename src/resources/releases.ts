@@ -95,7 +95,8 @@ export class ReleasesResource {
    * Retries publishing the specified release through its repository workflow. Uses that release's
    * version and accepted commit, even if a newer Draft or release exists.
    *
-   * A `502` response means the repository publishing workflow could not be dispatched.
+   * A `502 repository_unavailable` means the repository publishing workflow could not be
+   * dispatched, and nothing was changed.
    *
    * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
    * `POST /releases/{release_id}/republish`
@@ -133,15 +134,16 @@ export interface ReleasesListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
    * representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400
-   * invalid_request. List query parameters must appear only once; unrecognized parameters also
-   * return 400.
+   * input_invalid. List query parameters must appear only once; repeated or unrecognized parameters
+   * return 400 query_param_invalid.
    */
   limit?: number;
   /**
    * Opaque cursor from the preceding page's next_cursor. Valid only for the same organization,
-   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty,
-   * malformed, or repeated cursors return 400 invalid_request. The page limit may change between
-   * requests.
+   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty or
+   * malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start
+   * again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may
+   * change between requests.
    */
   cursor?: string;
   /** Only releases of this Target. */

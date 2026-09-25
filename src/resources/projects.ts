@@ -148,9 +148,9 @@ export class ProjectsResource {
   /**
    * Delete a project
    *
-   * A `502` response means the Project was not deleted because its release pull requests could not
-   * be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed
-   * deletion returns `404`.
+   * A `502 repository_unavailable` means the Project was not deleted because its release pull
+   * requests could not be retired. Retry deletion to finish retiring the remaining reviews.
+   * Repeating a completed deletion returns `404`.
    * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
    * and If-Match.
    * `DELETE /projects/{project_id}`
@@ -195,9 +195,9 @@ export class ProjectsResource {
    *
    * A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to
    * finish, reconcile your update, and retry.
-   * A `502` response means the Project was saved, but an obsolete release pull request could not be
-   * retired. Retrieve the Project and retry the same update to finish retiring reviews if that
-   * update is still desired.
+   * A `502 follow_up_failed` means the Project was saved, but an obsolete release pull request
+   * could not be retired. Retrieve the Project and retry the same update to finish retiring reviews
+   * if that update is still desired.
    * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
    * and If-Match.
    * `PATCH /projects/{project_id}`
@@ -241,8 +241,8 @@ export class ProjectsResource {
    * its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means
    * generated files are saved; check Delivery and Draft status separately for repository delivery
    * and pull requests. A Target already queued or running is returned without starting another
-   * Generation. A matching Idempotency-Key replay returns the same Generations with their current
-   * statuses.
+   * Generation. A `409 targets_inactive` means the Project has no active Target to generate. A
+   * matching Idempotency-Key replay returns the same Generations with their current statuses.
    *
    * If the package already matches a destination and no Draft is open, delivery creates no commit,
    * branch, or pull request. An existing Draft stays open. Automatic generation uses the same
@@ -289,15 +289,16 @@ export interface ProjectsListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
    * representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400
-   * invalid_request. List query parameters must appear only once; unrecognized parameters also
-   * return 400.
+   * input_invalid. List query parameters must appear only once; repeated or unrecognized parameters
+   * return 400 query_param_invalid.
    */
   limit?: number;
   /**
    * Opaque cursor from the preceding page's next_cursor. Valid only for the same organization,
-   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty,
-   * malformed, or repeated cursors return 400 invalid_request. The page limit may change between
-   * requests.
+   * operation, filters, and ordering that issued it. Omit to start at the first page. Empty or
+   * malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start
+   * again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may
+   * change between requests.
    */
   cursor?: string;
 }

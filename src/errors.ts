@@ -4,15 +4,15 @@
 import { ApiError, type ResponseMeta } from "./core/http.js";
 import type { ErrorModel, ErrorModelRead } from "./types.js";
 
-export { ApiError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation, unwrap } from "./core/http.js";
+export { ApiError, SdkError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation } from "./core/http.js";
 
 /**
- * The request body, Definition source, target selection, or package name is invalid.
+ * The request body, Spec source, target selection, or package name is invalid.
  * Raised for HTTP 400 responses.
  */
 export class BadRequestError extends ApiError<400, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The request body, Definition source, target selection, or package name is invalid.", 400, body, response);
+    super("The request body, Spec source, target selection, or package name is invalid.", 400, body, response);
   }
 }
 
@@ -57,12 +57,12 @@ export class PayloadTooLargeError extends ApiError<413, ErrorModelRead> {
 }
 
 /**
- * The Definition could not be resolved or understood.
+ * The Spec could not be resolved or understood.
  * Raised for HTTP 422 responses.
  */
 export class UnprocessableEntityError extends ApiError<422, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Definition could not be resolved or understood.", 422, body, response);
+    super("The Spec could not be resolved or understood.", 422, body, response);
   }
 }
 
@@ -98,12 +98,12 @@ export class ApiResponseError extends ApiError<number, ErrorModelRead> {
 }
 
 /**
- * No such resource in this account.
+ * No such resource in this organization.
  * Raised for HTTP 404 responses.
  */
 export class NotFoundError extends ApiError<404, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("No such resource in this account.", 404, body, response);
+    super("No such resource in this organization.", 404, body, response);
   }
 }
 

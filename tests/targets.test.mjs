@@ -5,42 +5,39 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
-test("targets.list GET /projects/{project_id}/targets", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"definition_id\":\"def_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"generator\":\"typescript-sdk\",\"dependency\":{\"kind\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"state\":\"active\",\"edition\":\"example\",\"release_channel\":\"stable\",\"version_policy\":{\"mode\":\"reviewed_semver\",\"pre1_breaking\":\"minor\"},\"current_version\":\"example\",\"proposed_version\":\"example\",\"proposed_version_source\":\"console\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
+test("targets.list GET /targets", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"type\":\"cli\",\"dependency\":{\"type\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"status\":\"active\",\"release_channel\":\"stable\",\"version_current\":\"example\",\"draft_id\":\"drf_3q7m1v8k2p5d9h4c\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\",\"relay\":true},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.list("test-project_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.targets.list(undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/projects/test-project_id/targets");
+    assert.equal(request.path.split("?")[0], "/targets");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
     mock.close();
   }
 });
 
-test("targets.create POST /projects/{project_id}/targets", async () => {
-  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"definition_id\":\"def_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"generator\":\"typescript-sdk\",\"dependency\":{\"kind\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"state\":\"active\",\"edition\":\"example\",\"release_channel\":\"stable\",\"version_policy\":{\"mode\":\"reviewed_semver\",\"pre1_breaking\":\"minor\"},\"current_version\":\"example\",\"proposed_version\":\"example\",\"proposed_version_source\":\"console\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+test("targets.create POST /targets", async () => {
+  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"type\":\"cli\",\"dependency\":{\"type\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"status\":\"active\",\"release_channel\":\"stable\",\"version_current\":\"example\",\"draft_id\":\"drf_3q7m1v8k2p5d9h4c\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\",\"relay\":true},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.create("test-project_id", {"name":"example","definition_id":"def_2p8m4q7k1v9d6h3c","generator":"typescript-sdk","state":"active","edition":"2026-08-24","release_channel":"stable","proposed_version":"example","checks":{"generated":["build","package","public_entrypoint"],"repository_required":["example"],"customer":[{"name":"example","command":"example"}]},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_application":"example","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"},"deliveries":[{"kind":"repository","repository":{"provider":"github","identifier":"parcel-example/api"},"directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}]}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.targets.create({"project_id":"prj_4f8k2m7x9q1v6b3n","name":"example","spec_id":"spec_2p8m4q7k1v9d6h3c","type":"cli","status":"active","release_channel":"stable","checks":{"generated":["build","package","public_entrypoint"],"repository_required":["example"],"customer":[{"name":"example","command":"example"}]},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_application":"example","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example","relay":true},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"},"deliveries":[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/api","directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}}]}, undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/projects/test-project_id/targets");
+    assert.equal(request.path.split("?")[0], "/targets");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
     mock.close();
   }
 });
 
-test("targets.retrieve GET /targets/{target_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"definition_id\":\"def_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"generator\":\"typescript-sdk\",\"dependency\":{\"kind\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"state\":\"active\",\"edition\":\"example\",\"release_channel\":\"stable\",\"version_policy\":{\"mode\":\"reviewed_semver\",\"pre1_breaking\":\"minor\"},\"current_version\":\"example\",\"proposed_version\":\"example\",\"proposed_version_source\":\"console\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+test("targets.get GET /targets/{target_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"type\":\"cli\",\"dependency\":{\"type\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"status\":\"active\",\"release_channel\":\"stable\",\"version_current\":\"example\",\"draft_id\":\"drf_3q7m1v8k2p5d9h4c\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\",\"relay\":true},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrieve("test-target_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.targets.get("test-target_id");
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/targets/test-target_id");
@@ -55,7 +52,6 @@ test("targets.delete DELETE /targets/{target_id}", async () => {
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.targets.delete("test-target_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
     const request = mock.requests[0];
     assert.equal(request.method, "DELETE");
     assert.equal(request.path.split("?")[0], "/targets/test-target_id");
@@ -66,11 +62,10 @@ test("targets.delete DELETE /targets/{target_id}", async () => {
 });
 
 test("targets.update PATCH /targets/{target_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"definition_id\":\"def_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"generator\":\"typescript-sdk\",\"dependency\":{\"kind\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"state\":\"active\",\"edition\":\"example\",\"release_channel\":\"stable\",\"version_policy\":{\"mode\":\"reviewed_semver\",\"pre1_breaking\":\"minor\"},\"current_version\":\"example\",\"proposed_version\":\"example\",\"proposed_version_source\":\"console\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"tgt_5m8q2v7k1p9d4h6c\",\"object\":\"target\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"name\":\"example\",\"type\":\"cli\",\"dependency\":{\"type\":\"go_sdk_module\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\"},\"status\":\"active\",\"release_channel\":\"stable\",\"version_current\":\"example\",\"draft_id\":\"drf_3q7m1v8k2p5d9h4c\",\"checks\":{\"generated\":[\"build\",\"package\",\"public_entrypoint\"],\"repository_required\":[\"example\"],\"customer\":[{\"name\":\"example\",\"command\":\"example\"}]},\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_application\":\"example\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\",\"relay\":true},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"deliveries\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.update("test-target_id", {"name":"example","state":"active","edition":"example","release_channel":"stable","proposed_version":"example","checks":{"generated":["build","package","public_entrypoint"],"repository_required":["example"],"customer":[{"name":"example","command":"example"}]},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_application":"example","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"},"deliveries":[{"kind":"repository","repository":{"provider":"github","identifier":"parcel-example/api"},"directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}]}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.targets.update("test-target_id", {"name":"example","status":"active","release_channel":"stable","checks":{"generated":["build","package","public_entrypoint"],"repository_required":["example"],"customer":[{"name":"example","command":"example"}]},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_application":"example","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example","relay":true},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"},"deliveries":[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/api","directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}}]}, undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "PATCH");
     assert.equal(request.path.split("?")[0], "/targets/test-target_id");
@@ -80,195 +75,14 @@ test("targets.update PATCH /targets/{target_id}", async () => {
   }
 });
 
-test("targets.listReleases GET /targets/{target_id}/releases", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"rel_7m2q8v4k1p9d5h6c\",\"object\":\"target_release\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"origin\":\"typeship\",\"version\":\"example\",\"channel\":\"stable\",\"provider\":\"example\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"delivery_revision\":\"example\",\"source_digest\":\"example\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}],\"accepted_risks\":[{\"comparison\":\"current\",\"reason\":\"example\",\"approved_by\":\"example\",\"approved_revision\":\"example\",\"approved_at\":\"2024-01-01T00:00:00Z\"}],\"import_provenance\":{\"tag\":\"example\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"imported_at\":\"2024-01-01T00:00:00Z\"},\"publications\":[{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
+test("targets.adopt POST /targets/{target_id}/adopt", async () => {
+  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"rel_7m2q8v4k1p9d5h6c\",\"object\":\"release\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"origin\":\"typeship\",\"version\":\"example\",\"channel\":\"stable\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"commit_sha\":\"example\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"status\":\"pending\",\"reason\":\"example\",\"commit_sha\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}],\"approvals\":[{\"source\":\"source_pr\",\"reason\":\"example\",\"approved_by\":\"example\",\"approved_sha\":\"example\",\"approved_at\":\"2024-01-01T00:00:00Z\"}],\"import_provenance\":{\"tag\":\"example\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"imported_at\":\"2024-01-01T00:00:00Z\"},\"publications\":[{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"status\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.listReleases("test-target_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/releases");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.retrieveDraft GET /targets/{target_id}/draft", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"target_draft\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"status\":\"no_draft\",\"current_version\":\"example\",\"version\":\"example\",\"selection\":{\"mode\":\"automatic\"},\"readiness\":{\"state\":\"success\",\"description\":\"example\",\"api_compatibility\":\"compatible\",\"package_compatibility\":\"compatible\",\"version_correct\":true,\"required_bump\":\"major\",\"previous_version\":\"example\",\"title_error\":\"example\"},\"changes\":{\"changelog\":\"example\",\"breaking_count\":1,\"previous_version\":\"example\"},\"head_revision\":\"example\",\"pull_request_url\":\"https://example.com\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"conflicts\":{\"total\":1,\"decided\":1},\"customized_files\":1,\"history_recovery\":{\"default_revision\":\"example\",\"head_revision\":\"example\",\"preserved_branch\":\"example\"},\"request_id\":\"req_3k8m1v6q9p2d7h4c\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}]}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrieveDraft("test-target_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.updateDraft PATCH /targets/{target_id}/draft", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"target_draft\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"status\":\"no_draft\",\"current_version\":\"example\",\"version\":\"example\",\"selection\":{\"mode\":\"automatic\"},\"readiness\":{\"state\":\"success\",\"description\":\"example\",\"api_compatibility\":\"compatible\",\"package_compatibility\":\"compatible\",\"version_correct\":true,\"required_bump\":\"major\",\"previous_version\":\"example\",\"title_error\":\"example\"},\"changes\":{\"changelog\":\"example\",\"breaking_count\":1,\"previous_version\":\"example\"},\"head_revision\":\"example\",\"pull_request_url\":\"https://example.com\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"conflicts\":{\"total\":1,\"decided\":1},\"customized_files\":1,\"history_recovery\":{\"default_revision\":\"example\",\"head_revision\":\"example\",\"preserved_branch\":\"example\"},\"request_id\":\"req_3k8m1v6q9p2d7h4c\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}]}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.updateDraft("test-target_id", {"version":"example"}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "PATCH");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.adoptRelease POST /targets/{target_id}/adopt", async () => {
-  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"rel_7m2q8v4k1p9d5h6c\",\"object\":\"target_release\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"origin\":\"typeship\",\"version\":\"example\",\"channel\":\"stable\",\"provider\":\"example\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"delivery_revision\":\"example\",\"source_digest\":\"example\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}],\"accepted_risks\":[{\"comparison\":\"current\",\"reason\":\"example\",\"approved_by\":\"example\",\"approved_revision\":\"example\",\"approved_at\":\"2024-01-01T00:00:00Z\"}],\"import_provenance\":{\"tag\":\"example\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"imported_at\":\"2024-01-01T00:00:00Z\"},\"publications\":[{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.adoptRelease("test-target_id", {"version":"example","tag":"example"}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.targets.adopt("test-target_id", {"version":"example","tag":"example"}, undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "POST");
     assert.equal(request.path.split("?")[0], "/targets/test-target_id/adopt");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.retrieveRelease GET /target-releases/{target_release_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"rel_7m2q8v4k1p9d5h6c\",\"object\":\"target_release\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"origin\":\"typeship\",\"version\":\"example\",\"channel\":\"stable\",\"provider\":\"example\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"delivery_revision\":\"example\",\"source_digest\":\"example\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}],\"accepted_risks\":[{\"comparison\":\"current\",\"reason\":\"example\",\"approved_by\":\"example\",\"approved_revision\":\"example\",\"approved_at\":\"2024-01-01T00:00:00Z\"}],\"import_provenance\":{\"tag\":\"example\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"imported_at\":\"2024-01-01T00:00:00Z\"},\"publications\":[{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrieveRelease("test-target_release_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/target-releases/test-target_release_id");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.republishRelease POST /target-releases/{target_release_id}/republish", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"rel_7m2q8v4k1p9d5h6c\",\"object\":\"target_release\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generation_id\":\"gen_7h2p5d9c3m8w1k6q\",\"origin\":\"typeship\",\"version\":\"example\",\"channel\":\"stable\",\"provider\":\"example\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"delivery_revision\":\"example\",\"source_digest\":\"example\",\"checks\":[{\"name\":\"example\",\"source\":\"typeship\",\"required\":true,\"state\":\"pending\",\"reason\":\"example\",\"revision\":\"example\",\"url\":\"https://example.com\",\"observed_at\":\"2024-01-01T00:00:00Z\"}],\"accepted_risks\":[{\"comparison\":\"current\",\"reason\":\"example\",\"approved_by\":\"example\",\"approved_revision\":\"example\",\"approved_at\":\"2024-01-01T00:00:00Z\"}],\"import_provenance\":{\"tag\":\"example\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"imported_at\":\"2024-01-01T00:00:00Z\"},\"publications\":[{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}],\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.republishRelease("test-target_release_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/target-releases/test-target_release_id/republish");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.listDraftFiles GET /targets/{target_id}/draft/files", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"object\":\"draft_file\",\"path\":\"example\",\"customization\":\"added\",\"conflict\":{\"kind\":\"no_common_version\",\"source\":\"generation\",\"decision\":\"repository\"},\"history\":{\"change\":\"added\",\"draft_differs\":true},\"sides\":[{\"side\":\"base\",\"mode\":\"100644\",\"size_bytes\":1,\"encoding\":\"utf8\"}]}]}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.listDraftFiles("test-target_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft/files");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.retrieveDraftFileContent GET /targets/{target_id}/draft/files/content", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"draft_file_content\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"path\":\"example\",\"side\":\"base\",\"encoding\":\"utf8\",\"content\":\"example\",\"mode\":\"100644\",\"size_bytes\":1,\"offset\":1,\"next_cursor\":\"example\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrieveDraftFileContent("test-target_id", {"path":"example","side":"base"});
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft/files/content");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.resolveDraftConflicts POST /targets/{target_id}/draft/conflicts/resolve", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"draft_conflict_resolution\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"head_revision\":\"example\",\"status\":\"preview\",\"files\":[{\"path\":\"example\",\"action\":\"keep\",\"mode\":\"100644\",\"size_bytes\":1}],\"remaining_conflicts\":1,\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.resolveDraftConflicts("test-target_id", {"expected_head_revision":"0123456789abcdef0123456789abcdef01234567","resolutions":[{"path":"example","keep":"repository"}],"dry_run":false});
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft/conflicts/resolve");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.discardDraftCustomizations POST /targets/{target_id}/draft/customizations/discard", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"draft_customization_discard\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"head_revision\":\"example\",\"status\":\"preview\",\"files\":[{\"path\":\"example\",\"action\":\"keep\",\"mode\":\"100644\",\"size_bytes\":1}],\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.discardDraftCustomizations("test-target_id", {"expected_head_revision":"0123456789abcdef0123456789abcdef01234567","paths":["example"],"dry_run":false});
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft/customizations/discard");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.recoverDraftHistory POST /targets/{target_id}/draft/history/recover", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"draft_history_recovery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"status\":\"approved\",\"default_revision\":\"example\",\"head_revision\":\"example\",\"preserved_branch\":\"example\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.recoverDraftHistory("test-target_id", {"expected_default_revision":"example","expected_head_revision":"example"});
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/targets/test-target_id/draft/history/recover");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.retrieveDelivery GET /deliveries/{delivery_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"kind\":\"repository\",\"state\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\"},\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true,\"url\":\"https://example.com\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrieveDelivery("test-delivery_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/deliveries/test-delivery_id");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
-test("targets.retrievePublication GET /publications/{publication_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"pub_2m8q4v7k1p9d5h6c\",\"object\":\"publication\",\"target_release_id\":\"rel_7m2q8v4k1p9d5h6c\",\"destination\":\"github\",\"state\":\"pending\",\"attempt\":1,\"run_url\":\"https://example.com\",\"registry_url\":\"https://example.com\",\"artifact_digest\":\"example\",\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"definition\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"started_at\":\"2024-01-01T00:00:00Z\",\"finished_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.targets.retrievePublication("test-publication_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/publications/test-publication_id");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
     mock.close();

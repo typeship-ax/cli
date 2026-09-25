@@ -21,7 +21,7 @@ import { homedir, hostname } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
-import { validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
+import { asApiResult, validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
 import { SCHEMAS, DEFS } from "./schemas.js";
 import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
@@ -42,17 +42,17 @@ const BASIC: { envUser: string; envPass: string } | null = null;
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.20.0";
+const VERSION = "0.21.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
 let LOGIN_IDENTITY: VerifiedIdentity | undefined;
-const WHOAMI: { resource: string; method: string } | null = {"resource":"account","method":"retrieve"};
+const WHOAMI: { resource: string; method: string } | null = null;
 const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
 const PKG_NAME = "@typeship-ax/cli";
 const UPDATE_NOTICE = false;
-const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n\nExamples use Parcel, a fictional delivery service. Replace its domains,\nrepository names, and resource identifiers with your own. The hosted\npetstore Definition is a runnable sample.\n";
+const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n\nExamples use Parcel, a fictional delivery service. Replace its domains,\nrepository names, and resource identifiers with your own. The hosted\npetstore Spec is a runnable sample.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
 const DOCS_INDEX_URL_DEFAULT: string | null = null;
 const RELAY: { mintUrl: string; project: string } | null = null;
@@ -602,7 +602,7 @@ async function startOAuthBrowserSession(parsed: Parsed, clientId: string, timeou
       audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
       organization: requestedLoginOrganization(parsed.flags),
     }, { signal: controller.signal, timeoutMs, authorize(url) {
-      process.stderr.write("Sign in to your existing account: " + url + "\n");
+      process.stderr.write("Sign in with your existing credentials: " + url + "\n");
       if (isAgentMode(parsed) || parsed.flags.get("no-browser") === true) process.stderr.write(JSON.stringify({ event: "oauth_browser", authorization_url: url, note: "Open this URL in a browser on the same computer as the CLI." }) + "\n");
       else openInBrowser(url);
     } });
@@ -780,7 +780,7 @@ async function cmdWhoami(parsed: Parsed): Promise<void> {
   if (op) {
     const client = await makeClient(parsed.flags, op);
     const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; data?: unknown; error?: unknown }>>>)[op.resource]!;
-    const result = await target[op.method]!();
+    const result = await asApiResult(target[op.method]!());
     if (result.ok) { out(result.data ?? { ok: true }); await flushExit(0); }
     failApi(result.error, LAST_CLIENT_HAD_CREDENTIAL);
   }
@@ -1174,7 +1174,7 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
     if (op) {
       const client = await makeClient(parsed.flags, op);
       const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; data?: unknown; error?: unknown }>>>)[op.resource]!;
-      const result = await target[op.method]!();
+      const result = await asApiResult(target[op.method]!());
       if (result.ok) {
         if (identityConfiguration() && savedIdentity?.identity) assertApiIdentity(savedIdentity.identity.values, readApiIdentity(result.data, IDENTITY_POLICY));
         report.identity = result.data;
@@ -1222,7 +1222,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
       try {
         const client = await makeClient(parsed.flags, op);
         const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; error?: unknown }>>>)[op.resource]!;
-        const result = await target[op.method]!();
+        const result = await asApiResult(target[op.method]!());
         checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message, fix: "The credential was rejected; run '" + BIN + " login' with a current one." });
       } catch (e) {
         checks.push({ name: "identity", ok: false, detail: (e as Error).message });
@@ -1957,7 +1957,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.20.0");
+  lines.push(paintOut("bold", BIN) + ": " + "typeship API" + " (v" + "1.0.0" + "), package " + "0.21.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -1989,7 +1989,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []),
   ].join(", ") || "none", width, 21));
   lines.push(...labeled("Endpoint env var: ", "TYPESHIP_BASE_URL", width, 18));
-  lines.push(...labeled("Account: ", BIN + " login | logout | whoami | auth check  (stored at " + credsPath() + ")", width, 9));
+  lines.push(...labeled("Sign-in: ", BIN + " login | logout | whoami | auth check  (stored at " + credsPath() + ")", width, 9));
   lines.push(...labeled("Setup: ", BIN + " init (connect this machine)" + " | " + BIN + " config (defaults)" + (HAS_MCP || MCP_URL ? " | " + BIN + " mcp install --all (agent clients)" : "") + " | " + BIN + " doctor | " + BIN + " upgrade | " + BIN + " completion <shell>", width, 7));
   lines.push(...labeled("Agents: ", BIN + " agent-guide | " + BIN + " help --json | --mode agent | -y/--yes/--force | --out <dir>  (JSON errors: {status, issues[{code}], next_steps})", width, 8));
   lines.push(...labeled("Docs: ", BIN + " docs [<resource> <command> | search <term> | read <page> | --web]", width, 6));
@@ -2277,7 +2277,7 @@ function requireOperationCredentials(op: OpSpec, options: ClientOptions & Record
       ...relevant.map((a) => "Set " + a.env + " in the environment, pass --" + a.flag + " <value>, or run '" + BIN + " login'."),
       ...(needsBasic && BASIC ? ["Set " + BASIC.envUser + " and " + BASIC.envPass + ", or pass --username and --password."] : []),
       "Supply all schemes in one alternative through " + "TYPESHIP_CREDENTIALS" + " or --credentials @<JSON-file>: " + alternatives.map((alternative) => alternative.map((option) => option.slice("credentials.".length)).join(" + ")).join(" OR ") + ".",
-    ] : ["Check the operation's security schemes in the API definition and regenerate with a supported, compatible alternative."],
+    ] : ["Check the operation's security schemes in the API Spec and regenerate with a supported, compatible alternative."],
   });
 }
 
@@ -2438,7 +2438,7 @@ function failOmitted(op: OmittedOpSpec): never {
   return failWith({
     status: "action_required",
     code: "PLAN_LIMIT",
-    message: "The command '" + BIN + " " + op.command.join(" ") + "' exists in the API Definition but was omitted from this generated package by its plan limit.",
+    message: "The command '" + BIN + " " + op.command.join(" ") + "' exists in the API Spec but was omitted from this generated package by its plan limit.",
     detail: { operation: op.tool, method: op.httpMethod, path: op.path, generated_operations: OPS.length, total_operations: OPS.length + EXCLUDED_OPS },
     nextSteps: ["Upgrade at https://typeship.dev/pricing and regenerate the package without the operation cap.", "Do not invent or retry an omitted command against this generated package."],
   });
@@ -2647,13 +2647,13 @@ async function main(): Promise<void> {
     }
   }
 
-  let result = await (callResult as Promise<{ ok: boolean; data?: unknown; error?: unknown; response?: { requestId?: string } }>);
-  if (result.ok && op.httpMethod === "POST" && op.path === "/projects/{project_id}/generations") {
+  let result = await asApiResult(callResult as Promise<unknown>);
+  if (result.ok && op.httpMethod === "POST" && op.path === "/projects/{project_id}/generate") {
     const batch = result.data as { data: Array<{ id: string }> };
-    const generations = (client as unknown as { generations: { wait(id: string): Promise<{ ok: boolean; data?: unknown; error?: unknown }> } }).generations;
+    const generations = (client as unknown as { generations: { wait(id: string): Promise<unknown> } }).generations;
     const completed: unknown[] = [];
     for (const generation of batch.data) {
-      const waited = await generations.wait(generation.id);
+      const waited = await asApiResult(generations.wait(generation.id));
       if (!waited.ok) failApi(waited.error, LAST_CLIENT_HAD_CREDENTIAL);
       completed.push(waited.data);
     }

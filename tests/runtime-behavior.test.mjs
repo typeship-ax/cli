@@ -5,13 +5,12 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
-test("a successful response exposes its request ID as response metadata", async () => {
+test("a successful response resolves to its parsed body", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"request_id\":\"req_success_body_test\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.generate.run({"definition":{"url":"https://example.com","headers":{}},"target":{"generator":"typescript-sdk"},"package_name":"example","module_path":"example","go_sdk":{"module_path":"example","version":"example","definition_digest":"example","edition":"example","package_name":"example"},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"graphql":{"endpoint":"https://example.com","environments":[{"name":"example","url":"https://example.com"}],"auth":"bearer","api_key_header":"example","title":"example","scalars":{}},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
-    assert.equal(result.response.requestId, "req_success_body_test");
+    const result = await client.generate.run({"spec":{"url":"https://example.com","headers":{}},"target":{"type":"cli"},"package_name":"example","module_path":"example","go_sdk":{"module_path":"example","version":"example","spec_digest":"example","package_name":"example"},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"graphql":{"endpoint":"https://example.com","environments":[{"name":"example","url":"https://example.com"}],"auth":"bearer","api_key_header":"example","title":"example","scalars":{}},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
+    assert.deepEqual(result, JSON.parse("{\"request_id\":\"req_success_body_test\"}"));
   } finally { mock.close(); }
 });
 
@@ -22,8 +21,7 @@ test("a retryable response is retried before success", async () => {
   ]);
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {}, maxRetries: 1, retry: { initialDelayMs: 0, maxDelayMs: 0 } });
-    const result = await client.generate.downloadPackage({"token":"example"});
-    assert.equal(result.ok, true, JSON.stringify(result));
+    await client.generate.downloadPackage({"token":"example"});
     assert.equal(mock.requests.length, 2);
   } finally { mock.close(); }
 });
@@ -35,8 +33,7 @@ test("an idempotency-protected write retries with one stable generated key", asy
   ]);
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"}, maxRetries: 1, retry: { initialDelayMs: 0, maxDelayMs: 0 } });
-    const result = await client.generate.run({"definition":{"url":"https://example.com","headers":{}},"target":{"generator":"typescript-sdk"},"package_name":"example","module_path":"example","go_sdk":{"module_path":"example","version":"example","definition_digest":"example","edition":"example","package_name":"example"},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"graphql":{"endpoint":"https://example.com","environments":[{"name":"example","url":"https://example.com"}],"auth":"bearer","api_key_header":"example","title":"example","scalars":{}},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
+    await client.generate.run({"spec":{"url":"https://example.com","headers":{}},"target":{"type":"cli"},"package_name":"example","module_path":"example","go_sdk":{"module_path":"example","version":"example","spec_digest":"example","package_name":"example"},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"graphql":{"endpoint":"https://example.com","environments":[{"name":"example","url":"https://example.com"}],"auth":"bearer","api_key_header":"example","title":"example","scalars":{}},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
     assert.equal(mock.requests.length, 2);
     const firstKey = mock.requests[0].headers["idempotency-key"];
     const secondKey = mock.requests[1].headers["idempotency-key"];
@@ -49,11 +46,15 @@ test("a documented status maps to its generated error class", async () => {
   const mock = await startMock({ status: 401, contentType: "application/json", body: JSON.stringify({ code: "test_error", message: "expected failure", request_id: "req_error_body_test" }), headers: { "Request-Id": "req_error_stale" } });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.account.retrieve();
-    assert.equal(result.ok, false, JSON.stringify(result));
-    assert.equal(result.error.constructor.name, "UnauthorizedError");
-    assert.equal(result.error.status, 401);
-    assert.equal(result.error.response.requestId, "req_error_body_test");
+    await assert.rejects(client.organization.get(), (error) => {
+      assert.equal(error.constructor.name, "UnauthorizedError");
+      assert.equal(error.status, 401);
+      assert.equal(error.code, "test_error");
+      assert.equal(error.requestId, "req_error_body_test");
+      assert.equal(error.body.message, "expected failure");
+      assert.match(error.message, /retry|correct|check|inspect|wait/i);
+      return true;
+    });
   } finally { mock.close(); }
 });
 
@@ -76,8 +77,7 @@ test("opt-in validation accepts a conforming success body", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "\"example\"" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {}, validate: true });
-    const result = await client.generate.downloadPackage({"token":"example"});
-    assert.equal(result.ok, true, JSON.stringify(result));
+    await client.generate.downloadPackage({"token":"example"});
   } finally { mock.close(); }
 });
 
@@ -85,9 +85,10 @@ test("opt-in validation catches a drifted success body", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "7" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {}, validate: true });
-    const result = await client.generate.downloadPackage({"token":"example"});
-    assert.equal(result.ok, false, JSON.stringify(result));
-    assert.equal(result.error.constructor.name, "ValidationError");
-    assert.equal(result.error.direction, "response");
+    await assert.rejects(client.generate.downloadPackage({"token":"example"}), (error) => {
+      assert.equal(error.constructor.name, "ValidationError");
+      assert.equal(error.direction, "response");
+      return true;
+    });
   } finally { mock.close(); }
 });

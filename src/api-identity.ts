@@ -76,9 +76,13 @@ export function identityFetch(apiBaseUrl: string): typeof fetch {
 
 type IdentityResult = { ok: boolean; data?: unknown; error?: { status?: number } };
 export async function identityResult(client: unknown, operation: { resource: string; method: string }): Promise<IdentityResult> {
-  const target = (client as Record<string, Record<string, () => Promise<IdentityResult>>>)[operation.resource];
+  const target = (client as Record<string, Record<string, () => Promise<unknown>>>)[operation.resource];
   if (!target?.[operation.method]) throw new Error("The configured identity operation is not available in this package.");
-  return target[operation.method]!();
+  try {
+    return { ok: true, data: await target[operation.method]!() };
+  } catch (error) {
+    return { ok: false, error: error as { status?: number } };
+  }
 }
 
 export function verifyClientIdentity(createClient: (options: Record<string, unknown>) => unknown, options: Record<string, unknown>, operation: { resource: string; method: string }, policy: IdentityPolicy, expected?: ApiIdentity): Promise<VerifiedIdentity> {

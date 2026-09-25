@@ -6,11 +6,10 @@ import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
 test("apiKeys.list GET /api-keys", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.apiKeys.list(undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/api-keys");
@@ -20,12 +19,11 @@ test("apiKeys.list GET /api-keys", async () => {
   }
 });
 
-test("apiKeys.retrieve GET /api-keys/{api_key_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+test("apiKeys.get GET /api-keys/{api_key_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.apiKeys.retrieve("test-api_key_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.apiKeys.get("test-api_key_id");
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/api-keys/test-api_key_id");
@@ -36,11 +34,10 @@ test("apiKeys.retrieve GET /api-keys/{api_key_id}", async () => {
 });
 
 test("apiKeys.revoke DELETE /api-keys/{api_key_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"example\",\"object\":\"api_key\",\"name\":\"example\",\"last4\":\"example\",\"revoked\":true,\"last_used_at\":\"2024-01-01T00:00:00Z\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.apiKeys.revoke("test-api_key_id", undefined);
-    assert.equal(result.ok, true, JSON.stringify(result));
     const request = mock.requests[0];
     assert.equal(request.method, "DELETE");
     assert.equal(request.path.split("?")[0], "/api-keys/test-api_key_id");

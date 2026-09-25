@@ -24,7 +24,7 @@ Requires Node.js 20+. The package is ESM.
 Generation does not publish a package. Before using the registry command below, confirm `name` and `version` in `package.json`, publish under a name you control, and verify that release is available on npm.
 
 ```sh
-npm install --global @typeship-ax/cli@0.20.0
+npm install --global @typeship-ax/cli@0.21.0
 ```
 
 ## CLI
@@ -33,7 +33,7 @@ The package ships `typeship`, a command for every API operation. API commands wr
 
 ```sh
 node dist/cli.js login # stores a credential (or set TYPESHIP_TOKEN)
-node dist/cli.js account retrieve
+node dist/cli.js projects list
 node dist/cli.js projects list --all # every page, one item per line
 node dist/cli.js help --json # command names, flags, and types
 ```

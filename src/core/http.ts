@@ -19,7 +19,7 @@ export interface ResponseMeta {
   headers: Headers;
   /** Parsed wire body before it is narrowed to the generated response type.
    * Use this escape hatch for additive fields or variants introduced after
-   * this generator edition. */
+   * this generator version. */
   rawBody?: unknown;
   /** Request identifier from the JSON response body, or from headers for
    * raw and bodyless responses. */
@@ -43,11 +43,7 @@ export interface RequestContext {
 }
 
 
-/**
- * Every SDK call returns a discriminated result instead of throwing.
- * Narrow on `ok` and the error side is a typed union of the documented
- * error responses for that exact operation.
- */
+/** Internal result used by CLI and MCP consumers of the shared core. */
 export type ApiResult<T, E> =
   | { ok: true; data: T; response: ResponseMeta }
   | { ok: false; error: E; response?: ResponseMeta };
@@ -59,15 +55,80 @@ export function unwrap<T, E>(result: ApiResult<T, E>): T {
   throw new Error(String(result.error));
 }
 
+/** Adapter for generated CLI and MCP entry points that consume result objects. */
+export async function asApiResult<T>(call: PromiseLike<T>): Promise<{ ok: boolean; data?: T; error?: unknown; response?: ResponseMeta }> {
+  try {
+    const data = await call;
+    const pageResponse = data && typeof data === "object" && "response" in data
+      ? (data as { response?: ResponseMeta }).response : undefined;
+    const response = pageResponse ?? {
+      status: 0,
+      headers: new Headers(),
+      rawBody: data,
+      requestId: requestIdFromBody(data),
+    };
+    return { ok: true, data, response };
+  } catch (error) {
+    const response = error && typeof error === "object" && "response" in error
+      ? (error as { response?: ResponseMeta }).response : undefined;
+    return { ok: false, error, response };
+  }
+}
+
+/** Common fields on every failure. A missing response has status null. */
+export class SdkError extends Error {
+  readonly code: string;
+  readonly status: number | null;
+  readonly requestId?: string;
+  readonly body: unknown;
+
+  constructor(message: string, code: string, status: number | null = null, body?: unknown, requestId?: string) {
+    super(message);
+    this.name = new.target.name;
+    this.code = code;
+    this.status = status;
+    this.body = body;
+    this.requestId = requestId;
+  }
+}
+
+function errorCode(body: unknown, fallback: string): string {
+  if (body && typeof body === "object" && !Array.isArray(body)) {
+    const value = body as Record<string, unknown>;
+    const first = Array.isArray(value.errors) ? value.errors[0] as { code?: unknown } | undefined : undefined;
+    const code = value.code ?? first?.code;
+    if (typeof code === "string" && code.trim()) return code;
+  }
+  return fallback;
+}
+
+function errorDetail(body: unknown): string {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return "";
+  const value = body as Record<string, unknown>;
+  const first = Array.isArray(value.errors) ? value.errors[0] as { message?: unknown } | undefined : undefined;
+  const detail = value.message ?? value.error ?? value.detail ?? first?.message;
+  return typeof detail === "string" && detail.trim() ? ": " + detail : "";
+}
+
+function nextStep(status: number): string {
+  if (status === 401) return "Check the credential and retry.";
+  if (status === 403) return "Check the credential's permissions and retry.";
+  if (status === 404) return "Check the requested identifier or path.";
+  if (status === 409) return "Refresh the resource and retry the change.";
+  if (status === 422 || status === 400) return "Correct the request and retry.";
+  if (status === 429) return "Wait before retrying the request.";
+  if (status >= 500) return "Retry later; contact the API provider if this continues.";
+  return "Inspect the error body and correct the request before retrying.";
+}
+
 /** Base class for every HTTP error response. */
-export class ApiError<S extends number = number, B = unknown> extends Error {
+export class ApiError<S extends number = number, B = unknown> extends SdkError {
   readonly status: S;
   readonly body: B;
   readonly response: ResponseMeta;
 
   constructor(message: string, status: S, body: B, response: ResponseMeta) {
-    super(message);
-    this.name = new.target.name;
+    super(message + errorDetail(body) + ". " + nextStep(status), errorCode(body, "http_" + status), status, body, response.requestId);
     this.status = status;
     this.body = body;
     this.response = response;
@@ -82,15 +143,14 @@ export class UnexpectedApiError extends ApiError<number, unknown> {
 }
 
 /** A successful response declared JSON but carried a body that could not be parsed. */
-export class ResponseParseError extends Error {
+export class ResponseParseError extends SdkError {
   readonly status: number;
   readonly body: string;
   readonly response: ResponseMeta;
   override readonly cause?: unknown;
 
   constructor(body: string, response: ResponseMeta, cause?: unknown) {
-    super("HTTP " + response.status + " response body was not valid JSON");
-    this.name = "ResponseParseError";
+    super("HTTP " + response.status + " response body was not valid JSON. Check the API response or contact its provider.", "response_parse_error", response.status, body, response.requestId);
     this.status = response.status;
     this.body = body;
     this.response = response;
@@ -105,18 +165,16 @@ export class ResponseParseError extends Error {
 
 export interface Violation { path: string; message: string }
 
-/** Request or response data did not match the spec's schema (opt-in via the
- * client's validate option). Never thrown: returned as the error side of
- * ApiResult, like every other failure. */
-export class ValidationError extends Error {
+/** Request or response data did not match the spec's schema. */
+export class ValidationError extends SdkError {
   readonly direction: "request" | "response";
   readonly target: "body" | "parameters";
   readonly violations: Violation[];
   constructor(direction: "request" | "response", violations: Violation[], target: "body" | "parameters" = "body") {
     const shown = violations.slice(0, 3).map((v) => v.path + " " + v.message).join("; ");
     super(direction + " " + target + " failed schema validation: " + shown
-      + (violations.length > 3 ? " (+" + (violations.length - 3) + " more)" : ""));
-    this.name = "ValidationError";
+      + (violations.length > 3 ? " (+" + (violations.length - 3) + " more)" : "")
+      + ". Correct the " + (direction === "request" ? "request" : "API response or update the spec") + ".", "validation_error");
     this.direction = direction;
     this.target = target;
     this.violations = violations;
@@ -251,13 +309,14 @@ function transportFailureMessage(method: string, url: string, cause: unknown): s
 }
 
 /** The request failed before a complete HTTP response arrived (network failure, timeout, abort, or truncated body). */
-export class TransportError extends Error {
+export class TransportError extends SdkError {
   override readonly cause?: unknown;
+  readonly response?: ResponseMeta;
 
-  constructor(message: string, cause?: unknown) {
-    super(message);
-    this.name = "TransportError";
+  constructor(message: string, cause?: unknown, response?: ResponseMeta) {
+    super(message + ". Check the connection and retry.", "transport_error", response?.status ?? null, undefined, response?.requestId);
     this.cause = cause;
+    this.response = response;
   }
 }
 
@@ -521,6 +580,7 @@ export class HttpCore {
           const error = (parseError ?? new TransportError(
             "The response body read failed before completing",
             cause,
+            meta(response),
           )) as unknown as E;
           await this.config.onError?.(error, { method: req.method, path: req.path });
           return { ok: false, error, response: parseError?.response ?? meta(response) };
@@ -567,8 +627,8 @@ export class HttpCore {
       let body: unknown;
       try {
         body = await parseBody(response, req.method);
-      } catch {
-        body = undefined; // error responses keep their status even if the body read aborts
+      } catch (cause) {
+        body = cause instanceof ResponseParseError ? cause.body : undefined;
       }
       emitResponseDebug(response, body);
       const responseMeta = meta(response, body);
@@ -587,6 +647,11 @@ export class HttpCore {
     const error = new TransportError("Request failed", lastError) as unknown as E;
     await this.config.onError?.(error, { method: req.method, path: req.path });
     return { ok: false, error };
+  }
+
+  /** SDK-facing call: resolve to the payload or throw its typed error. */
+  async requestData<T, E>(req: CoreRequest): Promise<T> {
+    return unwrap(await this.request<T, E>(req));
   }
 
   private async send(

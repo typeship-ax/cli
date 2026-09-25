@@ -5,12 +5,25 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
-test("generations.retrieve GET /generations/{generation_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"definition_revision_id\":\"drev_6m1q8v4k2p9d7h3c\",\"status\":\"succeeded\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"generator\":\"cli\",\"provenance\":{\"generator_edition\":\"2026-08-24\",\"resolved_config\":{\"cli\":{\"command_name\":\"parcel\"}},\"package_version\":\"1.0.0\"},\"meta\":{\"title\":\"Parcel API\",\"api_version\":\"1.0.0\",\"version\":\"1.0.0\",\"oas_version\":\"3.1\",\"artifact_name\":\"parcel-client\",\"client_name\":\"ParcelClient\",\"generators\":[\"cli\"]},\"warnings\":[],\"errors\":[],\"created_at\":\"2026-09-23T08:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+test("generations.list GET /generations", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"status\":\"queued\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"cli\",\"name\":\"example\",\"version\":\"example\",\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"file_count\":1,\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.generations.retrieve("test-generation_id");
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.generations.list(undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/generations");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("generations.get GET /generations/{generation_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"status\":\"queued\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"cli\",\"name\":\"example\",\"version\":\"example\",\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"file_count\":1,\"errors\":[{\"type\":\"request_error\",\"code\":\"invalid_request\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.generations.get("test-generation_id");
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/generations/test-generation_id");
@@ -20,17 +33,41 @@ test("generations.retrieve GET /generations/{generation_id}", async () => {
   }
 });
 
-test("generations.retrieveFile GET /generations/{generation_id}/file", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "\"example\"" });
+test("generations.listFiles GET /generations/{generation_id}/files", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"file_4k8m2v7q1p9d5h6c\",\"object\":\"file\",\"path\":\"example\",\"size_bytes\":1,\"sha256\":\"example\",\"encoding\":\"utf8\",\"mode\":\"100644\",\"created_at\":\"2024-01-01T00:00:00Z\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.generations.retrieveFile("test-generation_id", {"path":"example"});
-    assert.equal(result.ok, true, JSON.stringify(result));
+    const result = await client.generations.listFiles("test-generation_id", undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/generations/test-generation_id/file");
+    assert.equal(request.path.split("?")[0], "/generations/test-generation_id/files");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
+    mock.close();
+  }
+});
+
+test("generation wait honors Retry-After and uses a three-second poll interval", async () => {
+  const mock = await startMock([
+    { status: 429, contentType: "application/json", body: JSON.stringify({ errors: [{ code: "rate_limited", message: "Too many requests." }] }), headers: { "Retry-After": "1" } },
+    { status: 200, contentType: "application/json", body: JSON.stringify({ status: "queued" }) },
+    { status: 200, contentType: "application/json", body: JSON.stringify({ status: "completed" }) },
+  ]);
+  const originalSetTimeout = globalThis.setTimeout;
+  const delays = [];
+  globalThis.setTimeout = (callback, ms, ...args) => {
+    delays.push(ms);
+    return originalSetTimeout(callback, 0, ...args);
+  };
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: { apiKey: "test-token" } });
+    const result = await client.generations.wait("gen_wait_test");
+    assert.equal(result.status, "completed");
+    assert.equal(mock.requests.length, 3);
+    assert.ok(delays.includes(1_000), "429 Retry-After seconds are honored");
+    assert.ok(delays.includes(3_000), "generation polling stays within the authenticated allowance");
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
     mock.close();
   }
 });

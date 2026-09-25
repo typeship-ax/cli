@@ -14,16 +14,21 @@ import { DEFS, SCHEMAS } from "./schemas.js";
 
 import { GenerateResource } from "./resources/generate.js";
 import { ProjectsResource } from "./resources/projects.js";
-import { DefinitionsResource } from "./resources/definitions.js";
+import { SpecsResource } from "./resources/specs.js";
+import { SpecRevisionsResource } from "./resources/spec-revisions.js";
 import { TargetsResource } from "./resources/targets.js";
+import { DraftsResource } from "./resources/drafts.js";
+import { ReleasesResource } from "./resources/releases.js";
+import { DeliveriesResource } from "./resources/deliveries.js";
+import { PublicationsResource } from "./resources/publications.js";
 import { GenerationsResource } from "./resources/generations.js";
-import { DefinitionRevisionsResource } from "./resources/definition-revisions.js";
-import { AccountResource } from "./resources/account.js";
+import { FilesResource } from "./resources/files.js";
+import { OrganizationResource } from "./resources/organization.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.20.0";
-const USER_AGENT = "@typeship-ax/cli/0.20.0";
+export const VERSION = "0.21.0";
+const USER_AGENT = "@typeship-ax/cli/0.21.0";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -34,8 +39,8 @@ export interface ClientOptions {
    */
   bearerToken?: string | (() => string | Promise<string>);
   /**
-   * Credentials keyed by the Definition's security scheme names. Only one complete alternative is
-   * sent for each operation. Named values take precedence over convenience options.
+   * Credentials keyed by the Spec's security scheme names. Only one complete alternative is sent
+   * for each operation. Named values take precedence over convenience options.
    */
   credentials?: {
     "apiKey"?: AuthValue;
@@ -71,17 +76,16 @@ export interface ClientOptions {
   debug?: boolean | ((event: DebugEvent) => void);
   /**
    * Opt-in zero-dependency runtime validation of JSON bodies against the spec's schemas: true
-   * checks requests and responses and returns a ValidationError on mismatch (as the ApiResult
-   * error, never thrown); mode "warn" logs via console.warn and lets the call proceed. Catches spec
-   * drift the type system can't see.
+   * checks requests and responses and throws ValidationError on mismatch; mode "warn" logs via
+   * console.warn and lets the call proceed. Catches spec drift the type system can't see.
    */
   validate?: boolean | { requests?: boolean; responses?: boolean; mode?: "throw" | "warn" };
 }
 
 /**
- * typeship — v0.20.0
+ * typeship — v0.21.0
  *
- * Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
+ * Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
  * selected CLI, MCP, and SDK Target current.
  *
  * Every operation but one requires a bearer credential: an organization
@@ -93,16 +97,21 @@ export interface ClientOptions {
  *
  * Examples use Parcel, a fictional delivery service. Replace its domains,
  * repository names, and resource identifiers with your own. The hosted
- * petstore Definition is a runnable sample.
+ * petstore Spec is a runnable sample.
  */
 export class TypeshipClient {
   readonly generate: GenerateResource;
   readonly projects: ProjectsResource;
-  readonly definitions: DefinitionsResource;
+  readonly specs: SpecsResource;
+  readonly specRevisions: SpecRevisionsResource;
   readonly targets: TargetsResource;
+  readonly drafts: DraftsResource;
+  readonly releases: ReleasesResource;
+  readonly deliveries: DeliveriesResource;
+  readonly publications: PublicationsResource;
   readonly generations: GenerationsResource;
-  readonly definitionRevisions: DefinitionRevisionsResource;
-  readonly account: AccountResource;
+  readonly files: FilesResource;
+  readonly organization: OrganizationResource;
   readonly apiKeys: ApiKeysResource;
 
   constructor(options: ClientOptions = {}) {
@@ -160,11 +169,16 @@ export class TypeshipClient {
     });
     this.generate = new GenerateResource(core);
     this.projects = new ProjectsResource(core);
-    this.definitions = new DefinitionsResource(core);
+    this.specs = new SpecsResource(core);
+    this.specRevisions = new SpecRevisionsResource(core);
     this.targets = new TargetsResource(core);
+    this.drafts = new DraftsResource(core);
+    this.releases = new ReleasesResource(core);
+    this.deliveries = new DeliveriesResource(core);
+    this.publications = new PublicationsResource(core);
     this.generations = new GenerationsResource(core);
-    this.definitionRevisions = new DefinitionRevisionsResource(core);
-    this.account = new AccountResource(core);
+    this.files = new FilesResource(core);
+    this.organization = new OrganizationResource(core);
     this.apiKeys = new ApiKeysResource(core);
   }
 }
@@ -173,7 +187,6 @@ export * from "./types.js";
 export * from "./errors.js";
 export {
   formatDebugEvent,
-  type ApiResult,
   type AuthValue,
   type DebugEvent,
   type RequestContext,
@@ -184,9 +197,14 @@ export { Page, PagePromise } from "./core/pagination.js";
 
 export * from "./resources/generate.js";
 export * from "./resources/projects.js";
-export * from "./resources/definitions.js";
+export * from "./resources/specs.js";
+export * from "./resources/spec-revisions.js";
 export * from "./resources/targets.js";
+export * from "./resources/drafts.js";
+export * from "./resources/releases.js";
+export * from "./resources/deliveries.js";
+export * from "./resources/publications.js";
 export * from "./resources/generations.js";
-export * from "./resources/definition-revisions.js";
-export * from "./resources/account.js";
+export * from "./resources/files.js";
+export * from "./resources/organization.js";
 export * from "./resources/api-keys.js";

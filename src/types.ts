@@ -7,14 +7,11 @@ export type ProjectId = string;
 /** Unique identifier for a generation. */
 export type GenerationId = string;
 
-/** Unique identifier for a project's logical API Definition. */
-export type DefinitionId = string;
+/** Unique identifier for a project's logical API Spec. */
+export type SpecId = string;
 
-/** Unique identifier for a source document captured in a Definition Revision. */
-export type DefinitionDocumentId = string;
-
-/** Unique identifier for an immutable resolved Definition Revision. */
-export type DefinitionRevisionId = string;
+/** Unique identifier for an immutable resolved Spec Revision. */
+export type SpecRevisionId = string;
 
 /** Server-generated identifier used to correlate this response with Typeship logs. */
 export type RequestId = string;
@@ -32,26 +29,29 @@ export type TargetId = string;
 
 export type DeliveryId = string;
 
-export type TargetReleaseId = string;
+/** Unique identifier for a Draft. */
+export type DraftId = string;
+
+export type ReleaseId = string;
 
 export type PublicationId = string;
 
 /**
  * Generator implementation selected by a Target. This is configuration, not identity; several
- * Targets may use the same generator. cli is the TypeScript CLI; go-cli is the native Go CLI, a
+ * Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a
  * distinct product that imports one exact paired Go SDK module rather than a client of its own.
  */
 export const GeneratorKind = {
-  TYPESCRIPT_SDK: "typescript-sdk",
-  PYTHON_SDK: "python-sdk",
-  GO_SDK: "go-sdk",
   CLI: "cli",
-  GO_CLI: "go-cli",
+  GO_CLI: "go_cli",
   MCP: "mcp",
+  TYPESCRIPT_SDK: "typescript_sdk",
+  PYTHON_SDK: "python_sdk",
+  GO_SDK: "go_sdk",
 } as const;
 export type GeneratorKind = (typeof GeneratorKind)[keyof typeof GeneratorKind];
 
-export interface UrlDefinitionInput {
+export interface UrlSpecInput {
   /**
    * URL of an OpenAPI document, a GraphQL SDL file, or a GraphQL
    * endpoint (introspected automatically). Fetched server-side.
@@ -65,8 +65,8 @@ export interface UrlDefinitionInput {
   headers?: Record<string, string>;
 }
 
-/** Response shape for UrlDefinitionInput. */
-export interface UrlDefinitionInputRead {
+/** Response shape for UrlSpecInput. */
+export interface UrlSpecInputRead {
   /**
    * URL of an OpenAPI document, a GraphQL SDL file, or a GraphQL
    * endpoint (introspected automatically). Fetched server-side.
@@ -75,21 +75,21 @@ export interface UrlDefinitionInputRead {
   url: string;
 }
 
-export interface InlineDefinitionInput {
-  /** Raw Definition text (OpenAPI JSON/YAML or GraphQL SDL). Up to 10MB. */
+export interface InlineSpecInput {
+  /** Raw Spec text (OpenAPI JSON/YAML or GraphQL SDL). Up to 10MB. */
   inline: string;
 }
 
-/** A Definition for one-shot generation, provided as exactly one URL or inline entrypoint. */
-export type DefinitionInput = UrlDefinitionInput | InlineDefinitionInput;
+/** A Spec for one-shot generation, provided as exactly one URL or inline entrypoint. */
+export type SpecInput = UrlSpecInput | InlineSpecInput;
 
-/** Response shape for DefinitionInput. */
-export type DefinitionInputRead = UrlDefinitionInputRead | InlineDefinitionInput;
+/** Response shape for SpecInput. */
+export type SpecInputRead = UrlSpecInputRead | InlineSpecInput;
 
 /**
- * The exact paired Go SDK a go-cli generation is built on. Required when target.generator is go-cli
- * and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range
- * or a branch pins nothing.
+ * The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and
+ * rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a
+ * branch pins nothing.
  */
 export interface GoSdkDescriptor {
   /**
@@ -104,15 +104,10 @@ export interface GoSdkDescriptor {
    */
   version: string;
   /**
-   * SHA-256 hex digest of the Definition the SDK was generated from. Must match the resolved
-   * Definition, or the request fails with spec_error.
+   * SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the
+   * request fails with spec_error.
    */
-  definition_digest: string;
-  /**
-   * The generator edition the SDK was generated with. Only the current edition, 2026-08-24, is
-   * accepted.
-   */
-  edition: string;
+  spec_digest: string;
   /**
    * Go package identifier of the SDK, when the module path's last element does not imply it.
    * Optional.
@@ -121,10 +116,10 @@ export interface GoSdkDescriptor {
 }
 
 export interface GenerateRequest {
-  definition: DefinitionInput;
+  spec: SpecInput;
   /** One-shot generator descriptor; no persisted Target is created. */
   target: {
-    generator: GeneratorKind;
+    type: GeneratorKind;
   };
   /**
    * npm package or Python distribution override. Valid only for the TypeScript and Python SDK
@@ -133,7 +128,7 @@ export interface GenerateRequest {
   package_name?: string;
   /**
    * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
-   * Go CLI outputs. Linked projects derive this from the Go destination repository by default.
+   * Go CLI Targets. Projects derive this from the Go destination repository by default.
    */
   module_path?: string;
   go_sdk?: GoSdkDescriptor;
@@ -142,10 +137,10 @@ export interface GenerateRequest {
 
 /** Response shape for GenerateRequest. */
 export interface GenerateRequestRead {
-  definition: DefinitionInputRead;
+  spec: SpecInputRead;
   /** One-shot generator descriptor; no persisted Target is created. */
   target: {
-    generator: GeneratorKind | (string & {});
+    type: GeneratorKind | (string & {});
   };
   /**
    * npm package or Python distribution override. Valid only for the TypeScript and Python SDK
@@ -154,7 +149,7 @@ export interface GenerateRequestRead {
   package_name?: string;
   /**
    * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
-   * Go CLI outputs. Linked projects derive this from the Go destination repository by default.
+   * Go CLI Targets. Projects derive this from the Go destination repository by default.
    */
   module_path?: string;
   go_sdk?: GoSdkDescriptor;
@@ -184,225 +179,187 @@ export interface GeneratedFileRead {
   mode?: ("100644" | "100755") | (string & {});
 }
 
-export interface GenerationMeta {
-  title: string;
-  /** Version declared by the customer's API Definition. It never controls package releases. */
-  api_version: string;
-  /** Package version selected by the Target's release stream for this generation. */
-  version: string;
-  spec_format?: "openapi" | "graphql";
-  /** Detected OpenAPI version, "2.0", "3.0", or "3.1". */
-  oas_version: string;
-  /** True when the input was Swagger 2.0 and was converted. */
-  converted?: boolean;
-  /** Ecosystem-neutral identity of the generated artifact. */
-  artifact_name: string;
-  client_name: string;
-  /**
-   * Generator implementations present in this artifact. Persisted Target identity is reported on
-   * Generation.
-   */
-  generators: GeneratorKind[];
-  /**
-   * Present for go-cli generations only. Names the exact paired Go SDK module and version the CLI
-   * was generated against, as its go.mod requires it.
-   */
-  go_sdk?: {
-    /** Go module path of the SDK the Go CLI imports and pins. */
-    module_path: string;
-    /** Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. */
-    version: string;
-    /** Go package identifier of the SDK, when the module path does not imply it. */
-    package_name?: string;
-  };
-  resource_count?: number;
-  operation_count?: number;
-  schema_count?: number;
-  paginated_operation_count?: number;
-  /** Operations beyond the plan's endpoint allowance, not generated. */
-  omitted_operation_count?: number;
-  /** METHOD/path identities of operations omitted by the generation cap. */
-  omitted_operations?: string[];
-  /** Pull request opened by this regeneration, when one was. */
-  pr_url?: string | null;
-  pr_number?: number | null;
-  /**
-   * Whether a destination pull request opened, was unnecessary because the generated tree already
-   * matched, or could not be opened.
-   */
-  pr_status?: "opened" | "no_changes" | "blocked";
-  /**
-   * Markdown changelog entry for this regeneration, from the API surface diff. Absent on a first
-   * generation or when nothing changed.
-   */
-  changelog?: string;
-  /**
-   * Breaking changes in the diff; removed methods and fields, changed types, inputs that became
-   * required.
-   */
-  breaking_count?: number;
-  /**
-   * What the diff was measured against. destination uses the accepted repository state;
-   * last-generation uses the previous successful Generation; none means no baseline was available.
-   */
-  baseline?: "destination" | "last-generation" | "none";
-  /** Objective compatibility of the generated API surface against the merged destination baseline. */
-  api_compatibility?: "compatible" | "breaking" | "unknown";
-  /**
-   * Objective compatibility of public package entry points and selected targets against the merged
-   * destination baseline.
-   */
-  package_compatibility?: "compatible" | "breaking" | "unknown";
-  /**
-   * Whether the generated package version satisfies the cumulative change. Null when there is no
-   * prior version or analysis is unavailable.
-   */
-  version_correct?: boolean | null;
-  /**
-   * The destination pull request's combined readiness decision for the exact bot-generated head.
-   * Compatibility and version correctness remain separate fields above.
-   */
-  release_readiness?: "success" | "failure" | "pending" | "error";
-  /** The release-readiness decision in one line, as the commit status describes it. */
-  release_readiness_note?: string;
-  /** The package version the destination had before this regeneration. */
-  previous_version?: string;
-  /** Files changed by the customer relative to the accepted combined baseline. */
-  customer_change_count?: number;
-  integration_state?: "conflicted"
-    | "checking"
-    | "checks_failed"
-    | "ready"
-    | "accepted"
-    | "outdated";
-  /** Separate compatibility result against the last published artifact. */
-  published_compatibility?: "compatible" | "breaking" | "unknown" | "not_applicable";
-  /** Version of the last published artifact used by published_compatibility. */
-  published_version?: string;
-  file_count?: number;
-  total_lines?: number;
-  /** Deterministic Diagnostic summary for the exact Definition Revision consumed. */
-  diagnostics?: {
-    format: "openapi" | "graphql";
-    summary: DiagnosticSummary;
-  };
+export interface GenerationWarning {
+  /** Stable machine-readable warning code. */
+  code: string;
+  /** Human-readable explanation. */
+  message: string;
+  /** METHOD/path of the affected operation, when applicable. */
+  operation?: string;
 }
 
-/** Response shape for GenerationMeta. */
-export interface GenerationMetaRead {
-  title: string;
-  /** Version declared by the customer's API Definition. It never controls package releases. */
-  api_version: string;
-  /** Package version selected by the Target's release stream for this generation. */
-  version: string;
-  spec_format?: ("openapi" | "graphql") | (string & {});
-  /** Detected OpenAPI version, "2.0", "3.0", or "3.1". */
-  oas_version: string;
-  /** True when the input was Swagger 2.0 and was converted. */
-  converted?: boolean;
-  /** Ecosystem-neutral identity of the generated artifact. */
-  artifact_name: string;
-  client_name: string;
+export interface GenerationCoverage {
+  generated: number;
+  omitted: number;
+  total: number;
+  /** METHOD/path identities of operations omitted from the package. */
+  omitted_operations: string[];
+  /** Present when a plan or anonymous limit omitted operations. */
+  reason?: "anonymous" | "free_plan";
   /**
-   * Generator implementations present in this artifact. Persisted Target identity is reported on
-   * Generation.
+   * Sign-up link for anonymous capped runs.
+   * Format: uri
    */
-  generators: Array<GeneratorKind | (string & {})>;
+  signup_url?: string;
   /**
-   * Present for go-cli generations only. Names the exact paired Go SDK module and version the CLI
-   * was generated against, as its go.mod requires it.
+   * Upgrade link for capped signed-in runs.
+   * Format: uri
    */
-  go_sdk?: {
-    /** Go module path of the SDK the Go CLI imports and pins. */
-    module_path: string;
-    /** Exact SDK module version the Go CLI requires, v-prefixed SemVer or a Go pseudo-version. */
-    version: string;
-    /** Go package identifier of the SDK, when the module path does not imply it. */
-    package_name?: string;
-  };
-  resource_count?: number;
-  operation_count?: number;
-  schema_count?: number;
-  paginated_operation_count?: number;
-  /** Operations beyond the plan's endpoint allowance, not generated. */
-  omitted_operation_count?: number;
-  /** METHOD/path identities of operations omitted by the generation cap. */
-  omitted_operations?: string[];
-  /** Pull request opened by this regeneration, when one was. */
-  pr_url?: string | null;
-  pr_number?: number | null;
+  upgrade_url?: string;
+}
+
+/** Response shape for GenerationCoverage. */
+export interface GenerationCoverageRead {
+  generated: number;
+  omitted: number;
+  total: number;
+  /** METHOD/path identities of operations omitted from the package. */
+  omitted_operations: string[];
+  /** Present when a plan or anonymous limit omitted operations. */
+  reason?: ("anonymous" | "free_plan") | (string & {});
   /**
-   * Whether a destination pull request opened, was unnecessary because the generated tree already
-   * matched, or could not be opened.
+   * Sign-up link for anonymous capped runs.
+   * Format: uri
    */
-  pr_status?: ("opened" | "no_changes" | "blocked") | (string & {});
+  signup_url?: string;
   /**
-   * Markdown changelog entry for this regeneration, from the API surface diff. Absent on a first
-   * generation or when nothing changed.
+   * Upgrade link for capped signed-in runs.
+   * Format: uri
    */
-  changelog?: string;
+  upgrade_url?: string;
+}
+
+/**
+ * Unique identifier for one immutable file snapshot. An ID always returns the same bytes: a Spec
+ * Revision, a Generation, and each Draft side name their own file IDs, and a new Draft commit gets
+ * new IDs.
+ */
+export type FileId = string;
+
+export interface FileModel {
+  id: FileId;
+  object: "file";
+  /** Path within the Spec Revision, Generation package, or Target package. */
+  path: string;
+  size_bytes: number;
+  /** Digest of the complete file. */
+  sha256: string;
+  /** utf8: content is text. base64: content is base64-encoded binary bytes. */
+  encoding: "utf8" | "base64";
+  /** Git file mode for package files; null for Spec source files. */
+  mode: GitFileMode | null;
   /**
-   * Breaking changes in the diff; removed methods and fields, changed types, inputs that became
-   * required.
+   * When Typeship first issued this file ID.
+   * Format: date-time
    */
-  breaking_count?: number;
+  created_at: string;
+}
+
+/** Response shape for FileModel. */
+export interface FileModelRead {
+  id: FileId;
+  object: "file" | (string & {});
+  /** Path within the Spec Revision, Generation package, or Target package. */
+  path: string;
+  size_bytes: number;
+  /** Digest of the complete file. */
+  sha256: string;
+  /** utf8: content is text. base64: content is base64-encoded binary bytes. */
+  encoding: ("utf8" | "base64") | (string & {});
+  /** Git file mode for package files; null for Spec source files. */
+  mode: GitFileMode | (string & {}) | null;
   /**
-   * What the diff was measured against. destination uses the accepted repository state;
-   * last-generation uses the previous successful Generation; none means no baseline was available.
+   * When Typeship first issued this file ID.
+   * Format: date-time
    */
-  baseline?: ("destination" | "last-generation" | "none") | (string & {});
-  /** Objective compatibility of the generated API surface against the merged destination baseline. */
-  api_compatibility?: ("compatible" | "breaking" | "unknown") | (string & {});
+  created_at: string;
+}
+
+export type FileResponse = FileModel & {
   /**
-   * Objective compatibility of public package entry points and selected targets against the merged
-   * destination baseline.
+   * At most 24 KiB of the file starting at offset, encoded as encoding says. Text chunks never
+   * split a character; concatenate chunks in order.
    */
-  package_compatibility?: ("compatible" | "breaking" | "unknown") | (string & {});
+  content: string;
+  /** Byte offset of this chunk in the file. */
+  offset: number;
+  /** Pass as cursor to read the next chunk; null at the end of the file. */
+  next_cursor: string | null;
+} & ResponseMetadata;
+
+/** Response shape for FileResponse. */
+export type FileResponseRead = FileModelRead & {
   /**
-   * Whether the generated package version satisfies the cumulative change. Null when there is no
-   * prior version or analysis is unavailable.
+   * At most 24 KiB of the file starting at offset, encoded as encoding says. Text chunks never
+   * split a character; concatenate chunks in order.
    */
-  version_correct?: boolean | null;
+  content: string;
+  /** Byte offset of this chunk in the file. */
+  offset: number;
+  /** Pass as cursor to read the next chunk; null at the end of the file. */
+  next_cursor: string | null;
+} & ResponseMetadata;
+
+export interface FileList {
+  object: ListObject;
+  data: FileModel[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Response shape for FileList. */
+export interface FileListRead {
+  object: ListObject;
+  data: FileModelRead[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+export type SpecRevisionFile = FileModel & {
   /**
-   * The destination pull request's combined readiness decision for the exact bot-generated head.
-   * Compatibility and version correctness remain separate fields above.
+   * entrypoint and reference: captured source files. resolved: the single normalized document
+   * Typeship generated from.
    */
-  release_readiness?: ("success" | "failure" | "pending" | "error") | (string & {});
-  /** The release-readiness decision in one line, as the commit status describes it. */
-  release_readiness_note?: string;
-  /** The package version the destination had before this regeneration. */
-  previous_version?: string;
-  /** Files changed by the customer relative to the accepted combined baseline. */
-  customer_change_count?: number;
-  integration_state?: ("conflicted"
-    | "checking"
-    | "checks_failed"
-    | "ready"
-    | "accepted"
-    | "outdated") | (string & {});
-  /** Separate compatibility result against the last published artifact. */
-  published_compatibility?: ("compatible" | "breaking" | "unknown" | "not_applicable") | (string & {});
-  /** Version of the last published artifact used by published_compatibility. */
-  published_version?: string;
-  file_count?: number;
-  total_lines?: number;
-  /** Deterministic Diagnostic summary for the exact Definition Revision consumed. */
-  diagnostics?: {
-    format: ("openapi" | "graphql") | (string & {});
-    summary: DiagnosticSummary;
-  };
+  role: "entrypoint" | "reference" | "resolved";
+};
+
+/** Response shape for SpecRevisionFile. */
+export type SpecRevisionFileRead = FileModelRead & {
+  /**
+   * entrypoint and reference: captured source files. resolved: the single normalized document
+   * Typeship generated from.
+   */
+  role: ("entrypoint" | "reference" | "resolved") | (string & {});
+};
+
+export interface SpecRevisionFileList {
+  object: ListObject;
+  data: SpecRevisionFile[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Response shape for SpecRevisionFileList. */
+export interface SpecRevisionFileListRead {
+  object: ListObject;
+  data: SpecRevisionFileRead[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
 }
 
 export interface GenerationResult {
   files: GeneratedFile[];
   download?: GenerationDownload;
-  warnings: string[];
-  meta: GenerationMeta;
-  limits?: GenerationLimits;
+  warnings: GenerationWarning[];
+  coverage: GenerationCoverage;
   /**
    * Anonymous, URL-sourced generations only. A link a signed-in person can open to turn this run
-   * into a project in their organization (same Definition, Target, and config). Lasts seven days.
-   * Null for inline Definitions; absent on keyed calls.
+   * into a project in their organization (same Spec, Target, and config). Lasts seven days. Null
+   * for inline Specs; absent on keyed calls.
    */
   claim?: null
     | {
@@ -417,13 +374,12 @@ export interface GenerationResult {
 export interface GenerationResultRead {
   files: GeneratedFileRead[];
   download?: GenerationDownload;
-  warnings: string[];
-  meta: GenerationMetaRead;
-  limits?: GenerationLimitsRead;
+  warnings: GenerationWarning[];
+  coverage: GenerationCoverageRead;
   /**
    * Anonymous, URL-sourced generations only. A link a signed-in person can open to turn this run
-   * into a project in their organization (same Definition, Target, and config). Lasts seven days.
-   * Null for inline Definitions; absent on keyed calls.
+   * into a project in their organization (same Spec, Target, and config). Lasts seven days. Null
+   * for inline Specs; absent on keyed calls.
    */
   claim?: null
     | {
@@ -451,45 +407,7 @@ export interface GenerationDownload {
   file_count: number;
 }
 
-/**
- * Present when the generation was capped: by the free plan, or because the call was anonymous.
- * Absent on uncapped generations.
- */
-export interface GenerationLimits {
-  /** How many operations this generation was allowed to include. */
-  max_operations: number;
-  /** How many operations are present in the generated package. */
-  generated_operations: number;
-  /** How many operations in the Definition were left out. */
-  omitted_operations: number;
-  /** How many operations Typeship found in the complete Definition. */
-  total_operations: number;
-  reason: "anonymous" | "free_plan";
-  /** Anonymous calls only. Where to create an account. */
-  signup_url?: string;
-  /** Where the cap is lifted. */
-  upgrade_url: string;
-}
-
-/** Response shape for GenerationLimits. */
-export interface GenerationLimitsRead {
-  /** How many operations this generation was allowed to include. */
-  max_operations: number;
-  /** How many operations are present in the generated package. */
-  generated_operations: number;
-  /** How many operations in the Definition were left out. */
-  omitted_operations: number;
-  /** How many operations Typeship found in the complete Definition. */
-  total_operations: number;
-  reason: ("anonymous" | "free_plan") | (string & {});
-  /** Anonymous calls only. Where to create an account. */
-  signup_url?: string;
-  /** Where the cap is lifted. */
-  upgrade_url: string;
-}
-
-export interface UrlDefinitionSource {
-  kind: "url";
+export interface UrlSpecSourceSettings {
   /**
    * URL fetched for every generation.
    * Format: uri
@@ -499,9 +417,8 @@ export interface UrlDefinitionSource {
   headers_configured: boolean;
 }
 
-/** Request shape for UrlDefinitionSource. */
-export interface UrlDefinitionSourceWrite {
-  kind: "url";
+/** Request shape for UrlSpecSourceSettings. */
+export interface UrlSpecSourceSettingsWrite {
   /**
    * URL fetched for every generation.
    * Format: uri
@@ -509,61 +426,81 @@ export interface UrlDefinitionSourceWrite {
   url: string;
 }
 
-/** Response shape for UrlDefinitionSource. */
-export interface UrlDefinitionSourceRead {
-  kind: "url" | (string & {});
-  /**
-   * URL fetched for every generation.
-   * Format: uri
-   */
-  url: string;
-  /** Whether Typeship has stored write-only request headers for this URL. */
-  headers_configured: boolean;
+export interface UrlSpecSource {
+  type: "url";
+  url: UrlSpecSourceSettings;
 }
+
+/** Request shape for UrlSpecSource. */
+export interface UrlSpecSourceWrite {
+  type: "url";
+  url: UrlSpecSourceSettingsWrite;
+}
+
+/** Response shape for UrlSpecSource. */
+export interface UrlSpecSourceRead {
+  type: "url" | (string & {});
+  url: UrlSpecSourceSettings;
+}
+
+/** GitHub is the only launch provider; the field is stable for future adapters. */
+export const RepositoryProvider = {
+  GITHUB: "github",
+} as const;
+export type RepositoryProvider = (typeof RepositoryProvider)[keyof typeof RepositoryProvider];
+
+/** Provider-native repository identity, opaque outside its adapter. */
+export type RepositoryIdentifier = string;
 
 export interface RepositoryReference {
-  /** GitHub is the only launch provider; the field is stable for future adapters. */
-  provider: "github";
-  /** Provider-native repository identity, opaque outside its adapter. */
-  identifier: string;
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
 }
 
 /** Response shape for RepositoryReference. */
 export interface RepositoryReferenceRead {
-  /** GitHub is the only launch provider; the field is stable for future adapters. */
-  provider: "github" | (string & {});
-  /** Provider-native repository identity, opaque outside its adapter. */
-  identifier: string;
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
 }
 
-export interface RepositoryDefinitionSource {
-  kind: "repository";
-  repository: RepositoryReferenceResponse;
-  /** Repository-relative Definition entrypoint. */
+export interface RepositorySpecSourceSettings {
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
+  /** Repository-relative Spec entrypoint. */
   path: string;
 }
 
-/** Response shape for RepositoryDefinitionSource. */
-export interface RepositoryDefinitionSourceRead {
-  kind: "repository" | (string & {});
-  repository: RepositoryReferenceResponseRead;
-  /** Repository-relative Definition entrypoint. */
+/** Response shape for RepositorySpecSourceSettings. */
+export interface RepositorySpecSourceSettingsRead {
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
+  /** Repository-relative Spec entrypoint. */
   path: string;
 }
 
-/** The single source of truth for where a Project's Definition lives. */
-export type DefinitionSource = UrlDefinitionSource | RepositoryDefinitionSource;
+export interface RepositorySpecSource {
+  type: "repository";
+  repository: RepositorySpecSourceSettings;
+}
 
-/** Request shape for DefinitionSource. */
-export type DefinitionSourceWrite = UrlDefinitionSourceWrite | RepositoryDefinitionSource;
+/** Response shape for RepositorySpecSource. */
+export interface RepositorySpecSourceRead {
+  type: "repository" | (string & {});
+  repository: RepositorySpecSourceSettingsRead;
+}
 
-/** Response shape for DefinitionSource. */
-export type DefinitionSourceRead = UrlDefinitionSourceRead
-  | RepositoryDefinitionSourceRead
-  | Record<string, unknown> & { kind?: string };
+/** The single source of truth for where a Project's Spec lives. */
+export type SpecSource = UrlSpecSource | RepositorySpecSource;
 
-export interface UrlDefinitionSourceInput {
-  kind: "url";
+/** Request shape for SpecSource. */
+export type SpecSourceWrite = UrlSpecSourceWrite | RepositorySpecSource;
+
+/** Response shape for SpecSource. */
+export type SpecSourceRead = UrlSpecSourceRead
+  | RepositorySpecSourceRead
+  | Record<string, unknown> & { type?: string };
+
+export interface UrlSpecSourceSettingsInput {
   /**
    * URL of an OpenAPI document, GraphQL SDL file, or GraphQL endpoint.
    * Format: uri
@@ -578,9 +515,8 @@ export interface UrlDefinitionSourceInput {
   headers?: Record<string, string> | null;
 }
 
-/** Response shape for UrlDefinitionSourceInput. */
-export interface UrlDefinitionSourceInputRead {
-  kind: "url" | (string & {});
+/** Response shape for UrlSpecSourceSettingsInput. */
+export interface UrlSpecSourceSettingsInputRead {
   /**
    * URL of an OpenAPI document, GraphQL SDL file, or GraphQL endpoint.
    * Format: uri
@@ -588,34 +524,56 @@ export interface UrlDefinitionSourceInputRead {
   url: string;
 }
 
-export interface RepositoryDefinitionSourceInput {
-  kind: "repository";
-  repository: RepositoryReference;
-  /** Repository-relative Definition entrypoint. */
+export interface UrlSpecSourceInput {
+  type: "url";
+  url: UrlSpecSourceSettingsInput;
+}
+
+/** Response shape for UrlSpecSourceInput. */
+export interface UrlSpecSourceInputRead {
+  type: "url" | (string & {});
+  url: UrlSpecSourceSettingsInputRead;
+}
+
+export interface RepositorySpecSourceSettingsInput {
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
+  /** Repository-relative Spec entrypoint. */
   path: string;
 }
 
-/** Response shape for RepositoryDefinitionSourceInput. */
-export interface RepositoryDefinitionSourceInputRead {
-  kind: "repository" | (string & {});
-  repository: RepositoryReferenceRead;
-  /** Repository-relative Definition entrypoint. */
+/** Response shape for RepositorySpecSourceSettingsInput. */
+export interface RepositorySpecSourceSettingsInputRead {
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
+  /** Repository-relative Spec entrypoint. */
   path: string;
 }
 
-export type DefinitionSourceInput = UrlDefinitionSourceInput | RepositoryDefinitionSourceInput;
+export interface RepositorySpecSourceInput {
+  type: "repository";
+  repository: RepositorySpecSourceSettingsInput;
+}
 
-/** Response shape for DefinitionSourceInput. */
-export type DefinitionSourceInputRead = UrlDefinitionSourceInputRead
-  | RepositoryDefinitionSourceInputRead
-  | Record<string, unknown> & { kind?: string };
+/** Response shape for RepositorySpecSourceInput. */
+export interface RepositorySpecSourceInputRead {
+  type: "repository" | (string & {});
+  repository: RepositorySpecSourceSettingsInputRead;
+}
+
+export type SpecSourceInput = UrlSpecSourceInput | RepositorySpecSourceInput;
+
+/** Response shape for SpecSourceInput. */
+export type SpecSourceInputRead = UrlSpecSourceInputRead
+  | RepositorySpecSourceInputRead
+  | Record<string, unknown> & { type?: string };
 
 /**
- * A fix applied to the resolved Definition before generation. Paths are JSON
+ * A fix applied to the resolved Spec before generation. Paths are JSON
  * Pointers into the document. A patch whose target no longer exists is
  * skipped and reported as a warning on the generation, never silently.
  */
-export interface DefinitionPatch {
+export interface SpecPatch {
   op: "set" | "append" | "remove" | "rename";
   /**
    * JSON-Pointer-style path. Pattern segments enable bulk fixes:
@@ -631,8 +589,8 @@ export interface DefinitionPatch {
   reason?: string | null;
 }
 
-/** Response shape for DefinitionPatch. */
-export interface DefinitionPatchRead {
+/** Response shape for SpecPatch. */
+export interface SpecPatchRead {
   op: ("set" | "append" | "remove" | "rename") | (string & {});
   /**
    * JSON-Pointer-style path. Pattern segments enable bulk fixes:
@@ -650,8 +608,10 @@ export interface DefinitionPatchRead {
 
 /** One exact place where a Diagnostic rule found evidence. */
 export interface DiagnosticLocation {
-  /** Source document coordinate when the Definition contains multiple files. */
-  document?: string;
+  /** Source file path from the Spec Revision when the finding maps to a captured file. */
+  file_path?: string;
+  /** The captured source file, present with file_path. Read it with getFile. */
+  file_id?: FileId;
   /** JSON Pointer for OpenAPI, or schema coordinate for GraphQL. */
   path: string;
   /** Human-readable operation coordinate when the location belongs to an operation. */
@@ -668,9 +628,9 @@ export interface DiagnosticFix {
    * spec_patch is an exact OpenAPI edit Typeship can derive; source_edit requires author intent or
    * a lossless GraphQL source edit.
    */
-  kind: "spec_patch" | "source_edit";
-  /** Exact patches when kind is spec_patch. */
-  patches?: DefinitionPatchResponse[];
+  type: "spec_patch" | "source_edit";
+  /** Exact patches when type is spec_patch. */
+  patches?: SpecPatchResponse[];
   /** Source-level guidance when an exact patch would invent intent. */
   instructions?: string;
 }
@@ -683,38 +643,43 @@ export interface DiagnosticFixRead {
    * spec_patch is an exact OpenAPI edit Typeship can derive; source_edit requires author intent or
    * a lossless GraphQL source edit.
    */
-  kind: ("spec_patch" | "source_edit") | (string & {});
-  /** Exact patches when kind is spec_patch. */
-  patches?: DefinitionPatchResponseRead[];
+  type: ("spec_patch" | "source_edit") | (string & {});
+  /** Exact patches when type is spec_patch. */
+  patches?: SpecPatchResponseRead[];
   /** Source-level guidance when an exact patch would invent intent. */
   instructions?: string;
 }
 
-/** Every occurrence of one stable Diagnostic rule, grouped into one decision. */
+/**
+ * Every occurrence of one Diagnostic rule in a Spec Revision, grouped into one decision.
+ * Diagnostics are evaluated when read, using the Spec's current patches and Diagnostic policy.
+ */
 export interface Diagnostic {
-  /** Stable rule identifier for automation and suppressions. */
+  /** Stable rule identifier, unique within a Spec Revision. Suppressions name it as rule_id. */
   id: string;
+  object: "diagnostic";
+  /**
+   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
+   * only_new is set, occurrences present in the baseline never block.
+   */
+  blocking: boolean;
+  /**
+   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
+   * true when there is no baseline.
+   */
+  introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
   severity: "error" | "warning" | "suggestion";
   /** Product dimension affected by the diagnostic. */
   category: "correctness" | "sdk_ergonomics" | "agent_usability" | "safety";
   /** Concise statement of the root cause. */
   title: string;
-  /** What the API author should change. */
-  description: string;
-  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
-  impact: string;
+  /** One explanation of the finding and why it matters. */
+  message: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
-  /**
-   * Whether the finding is provable from the Definition, a conservative review suggestion, or a
-   * documented Typeship implementation limitation.
-   */
-  evidence_basis: "contract" | "heuristic" | "implementation";
-  /** Whether remediation requires intent that the Definition cannot prove. */
+  /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
-  surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFix;
@@ -727,29 +692,31 @@ export interface Diagnostic {
 
 /** Response shape for Diagnostic. */
 export interface DiagnosticRead {
-  /** Stable rule identifier for automation and suppressions. */
+  /** Stable rule identifier, unique within a Spec Revision. Suppressions name it as rule_id. */
   id: string;
+  object: "diagnostic" | (string & {});
+  /**
+   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
+   * only_new is set, occurrences present in the baseline never block.
+   */
+  blocking: boolean;
+  /**
+   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
+   * true when there is no baseline.
+   */
+  introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
   severity: ("error" | "warning" | "suggestion") | (string & {});
   /** Product dimension affected by the diagnostic. */
   category: ("correctness" | "sdk_ergonomics" | "agent_usability" | "safety") | (string & {});
   /** Concise statement of the root cause. */
   title: string;
-  /** What the API author should change. */
-  description: string;
-  /** Why consumers of generated CLI, MCP, or SDK surfaces care. */
-  impact: string;
+  /** One explanation of the finding and why it matters. */
+  message: string;
   /** Public surfaces affected by the root cause. */
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
-  /**
-   * Whether the finding is provable from the Definition, a conservative review suggestion, or a
-   * documented Typeship implementation limitation.
-   */
-  evidence_basis: ("contract" | "heuristic" | "implementation") | (string & {});
-  /** Whether remediation requires intent that the Definition cannot prove. */
+  /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** Concrete generated CLI, MCP, or SDK naming effect when Typeship can state it. */
-  surface_impact?: string;
   /** All affected coordinates, kept under one grouped diagnostic. */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFixRead;
@@ -760,20 +727,51 @@ export interface DiagnosticRead {
   authoring_brief: string;
 }
 
-/** Counts distinguish decisions from the number of affected schema locations. */
+/**
+ * Counts of grouped Diagnostics, one per rule. Retrieve the revision with include=diagnostics for
+ * each Diagnostic.
+ */
 export interface DiagnosticSummary {
-  /** Number of grouped rule diagnostics. */
-  diagnostics: number;
-  /** Total affected locations across all diagnostics. */
-  occurrences: number;
-  /** Grouped correctness errors. */
-  errors: number;
-  /** Grouped material risks. */
-  warnings: number;
-  /** Grouped improvements. */
-  suggestions: number;
-  /** Diagnostics with exact reviewable Definition patches. */
-  auto_fixable: number;
+  /**
+   * passed: no Diagnostic fails the Spec's Diagnostic policy. blocked: at least one does; retrieve
+   * with include=diagnostics and fix those marked blocking.
+   */
+  status: "passed" | "blocked";
+  /** Diagnostics reporting invalid behavior. */
+  error_count: number;
+  /** Diagnostics reporting material risk. */
+  warning_count: number;
+  /** Diagnostics suggesting an improvement. */
+  suggestion_count: number;
+  /** Diagnostics that fail the Spec's Diagnostic policy. */
+  blocking_count: number;
+  /**
+   * The previous revision of this Spec that introduced Diagnostics are compared with, or null for
+   * the first revision.
+   */
+  baseline_spec_revision_id: SpecRevisionId | null;
+}
+
+/** Response shape for DiagnosticSummary. */
+export interface DiagnosticSummaryRead {
+  /**
+   * passed: no Diagnostic fails the Spec's Diagnostic policy. blocked: at least one does; retrieve
+   * with include=diagnostics and fix those marked blocking.
+   */
+  status: ("passed" | "blocked") | (string & {});
+  /** Diagnostics reporting invalid behavior. */
+  error_count: number;
+  /** Diagnostics reporting material risk. */
+  warning_count: number;
+  /** Diagnostics suggesting an improvement. */
+  suggestion_count: number;
+  /** Diagnostics that fail the Spec's Diagnostic policy. */
+  blocking_count: number;
+  /**
+   * The previous revision of this Spec that introduced Diagnostics are compared with, or null for
+   * the first revision.
+   */
+  baseline_spec_revision_id: SpecRevisionId | null;
 }
 
 export interface DiagnosticSuppression {
@@ -819,150 +817,32 @@ export interface DiagnosticPolicyRead {
   suppressions: DiagnosticSuppression[];
 }
 
-export interface DiagnosticEvaluation {
-  state: "pass" | "fail";
-  blocking: DiagnosticReference[];
-  considered_occurrences: number;
-  suppressed_occurrences: number;
+export interface DiagnosticWarning {
+  code: "unsupported_format"
+    | "invalid_document"
+    | "invalid_patch"
+    | "no_match"
+    | "append_target_type"
+    | "rename_target_type"
+    | "rename_conflict";
+  message: string;
 }
 
-/** Response shape for DiagnosticEvaluation. */
-export interface DiagnosticEvaluationRead {
-  state: ("pass" | "fail") | (string & {});
-  blocking: DiagnosticReferenceRead[];
-  considered_occurrences: number;
-  suppressed_occurrences: number;
+/** Response shape for DiagnosticWarning. */
+export interface DiagnosticWarningRead {
+  code: ("unsupported_format"
+    | "invalid_document"
+    | "invalid_patch"
+    | "no_match"
+    | "append_target_type"
+    | "rename_target_type"
+    | "rename_conflict") | (string & {});
+  message: string;
 }
 
-/** Current-revision suppression usage for one stable Diagnostic rule. */
-export interface DiagnosticSuppressionSignal {
-  rule_id: string;
-  /** Current occurrences of this rule that are not suppressed. */
-  active_occurrences: number;
-  suppressed_occurrences: number;
-}
-
-/**
- * Current-revision signals for tuning Diagnostics policy. These counts do not claim that a
- * suppression is a false positive or that runtime behavior has been verified.
- */
-export interface DiagnosticQualitySignals {
-  suppressed_by_rule: DiagnosticSuppressionSignal[];
-  /** Reviewed exceptions whose rule or exact path no longer matches this revision. */
-  stale_suppressions: DiagnosticSuppressionResponse[];
-}
-
-/** Compact rule and location reference; full guidance appears once in diagnostics. */
-export interface DiagnosticReference {
-  rule_id: string;
-  severity: "error" | "warning" | "suggestion";
-  title: string;
-  locations: DiagnosticLocation[];
-}
-
-/** Response shape for DiagnosticReference. */
-export interface DiagnosticReferenceRead {
-  rule_id: string;
-  severity: ("error" | "warning" | "suggestion") | (string & {});
-  title: string;
-  locations: DiagnosticLocation[];
-}
-
-export interface DiagnosticDelta {
-  added: DiagnosticReference[];
-  resolved: DiagnosticReference[];
-  baseline_definition_revision_id: DefinitionRevisionId | null;
-}
-
-/** Response shape for DiagnosticDelta. */
-export interface DiagnosticDeltaRead {
-  added: DiagnosticReferenceRead[];
-  resolved: DiagnosticReferenceRead[];
-  baseline_definition_revision_id: DefinitionRevisionId | null;
-}
-
-/**
- * Deterministic Diagnostics for one immutable Definition Revision after existing patches. No
- * model-generated facts or silent edits.
- */
-export interface DiagnosticReport {
-  object: "diagnostic_report";
-  /** Contract format Typeship analyzed. */
-  format: "openapi" | "graphql";
-  project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId;
-  /** SHA-256 digest of the immutable raw source revision. */
-  source_sha256: string;
-  /** SHA-256 digest after applying the Definition's current patches. */
-  analyzed_sha256: string;
-  /** Loud misses or conflicts from the Definition's existing patches. */
-  patch_diagnostics: string[];
-  summary: DiagnosticSummary;
-  /** Stable grouped diagnostics, ordered by severity and rule identifier. */
-  diagnostics: Diagnostic[];
-  policy: DiagnosticPolicyResponse;
-  evaluation: DiagnosticEvaluation;
-  quality_signals: DiagnosticQualitySignals;
-  delta: DiagnosticDelta;
-  request_id: RequestId;
-}
-
-/** Response shape for DiagnosticReport. */
-export interface DiagnosticReportRead {
-  object: "diagnostic_report" | (string & {});
-  /** Contract format Typeship analyzed. */
-  format: ("openapi" | "graphql") | (string & {});
-  project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId;
-  /** SHA-256 digest of the immutable raw source revision. */
-  source_sha256: string;
-  /** SHA-256 digest after applying the Definition's current patches. */
-  analyzed_sha256: string;
-  /** Loud misses or conflicts from the Definition's existing patches. */
-  patch_diagnostics: string[];
-  summary: DiagnosticSummary;
-  /** Stable grouped diagnostics, ordered by severity and rule identifier. */
-  diagnostics: DiagnosticRead[];
-  policy: DiagnosticPolicyResponseRead;
-  evaluation: DiagnosticEvaluationRead;
-  quality_signals: DiagnosticQualitySignals;
-  delta: DiagnosticDeltaRead;
-  request_id: RequestId;
-}
-
-export interface DiagnosticRemediationRequest {
-  /** Stable IDs of current diagnostics whose exact patches should be reviewed and applied. */
-  diagnostic_ids: string[];
-}
-
-export interface DiagnosticRemediation {
-  object: "diagnostic_remediation";
-  kind: "overlay" | "source_review";
-  patches_applied: number;
-  /**
-   * Source pull request for repository projects; absent for URL overlays.
-   * Format: uri
-   */
-  review_url?: string | null;
-  request_id: RequestId;
-}
-
-/** Response shape for DiagnosticRemediation. */
-export interface DiagnosticRemediationRead {
-  object: "diagnostic_remediation" | (string & {});
-  kind: ("overlay" | "source_review") | (string & {});
-  patches_applied: number;
-  /**
-   * Source pull request for repository projects; absent for URL overlays.
-   * Format: uri
-   */
-  review_url?: string | null;
-  request_id: RequestId;
-}
-
-export interface RepositoryDeliveryInput {
-  kind: "repository";
-  repository: RepositoryReference;
+export interface RepositoryDeliverySettingsInput {
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
   directory?: string | null;
   /** npm or Python registry identity where applicable. */
   package_name?: string | null;
@@ -973,31 +853,42 @@ export interface RepositoryDeliveryInput {
    * Default: false
    */
   publish_on_merge?: boolean;
+}
+
+/** Response shape for RepositoryDeliverySettingsInput. */
+export interface RepositoryDeliverySettingsInputRead {
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
+  directory?: string | null;
+  /** npm or Python registry identity where applicable. */
+  package_name?: string | null;
+  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
+  module_path?: string | null;
+  /**
+   * Commit repository-owned registry automation and report publication after the Draft merges.
+   * Default: false
+   */
+  publish_on_merge?: boolean;
+}
+
+export interface RepositoryDeliveryInput {
+  type: "repository";
+  repository: RepositoryDeliverySettingsInput;
 }
 
 /** Response shape for RepositoryDeliveryInput. */
 export interface RepositoryDeliveryInputRead {
-  kind: "repository" | (string & {});
-  repository: RepositoryReferenceRead;
-  directory?: string | null;
-  /** npm or Python registry identity where applicable. */
-  package_name?: string | null;
-  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
-  module_path?: string | null;
-  /**
-   * Commit repository-owned registry automation and report publication after the Draft merges.
-   * Default: false
-   */
-  publish_on_merge?: boolean;
+  type: "repository" | (string & {});
+  repository: RepositoryDeliverySettingsInputRead;
 }
 
 export interface HostedMcpDeliveryInput {
-  kind: "hosted_mcp";
+  type: "hosted_mcp";
 }
 
 /** Response shape for HostedMcpDeliveryInput. */
 export interface HostedMcpDeliveryInputRead {
-  kind: "hosted_mcp" | (string & {});
+  type: "hosted_mcp" | (string & {});
 }
 
 export type DeliveryInput = RepositoryDeliveryInput | HostedMcpDeliveryInput;
@@ -1005,19 +896,54 @@ export type DeliveryInput = RepositoryDeliveryInput | HostedMcpDeliveryInput;
 /** Response shape for DeliveryInput. */
 export type DeliveryInputRead = RepositoryDeliveryInputRead
   | HostedMcpDeliveryInputRead
-  | Record<string, unknown> & { kind?: string };
+  | Record<string, unknown> & { type?: string };
+
+export interface RepositoryDeliverySettings {
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
+  directory: string | null;
+  package_name: string | null;
+  module_path: string | null;
+  publish_on_merge: boolean;
+}
+
+/** Response shape for RepositoryDeliverySettings. */
+export interface RepositoryDeliverySettingsRead {
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
+  directory: string | null;
+  package_name: string | null;
+  module_path: string | null;
+  publish_on_merge: boolean;
+}
+
+export interface HostedMcpDeliverySettings {
+  /**
+   * Hosted MCP endpoint for this Target, or null while it is being provisioned.
+   * Format: uri
+   */
+  url: string | null;
+}
 
 export interface RepositoryDelivery {
   id: DeliveryId;
   object: "delivery";
   target_id: TargetId;
-  kind: "repository";
-  state: "active" | "disabled";
-  repository: RepositoryReferenceResponse;
-  directory: string | null;
-  package_name: string | null;
-  module_path: string | null;
-  publish_on_merge: boolean;
+  type: "repository";
+  /**
+   * active: the repository accepts generated changes. action_required: inspect issues for the
+   * correction. disabled: the Target is disabled and receives no changes.
+   */
+  status: "active" | "action_required" | "disabled";
+  repository: RepositoryDeliverySettings;
+  issues: RepositoryDeliveryIssue[];
+  /** Repository check names Typeship expects before accepting a Draft. */
+  required_checks: string[];
+  /**
+   * Last observed repository event relevant to this Delivery, if available. A failed event adds an
+   * actionable issue.
+   */
+  last_event: RepositoryDeliveryEvent | null;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1029,27 +955,82 @@ export interface RepositoryDeliveryRead {
   id: DeliveryId;
   object: "delivery" | (string & {});
   target_id: TargetId;
-  kind: "repository" | (string & {});
-  state: ("active" | "disabled") | (string & {});
-  repository: RepositoryReferenceResponseRead;
-  directory: string | null;
-  package_name: string | null;
-  module_path: string | null;
-  publish_on_merge: boolean;
+  type: "repository" | (string & {});
+  /**
+   * active: the repository accepts generated changes. action_required: inspect issues for the
+   * correction. disabled: the Target is disabled and receives no changes.
+   */
+  status: ("active" | "action_required" | "disabled") | (string & {});
+  repository: RepositoryDeliverySettingsRead;
+  issues: RepositoryDeliveryIssueRead[];
+  /** Repository check names Typeship expects before accepting a Draft. */
+  required_checks: string[];
+  /**
+   * Last observed repository event relevant to this Delivery, if available. A failed event adds an
+   * actionable issue.
+   */
+  last_event: RepositoryDeliveryEventRead | null;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
   updated_at: string;
 }
 
+export interface RepositoryDeliveryIssue {
+  code: "app_not_installed"
+    | "repository_unreachable"
+    | "contents_write_missing"
+    | "pull_request_missing"
+    | "approval_label_missing"
+    | "check_missing"
+    | "event_failed";
+  /** Specific customer action or repository setting to inspect. */
+  message: string;
+}
+
+/** Response shape for RepositoryDeliveryIssue. */
+export interface RepositoryDeliveryIssueRead {
+  code: ("app_not_installed"
+    | "repository_unreachable"
+    | "contents_write_missing"
+    | "pull_request_missing"
+    | "approval_label_missing"
+    | "check_missing"
+    | "event_failed") | (string & {});
+  /** Specific customer action or repository setting to inspect. */
+  message: string;
+}
+
+export interface RepositoryDeliveryEvent {
+  /** Repository event type. */
+  event: string;
+  /** superseded: a newer event for the same repository replaced this one before it finished. */
+  status: "queued" | "running" | "completed" | "failed" | "superseded";
+  /** Format: date-time */
+  created_at: string;
+}
+
+/** Response shape for RepositoryDeliveryEvent. */
+export interface RepositoryDeliveryEventRead {
+  /** Repository event type. */
+  event: string;
+  /** superseded: a newer event for the same repository replaced this one before it finished. */
+  status: ("queued" | "running" | "completed" | "failed" | "superseded") | (string & {});
+  /** Format: date-time */
+  created_at: string;
+}
+
 export interface HostedMcpDelivery {
   id: DeliveryId;
   object: "delivery";
   target_id: TargetId;
-  kind: "hosted_mcp";
-  state: "active" | "disabled";
-  /** Format: uri */
-  url: string | null;
+  type: "hosted_mcp";
+  /**
+   * active: the endpoint serves the Target's latest accepted package. disabled: the Target is
+   * disabled and the endpoint is paused.
+   */
+  status: "active" | "disabled";
+  hosted_mcp: HostedMcpDeliverySettings;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1061,10 +1042,13 @@ export interface HostedMcpDeliveryRead {
   id: DeliveryId;
   object: "delivery" | (string & {});
   target_id: TargetId;
-  kind: "hosted_mcp" | (string & {});
-  state: ("active" | "disabled") | (string & {});
-  /** Format: uri */
-  url: string | null;
+  type: "hosted_mcp" | (string & {});
+  /**
+   * active: the endpoint serves the Target's latest accepted package. disabled: the Target is
+   * disabled and the endpoint is paused.
+   */
+  status: ("active" | "disabled") | (string & {});
+  hosted_mcp: HostedMcpDeliverySettings;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1076,25 +1060,23 @@ export type Delivery = RepositoryDelivery | HostedMcpDelivery;
 /** Response shape for Delivery. */
 export type DeliveryRead = RepositoryDeliveryRead
   | HostedMcpDeliveryRead
-  | Record<string, unknown> & { kind?: string };
+  | Record<string, unknown> & { type?: string };
 
 /**
- * Repository fields are present for a repository Delivery; url is present for a hosted_mcp
- * Delivery.
+ * repository is present for a repository Delivery, with issues, required_checks, and last_event;
+ * hosted_mcp is present for a hosted_mcp Delivery.
  */
 export interface DeliveryResponse {
   id: DeliveryId;
   object: "delivery";
   target_id: TargetId;
-  kind: "repository" | "hosted_mcp";
-  state: "active" | "disabled";
-  repository?: RepositoryReferenceResponse;
-  directory?: string | null;
-  package_name?: string | null;
-  module_path?: string | null;
-  publish_on_merge?: boolean;
-  /** Format: uri */
-  url?: string | null;
+  type: "repository" | "hosted_mcp";
+  status: "active" | "action_required" | "disabled";
+  repository?: RepositoryDeliverySettings;
+  issues?: RepositoryDeliveryIssue[];
+  required_checks?: string[];
+  last_event?: RepositoryDeliveryEvent | null;
+  hosted_mcp?: HostedMcpDeliverySettings;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1107,15 +1089,13 @@ export interface DeliveryResponseRead {
   id: DeliveryId;
   object: "delivery" | (string & {});
   target_id: TargetId;
-  kind: ("repository" | "hosted_mcp") | (string & {});
-  state: ("active" | "disabled") | (string & {});
-  repository?: RepositoryReferenceResponseRead;
-  directory?: string | null;
-  package_name?: string | null;
-  module_path?: string | null;
-  publish_on_merge?: boolean;
-  /** Format: uri */
-  url?: string | null;
+  type: ("repository" | "hosted_mcp") | (string & {});
+  status: ("active" | "action_required" | "disabled") | (string & {});
+  repository?: RepositoryDeliverySettingsRead;
+  issues?: RepositoryDeliveryIssueRead[];
+  required_checks?: string[];
+  last_event?: RepositoryDeliveryEventRead | null;
+  hosted_mcp?: HostedMcpDeliverySettings;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -1124,26 +1104,26 @@ export interface DeliveryResponseRead {
 }
 
 /**
- * One Target generated from a sibling Target. A go-cli Target carries kind go_sdk_module, naming
+ * One Target generated from a sibling Target. A go_cli Target carries type go_sdk_module, naming
  * the Go SDK Target it is generated against.
  */
 export interface TargetDependency {
-  kind: "go_sdk_module";
+  type: "go_sdk_module";
   target_id: TargetId;
 }
 
 /** Response shape for TargetDependency. */
 export interface TargetDependencyRead {
-  kind: "go_sdk_module" | (string & {});
+  type: "go_sdk_module" | (string & {});
   target_id: TargetId;
 }
 
 /**
- * Required checks run against the complete combined package. Generated checks and customer commands
- * share one reproducible workflow; repository_required names existing repository checks. Supplying
- * checks replaces all settings. Omitted generated restores build, package, and public_entrypoint;
- * omitted repository_required and customer restore empty lists. An empty object restores these
- * defaults. An empty array clears the corresponding list.
+ * Required checks run against the code in the Draft. Generated checks and customer commands share
+ * one reproducible workflow; repository_required names existing repository checks. Supplying checks
+ * replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted
+ * repository_required and customer restore empty lists. An empty object restores these defaults. An
+ * empty array clears the corresponding list.
  */
 export interface TargetChecks {
   /** Default: ["build","package","public_entrypoint"] */
@@ -1166,44 +1146,38 @@ export interface TargetChecksRead {
   }>;
 }
 
-export interface TargetFields {
+export interface TargetCreateRequest {
+  project_id: ProjectId;
   name: string;
-  definition_id: DefinitionId;
-  generator: GeneratorKind;
+  spec_id: SpecId;
+  type: GeneratorKind;
   /** Default: "active" */
-  state?: "active" | "disabled";
-  /** Default: "2026-08-24" */
-  edition?: string;
+  status?: "active" | "disabled";
   /** Default: "stable" */
   release_channel?: "stable" | "prerelease";
-  /** Optional larger or prerelease SemVer for the next reviewed release. */
-  proposed_version?: string | null;
   checks?: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * belong to the Spec.
    */
   config?: TargetConfig | null;
   deliveries?: DeliveryInput[];
 }
 
-/** Response shape for TargetFields. */
-export interface TargetFieldsRead {
+/** Response shape for TargetCreateRequest. */
+export interface TargetCreateRequestRead {
+  project_id: ProjectId;
   name: string;
-  definition_id: DefinitionId;
-  generator: GeneratorKind | (string & {});
+  spec_id: SpecId;
+  type: GeneratorKind | (string & {});
   /** Default: "active" */
-  state?: ("active" | "disabled") | (string & {});
-  /** Default: "2026-08-24" */
-  edition?: string;
+  status?: ("active" | "disabled") | (string & {});
   /** Default: "stable" */
   release_channel?: ("stable" | "prerelease") | (string & {});
-  /** Optional larger or prerelease SemVer for the next reviewed release. */
-  proposed_version?: string | null;
   checks?: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * belong to the Spec.
    */
   config?: TargetConfigRead | null;
   deliveries?: DeliveryInputRead[];
@@ -1211,18 +1185,15 @@ export interface TargetFieldsRead {
 
 export interface InitialTargetFields {
   name: string;
-  generator: GeneratorKind;
+  type: GeneratorKind;
   /** Default: "active" */
-  state?: "active" | "disabled";
-  /** Default: "2026-08-24" */
-  edition?: string;
+  status?: "active" | "disabled";
   /** Default: "stable" */
   release_channel?: "stable" | "prerelease";
-  proposed_version?: string | null;
   checks?: TargetChecks;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * belong to the Spec.
    */
   config?: TargetConfig | null;
   deliveries?: DeliveryInput[];
@@ -1231,18 +1202,15 @@ export interface InitialTargetFields {
 /** Response shape for InitialTargetFields. */
 export interface InitialTargetFieldsRead {
   name: string;
-  generator: GeneratorKind | (string & {});
+  type: GeneratorKind | (string & {});
   /** Default: "active" */
-  state?: ("active" | "disabled") | (string & {});
-  /** Default: "2026-08-24" */
-  edition?: string;
+  status?: ("active" | "disabled") | (string & {});
   /** Default: "stable" */
   release_channel?: ("stable" | "prerelease") | (string & {});
-  proposed_version?: string | null;
   checks?: TargetChecksRead;
   /**
    * Target-specific overrides merged over Project.config. GraphQL settings are rejected here and
-   * belong to the Definition.
+   * belong to the Spec.
    */
   config?: TargetConfigRead | null;
   deliveries?: DeliveryInputRead[];
@@ -1250,19 +1218,12 @@ export interface InitialTargetFieldsRead {
 
 export interface TargetUpdateRequest {
   name?: string;
-  state?: "active" | "disabled";
-  edition?: string;
+  status?: "active" | "disabled";
   release_channel?: "stable" | "prerelease";
-  /**
-   * Send only this field to select an exact SemVer, or null for automatic selection. The Target and
-   * Draft endpoints both support an optional If-Match precondition.
-   */
-  proposed_version?: string | null;
   checks?: TargetChecks;
   /**
    * Replaces the complete stored override object. Send null or an empty object to resume Project
-   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the
-   * Definition.
+   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfig | null;
   /**
@@ -1278,19 +1239,12 @@ export interface TargetUpdateRequest {
 /** Response shape for TargetUpdateRequest. */
 export interface TargetUpdateRequestRead {
   name?: string;
-  state?: ("active" | "disabled") | (string & {});
-  edition?: string;
+  status?: ("active" | "disabled") | (string & {});
   release_channel?: ("stable" | "prerelease") | (string & {});
-  /**
-   * Send only this field to select an exact SemVer, or null for automatic selection. The Target and
-   * Draft endpoints both support an optional If-Match precondition.
-   */
-  proposed_version?: string | null;
   checks?: TargetChecksRead;
   /**
    * Replaces the complete stored override object. Send null or an empty object to resume Project
-   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the
-   * Definition.
+   * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfigRead | null;
   /**
@@ -1303,36 +1257,35 @@ export interface TargetUpdateRequestRead {
   deliveries?: DeliveryInputRead[];
 }
 
+/**
+ * All Targets follow reviewed SemVer. Before 1.0.0, breaking changes require a minor version; the
+ * policy is fixed rather than configurable.
+ */
 export interface Target {
   id: TargetId;
   object: "target";
   project_id: ProjectId;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   name: string;
-  generator: GeneratorKind;
+  type: GeneratorKind;
   /**
-   * Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.
-   * Every other generator reports null.
+   * Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.
+   * Every other Target type reports null.
    */
   dependency: TargetDependency | null;
-  state: "active" | "disabled";
-  edition: string;
+  status: "active" | "disabled";
   release_channel: "stable" | "prerelease";
-  version_policy: {
-    mode: "reviewed_semver";
-    pre1_breaking: "minor";
-  };
   /**
-   * Read-only version of the Target's Current release, or null before its first release. Registry
-   * publication status is separate; inspect the Target Release for publication results.
+   * Read-only version of the Target's latest release, or null before its first release. Publishing
+   * status is separate; inspect the release for its results.
    */
-  current_version: string | null;
-  proposed_version: string | null;
-  proposed_version_source: "console" | "api" | "github" | null;
+  version_current: string | null;
+  /** The Target's open Draft. After a merge it names the next Draft. */
+  draft_id: DraftId;
   checks: TargetChecksResponse;
   /**
-   * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
-   * never appear here.
+   * Target-specific overrides merged over Project.config. GraphQL settings are Spec-owned and never
+   * appear here.
    */
   config: TargetConfigResponse | null;
   /** At most one repository and one hosted MCP Delivery. */
@@ -1349,27 +1302,15 @@ export interface TargetWrite {
   id: TargetId;
   object: "target";
   project_id: ProjectId;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   name: string;
-  generator: GeneratorKind;
-  state: "active" | "disabled";
-  edition: string;
+  type: GeneratorKind;
+  status: "active" | "disabled";
   release_channel: "stable" | "prerelease";
-  version_policy: {
-    mode: "reviewed_semver";
-    pre1_breaking: "minor";
-  };
-  /**
-   * Read-only version of the Target's Current release, or null before its first release. Registry
-   * publication status is separate; inspect the Target Release for publication results.
-   */
-  current_version: string | null;
-  proposed_version: string | null;
-  proposed_version_source: "console" | "api" | "github" | null;
   checks: TargetChecksResponse;
   /**
-   * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
-   * never appear here.
+   * Target-specific overrides merged over Project.config. GraphQL settings are Spec-owned and never
+   * appear here.
    */
   config: TargetConfigResponse | null;
   /** At most one repository and one hosted MCP Delivery. */
@@ -1386,32 +1327,27 @@ export interface TargetRead {
   id: TargetId;
   object: "target" | (string & {});
   project_id: ProjectId;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   name: string;
-  generator: GeneratorKind | (string & {});
+  type: GeneratorKind | (string & {});
   /**
-   * Present only on a go-cli Target, naming the sibling Go SDK Target the CLI is generated against.
-   * Every other generator reports null.
+   * Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.
+   * Every other Target type reports null.
    */
   dependency: TargetDependencyRead | null;
-  state: ("active" | "disabled") | (string & {});
-  edition: string;
+  status: ("active" | "disabled") | (string & {});
   release_channel: ("stable" | "prerelease") | (string & {});
-  version_policy: {
-    mode: "reviewed_semver" | (string & {});
-    pre1_breaking: "minor" | (string & {});
-  };
   /**
-   * Read-only version of the Target's Current release, or null before its first release. Registry
-   * publication status is separate; inspect the Target Release for publication results.
+   * Read-only version of the Target's latest release, or null before its first release. Publishing
+   * status is separate; inspect the release for its results.
    */
-  current_version: string | null;
-  proposed_version: string | null;
-  proposed_version_source: ("console" | "api" | "github" | null) | (string & {}) | null;
+  version_current: string | null;
+  /** The Target's open Draft. After a merge it names the next Draft. */
+  draft_id: DraftId;
   checks: TargetChecksResponseRead;
   /**
-   * Target-specific overrides merged over Project.config. GraphQL settings are Definition-owned and
-   * never appear here.
+   * Target-specific overrides merged over Project.config. GraphQL settings are Spec-owned and never
+   * appear here.
    */
   config: TargetConfigResponseRead | null;
   /** At most one repository and one hosted MCP Delivery. */
@@ -1430,6 +1366,57 @@ export type TargetResponseWrite = TargetWrite & ResponseMetadata;
 
 /** Response shape for TargetResponse. */
 export type TargetResponseRead = TargetRead & ResponseMetadata;
+
+export interface DeliveryList {
+  object: ListObject;
+  data: Delivery[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Response shape for DeliveryList. */
+export interface DeliveryListRead {
+  object: ListObject;
+  data: DeliveryRead[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+export interface PublicationList {
+  object: ListObject;
+  data: Publication[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Response shape for PublicationList. */
+export interface PublicationListRead {
+  object: ListObject;
+  data: PublicationRead[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+export interface DraftList {
+  object: ListObject;
+  data: Draft[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Response shape for DraftList. */
+export interface DraftListRead {
+  object: ListObject;
+  data: DraftRead[];
+  has_more: boolean;
+  next_cursor: string | null;
+  request_id: RequestId;
+}
 
 export interface TargetList {
   object: ListObject;
@@ -1457,9 +1444,9 @@ export interface TargetListRead {
   request_id: RequestId;
 }
 
-export interface TargetRelease {
-  id: TargetReleaseId;
-  object: "target_release";
+export interface Release {
+  id: ReleaseId;
+  object: "release";
   target_id: TargetId;
   /** Null only for a verified release imported during package adoption. */
   generation_id: GenerationId | null;
@@ -1467,22 +1454,33 @@ export interface TargetRelease {
   /** Immutable package version released from this Target. */
   version: string;
   channel: "stable" | "prerelease";
-  /** Delivery provider that accepted the release. */
-  provider: string;
   repository: RepositoryReferenceResponse | null;
-  definition_revision_id: DefinitionRevisionId | null;
-  /** Immutable provider-native revision that was merged or published. */
-  delivery_revision: string;
-  /** Digest of the exact accepted source tree used for publication. */
-  source_digest: string | null;
+  spec_revision_id: SpecRevisionId | null;
+  /**
+   * Git commit containing the accepted package. Compare it with the Delivery repository history or
+   * checked-out commit.
+   */
+  commit_sha: string;
   checks: PackageCheck[];
-  accepted_risks: AcceptedCompatibilityRisk[];
+  approvals: CompatibilityApproval[];
+  /**
+   * For an adopted Release, compare the tag and registry URL with the published package and its
+   * artifact digest. Null for a Release created by Typeship.
+   */
   import_provenance: {
+    /** Git tag to compare with the repository release, if available. */
     tag: string | null;
-    /** Format: uri */
+    /**
+     * Published package page to inspect, if available.
+     * Format: uri
+     */
     registry_url: string | null;
+    /** Published artifact digest to compare with registry metadata, if available. */
     artifact_digest: string | null;
-    /** Format: date-time */
+    /**
+     * When Typeship recorded the adopted package.
+     * Format: date-time
+     */
     imported_at: string | null;
   }
     | null;
@@ -1492,10 +1490,10 @@ export interface TargetRelease {
   request_id?: RequestId;
 }
 
-/** Response shape for TargetRelease. */
-export interface TargetReleaseRead {
-  id: TargetReleaseId;
-  object: "target_release" | (string & {});
+/** Response shape for Release. */
+export interface ReleaseRead {
+  id: ReleaseId;
+  object: "release" | (string & {});
   target_id: TargetId;
   /** Null only for a verified release imported during package adoption. */
   generation_id: GenerationId | null;
@@ -1503,22 +1501,33 @@ export interface TargetReleaseRead {
   /** Immutable package version released from this Target. */
   version: string;
   channel: ("stable" | "prerelease") | (string & {});
-  /** Delivery provider that accepted the release. */
-  provider: string;
   repository: RepositoryReferenceResponseRead | null;
-  definition_revision_id: DefinitionRevisionId | null;
-  /** Immutable provider-native revision that was merged or published. */
-  delivery_revision: string;
-  /** Digest of the exact accepted source tree used for publication. */
-  source_digest: string | null;
+  spec_revision_id: SpecRevisionId | null;
+  /**
+   * Git commit containing the accepted package. Compare it with the Delivery repository history or
+   * checked-out commit.
+   */
+  commit_sha: string;
   checks: PackageCheckRead[];
-  accepted_risks: AcceptedCompatibilityRiskRead[];
+  approvals: CompatibilityApprovalRead[];
+  /**
+   * For an adopted Release, compare the tag and registry URL with the published package and its
+   * artifact digest. Null for a Release created by Typeship.
+   */
   import_provenance: {
+    /** Git tag to compare with the repository release, if available. */
     tag: string | null;
-    /** Format: uri */
+    /**
+     * Published package page to inspect, if available.
+     * Format: uri
+     */
     registry_url: string | null;
+    /** Published artifact digest to compare with registry metadata, if available. */
     artifact_digest: string | null;
-    /** Format: date-time */
+    /**
+     * When Typeship recorded the adopted package.
+     * Format: date-time
+     */
     imported_at: string | null;
   }
     | null;
@@ -1528,23 +1537,23 @@ export interface TargetReleaseRead {
   request_id?: RequestId;
 }
 
-export type TargetReleaseResponse = TargetRelease & ResponseMetadata;
+export type ReleaseResponse = Release & ResponseMetadata;
 
-/** Response shape for TargetReleaseResponse. */
-export type TargetReleaseResponseRead = TargetReleaseRead & ResponseMetadata;
+/** Response shape for ReleaseResponse. */
+export type ReleaseResponseRead = ReleaseRead & ResponseMetadata;
 
-export interface TargetReleaseList {
+export interface ReleaseList {
   object: ListObject;
-  data: TargetRelease[];
+  data: Release[];
   has_more: boolean;
   next_cursor: string | null;
   request_id: RequestId;
 }
 
-/** Response shape for TargetReleaseList. */
-export interface TargetReleaseListRead {
+/** Response shape for ReleaseList. */
+export interface ReleaseListRead {
   object: ListObject;
-  data: TargetReleaseRead[];
+  data: ReleaseRead[];
   has_more: boolean;
   next_cursor: string | null;
   request_id: RequestId;
@@ -1553,9 +1562,9 @@ export interface TargetReleaseListRead {
 export interface Publication {
   id: PublicationId;
   object: "publication";
-  target_release_id: TargetReleaseId;
+  release_id: ReleaseId;
   destination: "github" | "npm" | "pypi" | "go" | "mcp";
-  state: "pending" | "publishing" | "published" | "failed" | "disabled";
+  status: "pending" | "publishing" | "published" | "failed" | "disabled";
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1568,6 +1577,10 @@ export interface Publication {
   started_at: string | null;
   /** Format: date-time */
   finished_at: string | null;
+  /** Milliseconds from started_at to finished_at; null until the attempt finishes. */
+  runtime_ms: number | null;
+  /** Format: date-time */
+  created_at: string;
   /** Format: date-time */
   updated_at: string;
 }
@@ -1576,9 +1589,9 @@ export interface Publication {
 export interface PublicationRead {
   id: PublicationId;
   object: "publication" | (string & {});
-  target_release_id: TargetReleaseId;
+  release_id: ReleaseId;
   destination: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
-  state: ("pending" | "publishing" | "published" | "failed" | "disabled") | (string & {});
+  status: ("pending" | "publishing" | "published" | "failed" | "disabled") | (string & {});
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1591,235 +1604,266 @@ export interface PublicationRead {
   started_at: string | null;
   /** Format: date-time */
   finished_at: string | null;
+  /** Milliseconds from started_at to finished_at; null until the attempt finishes. */
+  runtime_ms: number | null;
+  /** Format: date-time */
+  created_at: string;
   /** Format: date-time */
   updated_at: string;
 }
 
-export type PublicationResponse = Publication & {
-  /** Format: date-time */
-  created_at: string;
-} & ResponseMetadata;
+export type PublicationResponse = Publication & ResponseMetadata;
 
 /** Response shape for PublicationResponse. */
-export type PublicationResponseRead = PublicationRead & {
-  /** Format: date-time */
-  created_at: string;
-} & ResponseMetadata;
-
-export type TargetDraftSelection = {
-  mode: "automatic";
-}
-  | {
-      mode: "exact";
-      version: string;
-      /** Where the selection was made. */
-      source: "console" | "api" | "github" | null;
-    };
-
-/** Response shape for TargetDraftSelection. */
-export type TargetDraftSelectionRead = {
-  mode: "automatic" | (string & {});
-}
-  | {
-      mode: "exact" | (string & {});
-      version: string;
-      /** Where the selection was made. */
-      source: ("console" | "api" | "github" | null) | (string & {}) | null;
-    };
+export type PublicationResponseRead = PublicationRead & ResponseMetadata;
 
 /**
- * The Draft's state and its one next step. no_draft: no Draft is open; generate the Target.
- * generating: Typeship is updating the Draft branch; retrieve the Draft again. branch_changed: the
- * Draft branch has a commit Typeship has not integrated, such as your push or a discard; Typeship
- * starts that integration from the repository event, so retrieve the Draft again, and generate the
- * Target only if the status persists. conflicted: some conflicts have no decision; list files with
- * filter=conflicted and resolve them. needs_generation: saved conflict decisions, an approved
- * history recovery, or a settings change are not applied yet; generate the Target.
- * history_rewritten: the default branch no longer contains the accepted package; review files with
- * filter=history and approve history recovery. checking: package checks are running on
- * head_revision; retrieve the Draft again. failed: readiness failed or could not be assessed;
- * inspect readiness and checks, fix the package or pull request, and push to the Draft. ready:
- * every required check passed on head_revision; merge the pull request.
+ * none: the open Draft has no pending change; generate the Target to start one. working: Typeship
+ * is generating, carrying repository edits forward, applying decisions, or checking the Draft;
+ * retrieve it again. action_required: use the typed reason to find the customer's next action.
+ * ready: required checks passed on head_sha; merge the pull request. merged: the pull request
+ * merged and the Draft is final; retrieve the Target for the draft_id of its next Draft.
  */
 export const DraftStatus = {
-  NO_DRAFT: "no_draft",
-  GENERATING: "generating",
-  BRANCH_CHANGED: "branch_changed",
-  CONFLICTED: "conflicted",
-  NEEDS_GENERATION: "needs_generation",
-  HISTORY_REWRITTEN: "history_rewritten",
-  CHECKING: "checking",
-  FAILED: "failed",
+  NONE: "none",
+  WORKING: "working",
+  ACTION_REQUIRED: "action_required",
   READY: "ready",
+  MERGED: "merged",
 } as const;
 export type DraftStatus = (typeof DraftStatus)[keyof typeof DraftStatus];
 
-export interface TargetDraftConflicts {
+/**
+ * conflict: resolve the listed files. checks_failed: correct failed package checks. review_failed:
+ * correct the Draft title, version, or other readiness finding. checks_unavailable: restore a
+ * required check. history_rewritten: review the affected files and approve recovery.
+ */
+export const DraftActionReason = {
+  CONFLICT: "conflict",
+  CHECKS_FAILED: "checks_failed",
+  REVIEW_FAILED: "review_failed",
+  CHECKS_UNAVAILABLE: "checks_unavailable",
+  HISTORY_REWRITTEN: "history_rewritten",
+} as const;
+export type DraftActionReason = (typeof DraftActionReason)[keyof typeof DraftActionReason];
+
+export interface DraftConflicts {
   /** Conflicts in the current merge stage. */
   total: number;
-  /** Conflicts with a saved decision for head_revision. */
+  /** Conflicts with a saved decision for head_sha. */
   decided: number;
 }
 
 /** The approval inputs for a default-branch history rewrite. */
-export interface TargetDraftHistoryRecovery {
-  /** Rewritten default-branch commit. Send it as expected_default_revision. */
-  default_revision: string;
-  /** Draft commit Typeship last observed. Send it as expected_head_revision. */
-  head_revision: string | null;
+export interface DraftHistoryRecovery {
+  /** Rewritten default-branch commit. Send it as expected_default_sha. */
+  default_sha: string;
+  /** Draft commit Typeship last observed. Send it as expected_head_sha. */
+  head_sha: string | null;
   /** Existing Draft branch that stays available after recovery opens a new Draft. */
   preserved_branch: string | null;
 }
 
 /**
- * Readiness decision for the Draft's head_revision. Null readiness on the Draft means no candidate
- * exists.
+ * Readiness decision for the Draft's head_sha. Null readiness on the Draft means no Draft has been
+ * generated.
  */
-export interface TargetDraftReadiness {
+export interface DraftReadiness {
   /**
    * success means required checks passed; failure means the Draft needs correction or review; error
    * means assessment could not finish; pending means checks have not finished.
    */
-  state: "success" | "failure" | "error" | "pending";
+  status: "success" | "failure" | "error" | "pending";
   /** Human-readable explanation of the current decision. Do not parse it for control flow. */
   description: string;
-  /** API surface comparison against Current. unknown means analysis is unavailable. */
-  api_compatibility: "compatible" | "breaking" | "unknown";
+  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
+  compatibility_api: "compatible" | "breaking" | "unknown";
   /**
-   * Package and supported SDK source comparison against Current. unknown means analysis is
-   * incomplete or unavailable.
+   * Package and supported SDK source comparison against the latest release. unknown means analysis
+   * is incomplete or unavailable.
    */
-  package_compatibility: "compatible" | "breaking" | "unknown";
+  compatibility_package: "compatible" | "breaking" | "unknown";
   /** Whether the version satisfies the assessed change. Null when no verdict is available. */
   version_correct: boolean | null;
-  /** Minimum assessed version bump. Null when no bump has been determined. */
-  required_bump: "major" | "minor" | "patch" | null;
-  /** Version used for the comparison. Null when no comparison version is available. */
-  previous_version: string | null;
+  /**
+   * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
+   * has been determined.
+   */
+  bump_required: "major" | "minor" | "patch" | null;
+  /** Latest release version used for the comparison. Null before the first release. */
+  version_previous: string | null;
   /** Draft title error that must be corrected before release. Null when none is recorded. */
   title_error: string | null;
 }
 
-/** Response shape for TargetDraftReadiness. */
-export interface TargetDraftReadinessRead {
+/** Response shape for DraftReadiness. */
+export interface DraftReadinessRead {
   /**
    * success means required checks passed; failure means the Draft needs correction or review; error
    * means assessment could not finish; pending means checks have not finished.
    */
-  state: ("success" | "failure" | "error" | "pending") | (string & {});
+  status: ("success" | "failure" | "error" | "pending") | (string & {});
   /** Human-readable explanation of the current decision. Do not parse it for control flow. */
   description: string;
-  /** API surface comparison against Current. unknown means analysis is unavailable. */
-  api_compatibility: ("compatible" | "breaking" | "unknown") | (string & {});
+  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
+  compatibility_api: ("compatible" | "breaking" | "unknown") | (string & {});
   /**
-   * Package and supported SDK source comparison against Current. unknown means analysis is
-   * incomplete or unavailable.
+   * Package and supported SDK source comparison against the latest release. unknown means analysis
+   * is incomplete or unavailable.
    */
-  package_compatibility: ("compatible" | "breaking" | "unknown") | (string & {});
+  compatibility_package: ("compatible" | "breaking" | "unknown") | (string & {});
   /** Whether the version satisfies the assessed change. Null when no verdict is available. */
   version_correct: boolean | null;
-  /** Minimum assessed version bump. Null when no bump has been determined. */
-  required_bump: ("major" | "minor" | "patch" | null) | (string & {}) | null;
-  /** Version used for the comparison. Null when no comparison version is available. */
-  previous_version: string | null;
+  /**
+   * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
+   * has been determined.
+   */
+  bump_required: ("major" | "minor" | "patch" | null) | (string & {}) | null;
+  /** Latest release version used for the comparison. Null before the first release. */
+  version_previous: string | null;
   /** Draft title error that must be corrected before release. Null when none is recorded. */
   title_error: string | null;
 }
 
-export interface TargetDraft {
-  object: "target_draft";
+/**
+ * One reviewed package change for a Target. A Target has one open Draft, named by its draft_id;
+ * when the pull request merges, the Draft becomes merged and final, and the Target opens a new
+ * Draft with a new ID.
+ */
+export interface Draft {
+  id: DraftId;
+  object: "draft";
   target_id: TargetId;
   project_id: ProjectId;
   status: DraftStatus;
-  current_version: string | null;
-  version: string | null;
-  selection: TargetDraftSelection;
-  readiness: TargetDraftReadiness | null;
+  /** Present and required when status is action_required; absent otherwise. */
+  reason?: DraftActionReason;
+  /** Next version for this Draft, or null before a version is selected. */
+  version_next: string | null;
+  /** Where version_next was selected; null once the Draft merged. */
+  version_source: "automatic" | "console" | "api" | "github" | null;
+  readiness: DraftReadiness | null;
   changes: {
-    /** Cumulative changelog against Current. */
+    /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    previous_version?: string | null;
+    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_revision
-   * when resolving or discarding.
+   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
+   * resolving or discarding.
    */
-  head_revision: string | null;
-  /** Format: uri */
-  pull_request_url: string | null;
+  head_sha: string | null;
+  /** The Draft pull request in the destination repository, or null before one is opened. */
+  pull_request: {
+    /** Format: uri */
+    url: string;
+    number: number;
+  } | null;
   /** Generation whose package this Draft contains. */
   generation_id: GenerationId | null;
+  /**
+   * Release this Draft created when it merged; null while open, or when a merge changed only tests
+   * or checks.
+   */
+  release_id: ReleaseId | null;
+  /**
+   * When the Draft opened.
+   * Format: date-time
+   */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
   /** Conflict counts for the current merge stage; null when the Draft has no conflicts. */
-  conflicts: TargetDraftConflicts | null;
+  conflicts: DraftConflicts | null;
   /**
    * Files where the Draft differs from the last accepted package; null until the Draft is
    * integrated.
    */
   customized_files: number | null;
-  /** Present only while status is history_rewritten. */
-  history_recovery: TargetDraftHistoryRecovery | null;
+  /** Present only while status is action_required and reason is history_rewritten. */
+  history_recovery: DraftHistoryRecovery | null;
   request_id?: RequestId;
   checks: PackageCheck[];
 }
 
-/** Response shape for TargetDraft. */
-export interface TargetDraftRead {
-  object: "target_draft" | (string & {});
+/** Response shape for Draft. */
+export interface DraftRead {
+  id: DraftId;
+  object: "draft" | (string & {});
   target_id: TargetId;
   project_id: ProjectId;
   status: DraftStatus | (string & {});
-  current_version: string | null;
-  version: string | null;
-  selection: TargetDraftSelectionRead;
-  readiness: TargetDraftReadinessRead | null;
+  /** Present and required when status is action_required; absent otherwise. */
+  reason?: DraftActionReason | (string & {});
+  /** Next version for this Draft, or null before a version is selected. */
+  version_next: string | null;
+  /** Where version_next was selected; null once the Draft merged. */
+  version_source: ("automatic" | "console" | "api" | "github" | null) | (string & {}) | null;
+  readiness: DraftReadinessRead | null;
   changes: {
-    /** Cumulative changelog against Current. */
+    /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    previous_version?: string | null;
+    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_revision
-   * when resolving or discarding.
+   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
+   * resolving or discarding.
    */
-  head_revision: string | null;
-  /** Format: uri */
-  pull_request_url: string | null;
+  head_sha: string | null;
+  /** The Draft pull request in the destination repository, or null before one is opened. */
+  pull_request: {
+    /** Format: uri */
+    url: string;
+    number: number;
+  } | null;
   /** Generation whose package this Draft contains. */
   generation_id: GenerationId | null;
+  /**
+   * Release this Draft created when it merged; null while open, or when a merge changed only tests
+   * or checks.
+   */
+  release_id: ReleaseId | null;
+  /**
+   * When the Draft opened.
+   * Format: date-time
+   */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
   /** Conflict counts for the current merge stage; null when the Draft has no conflicts. */
-  conflicts: TargetDraftConflicts | null;
+  conflicts: DraftConflicts | null;
   /**
    * Files where the Draft differs from the last accepted package; null until the Draft is
    * integrated.
    */
   customized_files: number | null;
-  /** Present only while status is history_rewritten. */
-  history_recovery: TargetDraftHistoryRecovery | null;
+  /** Present only while status is action_required and reason is history_rewritten. */
+  history_recovery: DraftHistoryRecovery | null;
   request_id?: RequestId;
   checks: PackageCheckRead[];
 }
 
-export type TargetDraftResponse = TargetDraft & ResponseMetadata;
+export type DraftResponse = Draft & ResponseMetadata;
 
-/** Response shape for TargetDraftResponse. */
-export type TargetDraftResponseRead = TargetDraftRead & ResponseMetadata;
+/** Response shape for DraftResponse. */
+export type DraftResponseRead = DraftRead & ResponseMetadata;
 
-export interface TargetDraftUpdate {
+export interface DraftUpdateRequest {
   /** Exact SemVer, or null to return to automatic selection. */
-  version: string | null;
+  version_next: string | null;
 }
 
 export interface PackageCheck {
   name: string;
   source: "typeship" | "customer" | "repository" | "compatibility";
   required: boolean;
-  state: "pending" | "passed" | "failed" | "not_assessed";
+  status: "pending" | "passed" | "failed" | "not_assessed";
   reason: string;
-  revision: string;
+  commit_sha: string;
   /** Format: uri */
   url: string | null;
   /** Format: date-time */
@@ -1831,170 +1875,70 @@ export interface PackageCheckRead {
   name: string;
   source: ("typeship" | "customer" | "repository" | "compatibility") | (string & {});
   required: boolean;
-  state: ("pending" | "passed" | "failed" | "not_assessed") | (string & {});
+  status: ("pending" | "passed" | "failed" | "not_assessed") | (string & {});
   reason: string;
-  revision: string;
+  commit_sha: string;
   /** Format: uri */
   url: string | null;
   /** Format: date-time */
   observed_at: string | null;
 }
 
-export interface AcceptedCompatibilityRisk {
-  comparison: "current" | "published";
+export interface CompatibilityApproval {
+  source: "source_pr" | "draft_pr";
   reason: string;
   approved_by: string;
-  approved_revision: string;
+  approved_sha: string;
   /** Format: date-time */
   approved_at: string;
 }
 
-/** Response shape for AcceptedCompatibilityRisk. */
-export interface AcceptedCompatibilityRiskRead {
-  comparison: ("current" | "published") | (string & {});
+/** Response shape for CompatibilityApproval. */
+export interface CompatibilityApprovalRead {
+  source: ("source_pr" | "draft_pr") | (string & {});
   reason: string;
   approved_by: string;
-  approved_revision: string;
+  approved_sha: string;
   /** Format: date-time */
   approved_at: string;
 }
 
 export interface TargetAdoption {
-  /** Exact already-published package version to make Current. */
+  /** Exact already-published package version to make the latest release. */
   version: string;
   /** Immutable repository tag containing the matching package source. */
   tag: string;
 }
 
-export interface RepositoryHealthIssue {
-  code: "connection_missing"
-    | "definition_unreadable"
-    | "contents_write_missing"
-    | "review_write_missing"
-    | "breaking_acknowledgement_missing"
-    | "provider_unavailable";
-  message: string;
-}
-
-/** Response shape for RepositoryHealthIssue. */
-export interface RepositoryHealthIssueRead {
-  code: ("connection_missing"
-    | "definition_unreadable"
-    | "contents_write_missing"
-    | "review_write_missing"
-    | "breaking_acknowledgement_missing"
-    | "provider_unavailable") | (string & {});
-  message: string;
-}
-
-export interface RepositoryHealth {
-  repository: RepositoryReferenceResponse;
-  roles: Array<"source" | "destination">;
-  status: "ready" | "action_required";
-  default_branch?: string;
-  capabilities?: string[];
-  /**
-   * Whether a source repository has the optional typeship:breaking-approved policy label. Null when
-   * the repository is not a source or labels could not be read.
-   */
-  breaking_acknowledgement?: boolean | null;
-  definition?: "readable" | "missing";
-  issues: RepositoryHealthIssue[];
-}
-
-/** Response shape for RepositoryHealth. */
-export interface RepositoryHealthRead {
-  repository: RepositoryReferenceResponseRead;
-  roles: Array<("source" | "destination") | (string & {})>;
-  status: ("ready" | "action_required") | (string & {});
-  default_branch?: string;
-  capabilities?: string[];
-  /**
-   * Whether a source repository has the optional typeship:breaking-approved policy label. Null when
-   * the repository is not a source or labels could not be read.
-   */
-  breaking_acknowledgement?: boolean | null;
-  definition?: ("readable" | "missing") | (string & {});
-  issues: RepositoryHealthIssueRead[];
-}
-
-export interface RepositoryEventHealth {
-  provider: string;
-  id: string;
-  event: string;
-  status: "queued" | "processing" | "succeeded" | "failed" | "superseded";
-  error: string | null;
-  /** Format: date-time */
-  created_at: string;
-}
-
-/** Response shape for RepositoryEventHealth. */
-export interface RepositoryEventHealthRead {
-  provider: string;
-  id: string;
-  event: string;
-  status: ("queued" | "processing" | "succeeded" | "failed" | "superseded") | (string & {});
-  error: string | null;
-  /** Format: date-time */
-  created_at: string;
-}
-
-export interface RepositoryIntegrationHealth {
-  object: "repository_integration_health";
-  project_id: ProjectId;
-  status: "ready" | "action_required";
-  repositories: RepositoryHealth[];
-  required_checks: {
-    source: string[];
-    destination: string[];
-  };
-  last_event: RepositoryEventHealth | null;
-  request_id: RequestId;
-}
-
-/** Response shape for RepositoryIntegrationHealth. */
-export interface RepositoryIntegrationHealthRead {
-  object: "repository_integration_health" | (string & {});
-  project_id: ProjectId;
-  status: ("ready" | "action_required") | (string & {});
-  repositories: RepositoryHealthRead[];
-  required_checks: {
-    source: string[];
-    destination: string[];
-  };
-  last_event: RepositoryEventHealthRead | null;
-  request_id: RequestId;
-}
-
-export interface DefinitionFields {
-  source: DefinitionSourceInput;
+export interface SpecFields {
+  source: SpecSourceInput;
   /** Default: [] */
-  patches?: DefinitionPatch[];
+  patches?: SpecPatch[];
   /** GraphQL-only endpoint, auth, environment, title, and scalar settings. */
   graphql?: GraphqlSettings | null;
   diagnostic_policy?: DiagnosticPolicy;
 }
 
-/** Response shape for DefinitionFields. */
-export interface DefinitionFieldsRead {
-  source: DefinitionSourceInputRead;
+/** Response shape for SpecFields. */
+export interface SpecFieldsRead {
+  source: SpecSourceInputRead;
   /** Default: [] */
-  patches?: DefinitionPatchRead[];
+  patches?: SpecPatchRead[];
   /** GraphQL-only endpoint, auth, environment, title, and scalar settings. */
   graphql?: GraphqlSettingsRead | null;
   diagnostic_policy?: DiagnosticPolicyRead;
 }
 
-export interface Definition {
-  id: DefinitionId;
-  object: "definition";
+export interface Spec {
+  id: SpecId;
+  object: "spec";
   project_id: ProjectId;
-  source: DefinitionSource;
+  source: SpecSource;
   format: "openapi" | "graphql" | null;
-  patches: DefinitionPatchResponse[];
+  patches: SpecPatchResponse[];
   graphql: GraphqlSettingsResponse | null;
   diagnostic_policy: DiagnosticPolicyResponse;
-  latest_revision_id: DefinitionRevisionId | null;
+  revision_latest_id: SpecRevisionId | null;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -2002,17 +1946,17 @@ export interface Definition {
   request_id: RequestId;
 }
 
-/** Request shape for Definition. */
-export interface DefinitionWrite {
-  id: DefinitionId;
-  object: "definition";
+/** Request shape for Spec. */
+export interface SpecWrite {
+  id: SpecId;
+  object: "spec";
   project_id: ProjectId;
-  source: DefinitionSourceWrite;
+  source: SpecSourceWrite;
   format: "openapi" | "graphql" | null;
-  patches: DefinitionPatchResponse[];
+  patches: SpecPatchResponse[];
   graphql: GraphqlSettingsResponse | null;
   diagnostic_policy: DiagnosticPolicyResponse;
-  latest_revision_id: DefinitionRevisionId | null;
+  revision_latest_id: SpecRevisionId | null;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -2020,17 +1964,17 @@ export interface DefinitionWrite {
   request_id: RequestId;
 }
 
-/** Response shape for Definition. */
-export interface DefinitionRead {
-  id: DefinitionId;
-  object: "definition" | (string & {});
+/** Response shape for Spec. */
+export interface SpecRead {
+  id: SpecId;
+  object: "spec" | (string & {});
   project_id: ProjectId;
-  source: DefinitionSourceRead;
+  source: SpecSourceRead;
   format: ("openapi" | "graphql" | null) | (string & {}) | null;
-  patches: DefinitionPatchResponseRead[];
+  patches: SpecPatchResponseRead[];
   graphql: GraphqlSettingsResponseRead | null;
   diagnostic_policy: DiagnosticPolicyResponseRead;
-  latest_revision_id: DefinitionRevisionId | null;
+  revision_latest_id: SpecRevisionId | null;
   /** Format: date-time */
   created_at: string;
   /** Format: date-time */
@@ -2043,21 +1987,21 @@ export interface DefinitionRead {
  * headers are preserved when the URL is unchanged and headers are omitted; null or empty headers
  * clear them.
  */
-export interface DefinitionUpdateRequest {
-  source?: DefinitionSourceInput;
+export interface SpecUpdateRequest {
+  source?: SpecSourceInput;
   /** Replace all patches in order. An empty array removes every patch; null is invalid. */
-  patches?: DefinitionPatch[];
+  patches?: SpecPatch[];
   /** Replace all GraphQL settings. Null or an empty object clears them. */
   graphql?: GraphqlSettings | null;
   /** Replace the complete policy and suppression list. Null and an empty object are invalid. */
   diagnostic_policy?: DiagnosticPolicy;
 }
 
-/** Response shape for DefinitionUpdateRequest. */
-export interface DefinitionUpdateRequestRead {
-  source?: DefinitionSourceInputRead;
+/** Response shape for SpecUpdateRequest. */
+export interface SpecUpdateRequestRead {
+  source?: SpecSourceInputRead;
   /** Replace all patches in order. An empty array removes every patch; null is invalid. */
-  patches?: DefinitionPatchRead[];
+  patches?: SpecPatchRead[];
   /** Replace all GraphQL settings. Null or an empty object clears them. */
   graphql?: GraphqlSettingsRead | null;
   /** Replace the complete policy and suppression list. Null and an empty object are invalid. */
@@ -2065,29 +2009,22 @@ export interface DefinitionUpdateRequestRead {
 }
 
 /**
- * Project-owned identity, Definition reference, generation controls, and shared configuration.
- * Targets and Deliveries are available only through their canonical Target endpoints.
+ * Project-owned identity, Spec reference, generation controls, and shared configuration. Targets
+ * and Deliveries are available only through their canonical Target endpoints.
  */
 export interface Project {
   id: ProjectId;
   object: "project";
   name: string;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   /**
-   * Regenerate when the Definition changes: on every push to the default branch for a repository
-   * source, every 30 minutes for a URL source. Off by default: the first generation is always one
-   * you asked for. Off means only "generate now" and POST /projects/{project_id}/generations
-   * regenerate.
+   * Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects.
+   * Set false to generate only when requested.
    */
   auto_generate: boolean;
   /**
-   * Whether the webhook relay is on, letting the generated CLI's webhooks listen command mint relay
-   * sessions. Requires the cli target and Pro; turning the target off turns this off.
-   */
-  relay_enabled: boolean;
-  /**
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
-   * settings remain Definition-owned.
+   * settings remain Spec-owned.
    */
   config: ProjectConfigResponse | null;
   /** Format: date-time */
@@ -2103,22 +2040,15 @@ export interface Project {
 /** Request shape for Project. */
 export interface ProjectWrite {
   name: string;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   /**
-   * Regenerate when the Definition changes: on every push to the default branch for a repository
-   * source, every 30 minutes for a URL source. Off by default: the first generation is always one
-   * you asked for. Off means only "generate now" and POST /projects/{project_id}/generations
-   * regenerate.
+   * Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects.
+   * Set false to generate only when requested.
    */
   auto_generate: boolean;
   /**
-   * Whether the webhook relay is on, letting the generated CLI's webhooks listen command mint relay
-   * sessions. Requires the cli target and Pro; turning the target off turns this off.
-   */
-  relay_enabled: boolean;
-  /**
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
-   * settings remain Definition-owned.
+   * settings remain Spec-owned.
    */
   config: ProjectConfigResponse | null;
   request_id: RequestId;
@@ -2129,22 +2059,15 @@ export interface ProjectRead {
   id: ProjectId;
   object: "project" | (string & {});
   name: string;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   /**
-   * Regenerate when the Definition changes: on every push to the default branch for a repository
-   * source, every 30 minutes for a URL source. Off by default: the first generation is always one
-   * you asked for. Off means only "generate now" and POST /projects/{project_id}/generations
-   * regenerate.
+   * Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects.
+   * Set false to generate only when requested.
    */
   auto_generate: boolean;
   /**
-   * Whether the webhook relay is on, letting the generated CLI's webhooks listen command mint relay
-   * sessions. Requires the cli target and Pro; turning the target off turns this off.
-   */
-  relay_enabled: boolean;
-  /**
    * Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL
-   * settings remain Definition-owned.
+   * settings remain Spec-owned.
    */
   config: ProjectConfigResponseRead | null;
   /** Format: date-time */
@@ -2165,7 +2088,7 @@ export interface ProjectSummary {
   id: ProjectId;
   object: "project";
   name: string;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   auto_generate: boolean;
   /** Format: date-time */
   created_at: string;
@@ -2178,7 +2101,7 @@ export interface ProjectSummaryRead {
   id: ProjectId;
   object: "project" | (string & {});
   name: string;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   auto_generate: boolean;
   /** Format: date-time */
   created_at: string;
@@ -2188,54 +2111,44 @@ export interface ProjectSummaryRead {
 
 export interface CreateProjectRequest {
   name: string;
-  definition: DefinitionFields;
+  spec: SpecFields;
   /**
    * Initial first-class Targets. More than one may use the same generator with different identities
    * or Deliveries.
    */
   targets: InitialTargetFields[];
   /**
-   * Whether Typeship should regenerate automatically when the source changes.
-   * Default: false
+   * Whether Typeship should regenerate automatically when the source or saved configuration
+   * changes.
+   * Default: true
    */
   auto_generate?: boolean;
-  /**
-   * Enable webhook relay sessions. Requires the CLI target and Pro.
-   * Default: false
-   */
-  relay_enabled?: boolean;
-  /** Shared defaults inherited by every Target. GraphQL settings belong in definition.graphql. */
+  /** Shared defaults inherited by every Target. GraphQL settings belong in spec.graphql. */
   config?: ProjectConfig | null;
 }
 
 /** Response shape for CreateProjectRequest. */
 export interface CreateProjectRequestRead {
   name: string;
-  definition: DefinitionFieldsRead;
+  spec: SpecFieldsRead;
   /**
    * Initial first-class Targets. More than one may use the same generator with different identities
    * or Deliveries.
    */
   targets: InitialTargetFieldsRead[];
   /**
-   * Whether Typeship should regenerate automatically when the source changes.
-   * Default: false
+   * Whether Typeship should regenerate automatically when the source or saved configuration
+   * changes.
+   * Default: true
    */
   auto_generate?: boolean;
-  /**
-   * Enable webhook relay sessions. Requires the CLI target and Pro.
-   * Default: false
-   */
-  relay_enabled?: boolean;
-  /** Shared defaults inherited by every Target. GraphQL settings belong in definition.graphql. */
+  /** Shared defaults inherited by every Target. GraphQL settings belong in spec.graphql. */
   config?: ProjectConfigRead | null;
 }
 
 export interface UpdateProjectRequest {
   name?: string;
   auto_generate?: boolean;
-  /** Enable webhook relay sessions. Requires the CLI target and Pro. */
-  relay_enabled?: boolean;
   /** Replaces the Project's shared Target defaults. Send null to clear them. */
   config?: ProjectConfig | null;
 }
@@ -2244,8 +2157,6 @@ export interface UpdateProjectRequest {
 export interface UpdateProjectRequestRead {
   name?: string;
   auto_generate?: boolean;
-  /** Enable webhook relay sessions. Requires the CLI target and Pro. */
-  relay_enabled?: boolean;
   /** Replaces the Project's shared Target defaults. Send null to clear them. */
   config?: ProjectConfigRead | null;
 }
@@ -2254,26 +2165,45 @@ export interface UpdateProjectRequestRead {
  * The organization an API key belongs to. Members share its projects, keys, and plan; sign-in
  * identity is not part of the API.
  */
-export interface Account {
+export interface Organization {
+  /** Opaque, output-only organization identifier. Copy it unchanged; its format is not a contract. */
   id: string;
-  object: "account";
+  object: "organization";
   /** The organization's display name. */
   name: string;
   plan: "free" | "pro" | "enterprise";
   /** Format: date-time */
   created_at: string;
+  /** Format: date-time */
+  updated_at: string;
   request_id: RequestId;
 }
 
-/** Response shape for Account. */
-export interface AccountRead {
+/** Request shape for Organization. */
+export interface OrganizationWrite {
+  object: "organization";
+  /** The organization's display name. */
+  name: string;
+  plan: "free" | "pro" | "enterprise";
+  /** Format: date-time */
+  created_at: string;
+  /** Format: date-time */
+  updated_at: string;
+  request_id: RequestId;
+}
+
+/** Response shape for Organization. */
+export interface OrganizationRead {
+  /** Opaque, output-only organization identifier. Copy it unchanged; its format is not a contract. */
   id: string;
-  object: "account" | (string & {});
+  object: "organization" | (string & {});
   /** The organization's display name. */
   name: string;
   plan: ("free" | "pro" | "enterprise") | (string & {});
   /** Format: date-time */
   created_at: string;
+  /** Format: date-time */
+  updated_at: string;
   request_id: RequestId;
 }
 
@@ -2456,6 +2386,40 @@ export interface CliBehavior {
   skills_repo?: string | null;
 }
 
+/** How the generated CLI behaves. Part of Config. */
+export interface TargetCliBehavior {
+  /** Command users run, independent of how the CLI is distributed. */
+  command_name?: string | null;
+  /**
+   * Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated
+   * code phones nobody unless this is enabled.
+   */
+  update_notice?: boolean;
+  /**
+   * Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8
+   * Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to
+   * disable, then regenerate.
+   */
+  changelog_url?: string | null;
+  /**
+   * Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled
+   * title and environment details.
+   */
+  support_url?: string | null;
+  /**
+   * Hosted MCP endpoint installed by the generated CLI instead of launching the package's local
+   * stdio server.
+   */
+  mcp_url?: string | null;
+  /** GitHub owner/name of the skills package the generated CLI offers to install during init. */
+  skills_repo?: string | null;
+  /**
+   * Enable webhook relay sessions for this CLI Target. Requires Pro. Turning it off prevents new
+   * sessions.
+   */
+  relay?: boolean;
+}
+
 /** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */
 export interface McpBehavior {
   /** Stable official MCP registry name, independent of the server runtime. */
@@ -2613,11 +2577,10 @@ export interface PackageBehavior {
 }
 
 /**
- * Everything Typeship needs beyond the Definition, in one object: generation customization
- * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
- * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
- * itself. One-shot generation also accepts GraphQL settings here; stored projects keep those
- * settings on their Definition.
+ * Everything Typeship needs beyond the Spec, in one object: generation customization (globals,
+ * retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url).
+ * Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot
+ * generation also accepts GraphQL settings here; stored projects keep those settings on their Spec.
  */
 export interface Config {
   /**
@@ -2640,8 +2603,8 @@ export interface Config {
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2674,8 +2637,8 @@ export interface ConfigRead {
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2690,7 +2653,7 @@ export interface ConfigRead {
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
  * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
- * the Project's Definition and are rejected in both stored config scopes.
+ * the Project's Spec and are rejected in both stored config scopes.
  */
 export interface ProjectConfig {
   /**
@@ -2712,8 +2675,8 @@ export interface ProjectConfig {
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2745,8 +2708,8 @@ export interface ProjectConfigRead {
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2776,14 +2739,14 @@ export interface TargetConfig {
    */
   pagination?: Record<string, PaginationRule | boolean>;
   auth?: TargetAuthenticationConfig;
-  cli?: CliBehavior;
+  cli?: TargetCliBehavior;
   mcp?: McpBehavior;
   readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2809,14 +2772,14 @@ export interface TargetConfigRead {
    */
   pagination?: Record<string, PaginationRuleRead | boolean>;
   auth?: TargetAuthenticationConfig;
-  cli?: CliBehavior;
+  cli?: TargetCliBehavior;
   mcp?: McpBehaviorRead;
   readme?: ReadmeBehavior;
   package?: PackageBehavior;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -2928,7 +2891,7 @@ export interface RetryTuning {
 
 export interface PaginationRule {
   /** Default: "cursor" */
-  style?: "cursor" | "cursorFromLastId" | "page" | "offset";
+  style?: "cursor" | "cursor_from_last_id" | "page" | "offset";
   /** Response field holding the item array. */
   items_field: string;
   cursor_param?: string;
@@ -2943,7 +2906,7 @@ export interface PaginationRule {
 /** Response shape for PaginationRule. */
 export interface PaginationRuleRead {
   /** Default: "cursor" */
-  style?: ("cursor" | "cursorFromLastId" | "page" | "offset") | (string & {});
+  style?: ("cursor" | "cursor_from_last_id" | "page" | "offset") | (string & {});
   /** Response field holding the item array. */
   items_field: string;
   cursor_param?: string;
@@ -2969,208 +2932,124 @@ export interface FileStubRead {
 }
 
 /**
- * A Generation moves from queued to running, then succeeds when its files are saved or fails.
+ * A Generation moves from queued to running, then completes when its files are saved or fails.
  * Delivery and Draft status are separate.
  */
 export const GenerationStatus = {
   QUEUED: "queued",
   RUNNING: "running",
-  SUCCEEDED: "succeeded",
+  COMPLETED: "completed",
   FAILED: "failed",
 } as const;
 export type GenerationStatus = (typeof GenerationStatus)[keyof typeof GenerationStatus];
 
 export const GenerationTrigger = {
   MANUAL: "manual",
-  WEBHOOK: "webhook",
-  POLL: "poll",
+  SPEC_CHANGED: "spec_changed",
+  CONFIG_CHANGED: "config_changed",
   PREVIEW: "preview",
 } as const;
 export type GenerationTrigger = (typeof GenerationTrigger)[keyof typeof GenerationTrigger];
 
-export interface GenerationProvenance {
-  /** Pinned generator contract edition. */
-  generator_edition: string;
-  /**
-   * Recorded configuration for this Generation in the public Config format, including inherited
-   * Project defaults and Target overrides. Later edits do not change it. Source credentials are
-   * never included. Null when no configuration was recorded.
-   */
-  resolved_config: ConfigResponse | null;
-  package_version: string | null;
-}
-
-/** Response shape for GenerationProvenance. */
-export interface GenerationProvenanceRead {
-  /** Pinned generator contract edition. */
-  generator_edition: string;
-  /**
-   * Recorded configuration for this Generation in the public Config format, including inherited
-   * Project defaults and Target overrides. Later edits do not change it. Source credentials are
-   * never included. Null when no configuration was recorded.
-   */
-  resolved_config: ConfigResponseRead | null;
-  package_version: string | null;
-}
-
 export interface Generation {
   id: GenerationId;
   object: "generation";
-  /**
-   * Present and true when the generated target was too large to inline; files_index lists paths,
-   * fetched one at a time via GET /generations/{generation_id}/file.
-   */
-  files_omitted?: boolean;
-  files_index?: FileStub[];
   project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
+  spec_revision_id: SpecRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind;
-  provenance: GenerationProvenance;
-  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
-  meta: GenerationMeta | null;
-  warnings: string[];
-  /** Present on retrieve and create; omitted in lists. */
-  files?: GeneratedFile[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
+  type: GeneratorKind;
+  /** Package name; null until known. */
+  name: string | null;
+  /** Package version; null until known. */
+  version: string | null;
+  warnings: GenerationWarning[];
+  /** Operation coverage; null until generation has finished. */
+  coverage: GenerationCoverage | null;
+  /** Generated package files. List them with listGenerationFiles. */
+  file_count: number;
   errors: DomainError[];
+  /**
+   * Milliseconds from the start of the run until it completed or failed; null while queued or
+   * running.
+   */
+  runtime_ms: number | null;
   /** Format: date-time */
   created_at: string;
-  request_id?: RequestId;
+  /** Format: date-time */
+  updated_at: string;
 }
 
 /** Request shape for Generation. */
 export interface GenerationWrite {
   id: GenerationId;
-  /**
-   * Present and true when the generated target was too large to inline; files_index lists paths,
-   * fetched one at a time via GET /generations/{generation_id}/file.
-   */
-  files_omitted?: boolean;
-  files_index?: FileStub[];
   project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
+  spec_revision_id: SpecRevisionId | null;
   status: GenerationStatus;
   trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind;
-  provenance: GenerationProvenance;
-  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
-  meta: GenerationMeta | null;
-  warnings: string[];
-  /** Present on retrieve and create; omitted in lists. */
-  files?: GeneratedFile[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
+  type: GeneratorKind;
+  /** Package name; null until known. */
+  name: string | null;
+  /** Package version; null until known. */
+  version: string | null;
+  warnings: GenerationWarning[];
+  /** Operation coverage; null until generation has finished. */
+  coverage: GenerationCoverage | null;
+  /** Generated package files. List them with listGenerationFiles. */
+  file_count: number;
   errors: DomainError[];
+  /**
+   * Milliseconds from the start of the run until it completed or failed; null while queued or
+   * running.
+   */
+  runtime_ms: number | null;
   /** Format: date-time */
   created_at: string;
-  request_id?: RequestId;
+  /** Format: date-time */
+  updated_at: string;
 }
 
 /** Response shape for Generation. */
 export interface GenerationRead {
   id: GenerationId;
   object: "generation" | (string & {});
-  /**
-   * Present and true when the generated target was too large to inline; files_index lists paths,
-   * fetched one at a time via GET /generations/{generation_id}/file.
-   */
-  files_omitted?: boolean;
-  files_index?: FileStubRead[];
   project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
+  spec_revision_id: SpecRevisionId | null;
   status: GenerationStatus | (string & {});
   trigger: GenerationTrigger | (string & {});
-  /** Persisted Target identity. Null only for one-shot generation. */
   target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind | (string & {});
-  provenance: GenerationProvenanceRead;
-  /** Null while queued or running, or when a failed or legacy generation produced no metadata. */
-  meta: GenerationMetaRead | null;
-  warnings: string[];
-  /** Present on retrieve and create; omitted in lists. */
-  files?: GeneratedFileRead[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
+  type: GeneratorKind | (string & {});
+  /** Package name; null until known. */
+  name: string | null;
+  /** Package version; null until known. */
+  version: string | null;
+  warnings: GenerationWarning[];
+  /** Operation coverage; null until generation has finished. */
+  coverage: GenerationCoverageRead | null;
+  /** Generated package files. List them with listGenerationFiles. */
+  file_count: number;
   errors: DomainErrorRead[];
+  /**
+   * Milliseconds from the start of the run until it completed or failed; null while queued or
+   * running.
+   */
+  runtime_ms: number | null;
   /** Format: date-time */
   created_at: string;
-  request_id?: RequestId;
+  /** Format: date-time */
+  updated_at: string;
 }
 
-/**
- * Generation metadata returned by collection endpoints. Generated file contents and file indexes
- * are available only from retrieve and create operations.
- */
-export interface GenerationSummary {
-  id: GenerationId;
-  object: "generation";
-  project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
-  status: GenerationStatus;
-  trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for one-shot generation. */
-  target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind;
-  provenance: GenerationProvenance;
-  /** Null only for a failed or legacy generation that produced no metadata. */
-  meta: GenerationMeta | null;
-  warnings: string[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainError[];
-  /** Format: date-time */
-  created_at: string;
-}
+/** Generation metadata returned by collection endpoints. */
+export type GenerationSummary = Generation;
 
 /** Request shape for GenerationSummary. */
-export interface GenerationSummaryWrite {
-  id: GenerationId;
-  project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
-  status: GenerationStatus;
-  trigger: GenerationTrigger;
-  /** Persisted Target identity. Null only for one-shot generation. */
-  target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind;
-  provenance: GenerationProvenance;
-  /** Null only for a failed or legacy generation that produced no metadata. */
-  meta: GenerationMeta | null;
-  warnings: string[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainError[];
-  /** Format: date-time */
-  created_at: string;
-}
+export type GenerationSummaryWrite = GenerationWrite;
 
 /** Response shape for GenerationSummary. */
-export interface GenerationSummaryRead {
-  id: GenerationId;
-  object: "generation" | (string & {});
-  project_id: ProjectId;
-  definition_revision_id: DefinitionRevisionId | null;
-  status: GenerationStatus | (string & {});
-  trigger: GenerationTrigger | (string & {});
-  /** Persisted Target identity. Null only for one-shot generation. */
-  target_id: TargetId | null;
-  /** Resolved generator implementation; provenance rather than resource identity. */
-  generator: GeneratorKind | (string & {});
-  provenance: GenerationProvenanceRead;
-  /** Null only for a failed or legacy generation that produced no metadata. */
-  meta: GenerationMetaRead | null;
-  warnings: string[];
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainErrorRead[];
-  /** Format: date-time */
-  created_at: string;
-}
+export type GenerationSummaryRead = GenerationRead;
 
 export type GenerationResponse = Generation & ResponseMetadata;
 
@@ -3183,7 +3062,7 @@ export type GenerationResponseRead = GenerationRead & ResponseMetadata;
 /** A selected target that did not generate in a multi-target run. */
 export interface GenerationFailure {
   target_id: TargetId;
-  generator: GeneratorKind;
+  type: GeneratorKind;
   status: "failed";
   /** Recorded failures. Empty when this resource has no recorded failure. */
   errors: DomainError[];
@@ -3192,7 +3071,7 @@ export interface GenerationFailure {
 /** Response shape for GenerationFailure. */
 export interface GenerationFailureRead {
   target_id: TargetId;
-  generator: GeneratorKind | (string & {});
+  type: GeneratorKind | (string & {});
   status: "failed" | (string & {});
   /** Recorded failures. Empty when this resource has no recorded failure. */
   errors: DomainErrorRead[];
@@ -3230,6 +3109,11 @@ export interface ApiKey {
   last_used_at: string | null;
   /** Format: date-time */
   created_at: string;
+  /**
+   * When the key last changed, such as its revocation.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -3245,6 +3129,11 @@ export interface ApiKeyRead {
   last_used_at: string | null;
   /** Format: date-time */
   created_at: string;
+  /**
+   * When the key last changed, such as its revocation.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -3253,142 +3142,118 @@ export type ApiKeyResponse = ApiKey & ResponseMetadata;
 /** Response shape for ApiKeyResponse. */
 export type ApiKeyResponseRead = ApiKeyRead & ResponseMetadata;
 
-export interface UrlDefinitionRevisionSource {
-  kind: "url";
-  /** Format: uri */
-  url: string;
+export interface UrlSpecRevisionSource {
+  type: "url";
+  url: {
+    /** Format: uri */
+    url: string;
+  };
 }
 
-/** Response shape for UrlDefinitionRevisionSource. */
-export interface UrlDefinitionRevisionSourceRead {
-  kind: "url" | (string & {});
-  /** Format: uri */
-  url: string;
+/** Response shape for UrlSpecRevisionSource. */
+export interface UrlSpecRevisionSourceRead {
+  type: "url" | (string & {});
+  url: {
+    /** Format: uri */
+    url: string;
+  };
 }
 
-export interface RepositoryDefinitionRevisionSource {
-  kind: "repository";
-  repository: RepositoryReferenceResponse;
-  /** Repository-relative Definition entrypoint path. */
-  path: string;
-  /** Git ref resolved for this revision, when recorded. */
-  ref?: string | null;
-  /** Exact Git commit consumed, when recorded. */
-  commit_sha?: string | null;
+export interface RepositorySpecRevisionSource {
+  type: "repository";
+  repository: {
+    provider: RepositoryProvider;
+    identifier: RepositoryIdentifier;
+    /** Repository-relative Spec entrypoint path. */
+    path: string;
+    /** Git ref resolved for this revision, when recorded. */
+    ref?: string | null;
+    /** Exact Git commit consumed, when recorded. */
+    commit_sha?: string | null;
+  };
 }
 
-/** Response shape for RepositoryDefinitionRevisionSource. */
-export interface RepositoryDefinitionRevisionSourceRead {
-  kind: "repository" | (string & {});
-  repository: RepositoryReferenceResponseRead;
-  /** Repository-relative Definition entrypoint path. */
-  path: string;
-  /** Git ref resolved for this revision, when recorded. */
-  ref?: string | null;
-  /** Exact Git commit consumed, when recorded. */
-  commit_sha?: string | null;
+/** Response shape for RepositorySpecRevisionSource. */
+export interface RepositorySpecRevisionSourceRead {
+  type: "repository" | (string & {});
+  repository: {
+    provider: RepositoryProvider | (string & {});
+    identifier: RepositoryIdentifier;
+    /** Repository-relative Spec entrypoint path. */
+    path: string;
+    /** Git ref resolved for this revision, when recorded. */
+    ref?: string | null;
+    /** Exact Git commit consumed, when recorded. */
+    commit_sha?: string | null;
+  };
 }
 
-export type DefinitionRevisionSource = UrlDefinitionRevisionSource | RepositoryDefinitionRevisionSource;
+export type SpecRevisionSource = UrlSpecRevisionSource | RepositorySpecRevisionSource;
 
-/** Response shape for DefinitionRevisionSource. */
-export type DefinitionRevisionSourceRead = UrlDefinitionRevisionSourceRead
-  | RepositoryDefinitionRevisionSourceRead
-  | Record<string, unknown> & { kind?: string };
+/** Response shape for SpecRevisionSource. */
+export type SpecRevisionSourceRead = UrlSpecRevisionSourceRead
+  | RepositorySpecRevisionSourceRead
+  | Record<string, unknown> & { type?: string };
 
-export interface DefinitionDocument {
-  id: DefinitionDocumentId;
-  role: "entrypoint" | "reference";
-  /** Repository-relative path or same-origin URL captured in this revision. */
-  coordinate: string;
-  sha256: string;
-  size_bytes: number;
-}
-
-/** Response shape for DefinitionDocument. */
-export interface DefinitionDocumentRead {
-  id: DefinitionDocumentId;
-  role: ("entrypoint" | "reference") | (string & {});
-  /** Repository-relative path or same-origin URL captured in this revision. */
-  coordinate: string;
-  sha256: string;
-  size_bytes: number;
-}
-
-export interface DefinitionDocumentResponse {
-  id: DefinitionDocumentId;
-  object: "definition_document";
-  definition_revision_id: DefinitionRevisionId;
-  role: "entrypoint" | "reference";
-  /** Repository-relative path or same-origin URL captured in this revision. */
-  coordinate: string;
-  sha256: string;
-  size_bytes: number;
-  /** Format: date-time */
-  created_at: string;
-  request_id: RequestId;
-}
-
-/** Response shape for DefinitionDocumentResponse. */
-export interface DefinitionDocumentResponseRead {
-  id: DefinitionDocumentId;
-  object: "definition_document" | (string & {});
-  definition_revision_id: DefinitionRevisionId;
-  role: ("entrypoint" | "reference") | (string & {});
-  /** Repository-relative path or same-origin URL captured in this revision. */
-  coordinate: string;
-  sha256: string;
-  size_bytes: number;
-  /** Format: date-time */
-  created_at: string;
-  request_id: RequestId;
-}
-
-export interface DefinitionRevision {
-  id: DefinitionRevisionId;
-  object: "definition_revision";
+export interface SpecRevision {
+  id: SpecRevisionId;
+  object: "spec_revision";
   project_id: ProjectId;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   format: "openapi" | "graphql";
-  document_count: number;
-  /** Present on retrieve; list responses use document_count. */
-  documents?: DefinitionDocument[];
-  /** SHA-256 digest of every document coordinate, digest, and size in the resolved graph. */
+  file_count: number;
+  /** SHA-256 digest of every source file path, digest, and size in the resolved graph. */
   sha256: string;
-  /** Total bytes across all source documents. */
+  /** Total bytes across all source files. */
   size_bytes: number;
   /** Origin recorded when this immutable revision was created. */
-  source: DefinitionRevisionSource | null;
+  source: SpecRevisionSource | null;
+  /** Present on retrieve; list responses omit it. */
+  diagnostic_summary?: DiagnosticSummary;
+  /** Present only with include=diagnostics. Ordered by severity, then rule identifier. */
+  diagnostics?: Diagnostic[];
+  /**
+   * Present only with include=diagnostics. Coded misses or conflicts from applying the Spec's
+   * patches to this revision.
+   */
+  patch_diagnostics?: DiagnosticWarning[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
 }
 
-/** Response shape for DefinitionRevision. */
-export interface DefinitionRevisionRead {
-  id: DefinitionRevisionId;
-  object: "definition_revision" | (string & {});
+/** Response shape for SpecRevision. */
+export interface SpecRevisionRead {
+  id: SpecRevisionId;
+  object: "spec_revision" | (string & {});
   project_id: ProjectId;
-  definition_id: DefinitionId;
+  spec_id: SpecId;
   format: ("openapi" | "graphql") | (string & {});
-  document_count: number;
-  /** Present on retrieve; list responses use document_count. */
-  documents?: DefinitionDocumentRead[];
-  /** SHA-256 digest of every document coordinate, digest, and size in the resolved graph. */
+  file_count: number;
+  /** SHA-256 digest of every source file path, digest, and size in the resolved graph. */
   sha256: string;
-  /** Total bytes across all source documents. */
+  /** Total bytes across all source files. */
   size_bytes: number;
   /** Origin recorded when this immutable revision was created. */
-  source: DefinitionRevisionSourceRead | null;
+  source: SpecRevisionSourceRead | null;
+  /** Present on retrieve; list responses omit it. */
+  diagnostic_summary?: DiagnosticSummaryRead;
+  /** Present only with include=diagnostics. Ordered by severity, then rule identifier. */
+  diagnostics?: DiagnosticRead[];
+  /**
+   * Present only with include=diagnostics. Coded misses or conflicts from applying the Spec's
+   * patches to this revision.
+   */
+  patch_diagnostics?: DiagnosticWarningRead[];
   /** Format: date-time */
   created_at: string;
   request_id?: RequestId;
 }
 
-export type DefinitionRevisionResponse = DefinitionRevision & ResponseMetadata;
+export type SpecRevisionResponse = SpecRevision & ResponseMetadata;
 
-/** Response shape for DefinitionRevisionResponse. */
-export type DefinitionRevisionResponseRead = DefinitionRevisionRead & ResponseMetadata;
+/** Response shape for SpecRevisionResponse. */
+export type SpecRevisionResponseRead = SpecRevisionRead & ResponseMetadata;
 
 export interface ProjectList {
   object: ListObject;
@@ -3443,9 +3308,9 @@ export interface GenerationListRead {
   request_id: RequestId;
 }
 
-export interface DefinitionRevisionList {
+export interface SpecRevisionList {
   object: ListObject;
-  data: DefinitionRevision[];
+  data: SpecRevision[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3453,10 +3318,10 @@ export interface DefinitionRevisionList {
   request_id: RequestId;
 }
 
-/** Response shape for DefinitionRevisionList. */
-export interface DefinitionRevisionListRead {
+/** Response shape for SpecRevisionList. */
+export interface SpecRevisionListRead {
   object: ListObject;
-  data: DefinitionRevisionRead[];
+  data: SpecRevisionRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3524,7 +3389,6 @@ export const ErrorType = {
   SOURCE_ERROR: "source_error",
   RATE_LIMIT_ERROR: "rate_limit_error",
   API_ERROR: "api_error",
-  UNKNOWN_ERROR: "unknown_error",
 } as const;
 export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 
@@ -3541,17 +3405,14 @@ export const ErrorCode = {
   SPEC_ERROR: "spec_error",
   FETCH_ERROR: "fetch_error",
   REPOSITORY_PROVIDER_UNSUPPORTED: "repository_provider_unsupported",
-  EDITION_UNAVAILABLE: "edition_unavailable",
   TARGET_BUSY: "target_busy",
   NO_DRAFT: "no_draft",
-  STALE_DRAFT: "stale_draft",
-  NO_CHANGES: "no_changes",
+  DRAFT_MERGED: "draft_merged",
+  RESOURCE_CHANGED: "resource_changed",
   INVALID_VERSION: "invalid_version",
   PRECONDITION_FAILED: "precondition_failed",
-  DEFINITION_CHANGED: "definition_changed",
   VERSION_OCCUPIED: "version_occupied",
   VERSION_TOO_LOW: "version_too_low",
-  RELEASE_ANALYSIS_STALE: "release_analysis_stale",
   TARGET_ALREADY_RELEASED: "target_already_released",
   ADOPTION_UNVERIFIED: "adoption_unverified",
   PUBLICATION_DISABLED: "publication_disabled",
@@ -3577,13 +3438,10 @@ export const ErrorCode = {
   DEPENDENCY_MODULE_PATH_MISSING: "dependency_module_path_missing",
   DEPENDENCY_UNRELEASED: "dependency_unreleased",
   DEPENDENCY_REVISION_MISMATCH: "dependency_revision_mismatch",
-  DEPENDENCY_EDITION_INCOMPATIBLE: "dependency_edition_incompatible",
   PUBLICATION_FAILED: "publication_failed",
   CUSTOMIZATION_CONFLICT: "customization_conflict",
   HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
   CHECKS_UNAVAILABLE: "checks_unavailable",
-  GENERATION_STALE: "generation_stale",
-  UNCLASSIFIED_ERROR: "unclassified_error",
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
@@ -3608,7 +3466,7 @@ export interface ErrorDetail {
   message: string;
   /**
    * Whether another attempt can succeed without correcting the inputs. For a recorded failure,
-   * start generation or publication again; retrieving the resource or replaying an idempotency key
+   * start generation or publishing again; retrieving the resource or replaying an idempotency key
    * does not start another attempt.
    */
   retryable: boolean;
@@ -3643,7 +3501,7 @@ export interface ErrorDetailRead {
   message: string;
   /**
    * Whether another attempt can succeed without correcting the inputs. For a recorded failure,
-   * start generation or publication again; retrieving the resource or replaying an idempotency key
+   * start generation or publishing again; retrieving the resource or replaying an idempotency key
    * does not start another attempt.
    */
   retryable: boolean;
@@ -3657,26 +3515,22 @@ export interface ErrorDetailRead {
 }
 
 export interface RepositoryReferenceResponse {
-  /** GitHub is the only launch provider; the field is stable for future adapters. */
-  provider: "github";
-  /** Provider-native repository identity, opaque outside its adapter. */
-  identifier: string;
+  provider: RepositoryProvider;
+  identifier: RepositoryIdentifier;
 }
 
 /** Response shape for RepositoryReferenceResponse. */
 export interface RepositoryReferenceResponseRead {
-  /** GitHub is the only launch provider; the field is stable for future adapters. */
-  provider: "github" | (string & {});
-  /** Provider-native repository identity, opaque outside its adapter. */
-  identifier: string;
+  provider: RepositoryProvider | (string & {});
+  identifier: RepositoryIdentifier;
 }
 
 /**
- * A fix applied to the resolved Definition before generation. Paths are JSON
+ * A fix applied to the resolved Spec before generation. Paths are JSON
  * Pointers into the document. A patch whose target no longer exists is
  * skipped and reported as a warning on the generation, never silently.
  */
-export interface DefinitionPatchResponse {
+export interface SpecPatchResponse {
   op: "set" | "append" | "remove" | "rename";
   /**
    * JSON-Pointer-style path. Pattern segments enable bulk fixes:
@@ -3692,8 +3546,8 @@ export interface DefinitionPatchResponse {
   reason?: string | null;
 }
 
-/** Response shape for DefinitionPatchResponse. */
-export interface DefinitionPatchResponseRead {
+/** Response shape for SpecPatchResponse. */
+export interface SpecPatchResponseRead {
   op: ("set" | "append" | "remove" | "rename") | (string & {});
   /**
    * JSON-Pointer-style path. Pattern segments enable bulk fixes:
@@ -3753,11 +3607,11 @@ export interface DiagnosticPolicyResponseRead {
 }
 
 /**
- * Required checks run against the complete combined package. Generated checks and customer commands
- * share one reproducible workflow; repository_required names existing repository checks. Supplying
- * checks replaces all settings. Omitted generated restores build, package, and public_entrypoint;
- * omitted repository_required and customer restore empty lists. An empty object restores these
- * defaults. An empty array clears the corresponding list.
+ * Required checks run against the code in the Draft. Generated checks and customer commands share
+ * one reproducible workflow; repository_required names existing repository checks. Supplying checks
+ * replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted
+ * repository_required and customer restore empty lists. An empty object restores these defaults. An
+ * empty array clears the corresponding list.
  */
 export interface TargetChecksResponse {
   /** Default: ["build","package","public_entrypoint"] */
@@ -3959,6 +3813,40 @@ export interface CliBehaviorResponse {
   skills_repo?: string | null;
 }
 
+/** How the generated CLI behaves. Part of Config. */
+export interface TargetCliBehaviorResponse {
+  /** Command users run, independent of how the CLI is distributed. */
+  command_name?: string | null;
+  /**
+   * Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated
+   * code phones nobody unless this is enabled.
+   */
+  update_notice?: boolean;
+  /**
+   * Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8
+   * Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to
+   * disable, then regenerate.
+   */
+  changelog_url?: string | null;
+  /**
+   * Where the generated CLI's feedback command sends users. GitHub issues/new URLs get a prefilled
+   * title and environment details.
+   */
+  support_url?: string | null;
+  /**
+   * Hosted MCP endpoint installed by the generated CLI instead of launching the package's local
+   * stdio server.
+   */
+  mcp_url?: string | null;
+  /** GitHub owner/name of the skills package the generated CLI offers to install during init. */
+  skills_repo?: string | null;
+  /**
+   * Enable webhook relay sessions for this CLI Target. Requires Pro. Turning it off prevents new
+   * sessions.
+   */
+  relay?: boolean;
+}
+
 /** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */
 export interface McpBehaviorResponse {
   /** Stable official MCP registry name, independent of the server runtime. */
@@ -4116,11 +4004,10 @@ export interface PackageBehaviorResponse {
 }
 
 /**
- * Everything Typeship needs beyond the Definition, in one object: generation customization
- * (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package,
- * docs_url). Plain configuration. Typeship never requires vendor extensions inside the Definition
- * itself. One-shot generation also accepts GraphQL settings here; stored projects keep those
- * settings on their Definition.
+ * Everything Typeship needs beyond the Spec, in one object: generation customization (globals,
+ * retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url).
+ * Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot
+ * generation also accepts GraphQL settings here; stored projects keep those settings on their Spec.
  */
 export interface ConfigResponse {
   /**
@@ -4143,8 +4030,8 @@ export interface ConfigResponse {
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4177,8 +4064,8 @@ export interface ConfigResponseRead {
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4193,7 +4080,7 @@ export interface ConfigResponseRead {
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
  * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
- * the Project's Definition and are rejected in both stored config scopes.
+ * the Project's Spec and are rejected in both stored config scopes.
  */
 export interface ProjectConfigResponse {
   /**
@@ -4215,8 +4102,8 @@ export interface ProjectConfigResponse {
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4248,8 +4135,8 @@ export interface ProjectConfigResponseRead {
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4279,14 +4166,14 @@ export interface TargetConfigResponse {
    */
   pagination?: Record<string, PaginationRuleResponse | boolean>;
   auth?: TargetAuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
+  cli?: TargetCliBehaviorResponse;
   mcp?: McpBehaviorResponse;
   readme?: ReadmeBehaviorResponse;
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4312,14 +4199,14 @@ export interface TargetConfigResponseRead {
    */
   pagination?: Record<string, PaginationRuleResponseRead | boolean>;
   auth?: TargetAuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
+  cli?: TargetCliBehaviorResponse;
   mcp?: McpBehaviorResponseRead;
   readme?: ReadmeBehaviorResponse;
   package?: PackageBehaviorResponse;
   /**
    * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Definition's
-   * externalDocs URL.
+   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
+   * URL.
    * Format: uri
    */
   docs_url?: string | null;
@@ -4431,7 +4318,7 @@ export interface RetryTuningResponse {
 
 export interface PaginationRuleResponse {
   /** Default: "cursor" */
-  style?: "cursor" | "cursorFromLastId" | "page" | "offset";
+  style?: "cursor" | "cursor_from_last_id" | "page" | "offset";
   /** Response field holding the item array. */
   items_field: string;
   cursor_param?: string;
@@ -4446,7 +4333,7 @@ export interface PaginationRuleResponse {
 /** Response shape for PaginationRuleResponse. */
 export interface PaginationRuleResponseRead {
   /** Default: "cursor" */
-  style?: ("cursor" | "cursorFromLastId" | "page" | "offset") | (string & {});
+  style?: ("cursor" | "cursor_from_last_id" | "page" | "offset") | (string & {});
   /** Response field holding the item array. */
   items_field: string;
   cursor_param?: string;
@@ -4478,105 +4365,93 @@ export const GitFileMode = {
 export type GitFileMode = (typeof GitFileMode)[keyof typeof GitFileMode];
 
 /**
- * One side of a Draft file comparison. A conflict has base (the common version before both
- * changes), repository (the file on the Draft), and incoming (the file the merge brings in). A
- * default-branch history rewrite has accepted (the last accepted package), default (the rewritten
- * default branch), and draft (the current Draft branch).
+ * One side of a Draft file comparison: base is the last merged version, yours is your repository
+ * edit, and generated is the new version Typeship proposes for this conflict stage. The conflict
+ * source identifies whether that version comes from a Generation, the default branch, or a saved
+ * Draft. Missing sides represent deleted or absent files.
  */
 export const DraftFileSide = {
   BASE: "base",
-  REPOSITORY: "repository",
-  INCOMING: "incoming",
-  ACCEPTED: "accepted",
-  DEFAULT: "default",
-  DRAFT: "draft",
+  YOURS: "yours",
+  GENERATED: "generated",
 } as const;
 export type DraftFileSide = (typeof DraftFileSide)[keyof typeof DraftFileSide];
 
-export interface DraftFileSideSummary {
-  side: DraftFileSide;
-  mode: GitFileMode;
-  size_bytes: number;
-  /** utf8 for text; base64 for binary content. */
-  encoding: "utf8" | "base64";
-}
-
-/** Response shape for DraftFileSideSummary. */
-export interface DraftFileSideSummaryRead {
-  side: DraftFileSide | (string & {});
-  mode: GitFileMode | (string & {});
-  size_bytes: number;
-  /** utf8 for text; base64 for binary content. */
-  encoding: ("utf8" | "base64") | (string & {});
+/**
+ * File IDs for each side of a conflict or history comparison. null means the file is absent on that
+ * side.
+ */
+export interface DraftFileSides {
+  base: FileId | null;
+  yours: FileId | null;
+  generated: FileId | null;
 }
 
 export interface DraftFileConflict {
   /**
-   * Why the merge stopped. no_common_version: there is no earlier version to compare, such as the
-   * first Draft of an adopted package. file_ownership: generated output collides with a file you
-   * added. repository_deleted_incoming_changed and incoming_deleted_repository_changed: one side
+   * Why the Draft needs a decision. no_common_version: there is no last merged version to compare,
+   * such as the first Draft of an adopted package. file_ownership: generated output collides with a
+   * file you added. yours_deleted_generated_changed and generated_deleted_yours_changed: one side
    * deleted a file the other changed. overlapping_text: both sides edited the same lines.
    * too_large_to_merge: the file has too many changed lines to merge line by line. binary_changed
    * and file_mode_changed: both sides changed binary content or the file mode.
    */
-  kind: "no_common_version"
+  type: "no_common_version"
     | "file_ownership"
-    | "repository_deleted_incoming_changed"
-    | "incoming_deleted_repository_changed"
+    | "yours_deleted_generated_changed"
+    | "generated_deleted_yours_changed"
     | "overlapping_text"
     | "too_large_to_merge"
     | "binary_changed"
     | "file_mode_changed";
   /**
-   * Where the incoming version comes from: the new Generation, commits on the default branch, or
-   * the code of a Draft whose branch was rebased, reset, or deleted (its old branch is preserved).
-   * The merge applies previous_draft, then default_branch, then generation, and stops at the first
-   * stage with conflicts, so applying one stage's decisions can report conflicts from the next.
+   * Where the code in this Draft comes from: newly generated files, commits on the default branch,
+   * or edits from a Draft whose branch was rebased, reset, or deleted. Typeship may find another
+   * conflict after these decisions are applied.
    */
   source: "generation" | "default_branch" | "previous_draft";
   /**
-   * Decision saved for this conflict on head_revision; null when none. Saved decisions apply when
-   * the Target is generated.
+   * Decision saved for this conflict on head_sha; null when none. Typeship continues when every
+   * conflict has a decision.
    */
-  decision: "repository" | "incoming" | "content" | null;
+  decision: "yours" | "generated" | "content" | null;
 }
 
 /** Response shape for DraftFileConflict. */
 export interface DraftFileConflictRead {
   /**
-   * Why the merge stopped. no_common_version: there is no earlier version to compare, such as the
-   * first Draft of an adopted package. file_ownership: generated output collides with a file you
-   * added. repository_deleted_incoming_changed and incoming_deleted_repository_changed: one side
+   * Why the Draft needs a decision. no_common_version: there is no last merged version to compare,
+   * such as the first Draft of an adopted package. file_ownership: generated output collides with a
+   * file you added. yours_deleted_generated_changed and generated_deleted_yours_changed: one side
    * deleted a file the other changed. overlapping_text: both sides edited the same lines.
    * too_large_to_merge: the file has too many changed lines to merge line by line. binary_changed
    * and file_mode_changed: both sides changed binary content or the file mode.
    */
-  kind: ("no_common_version"
+  type: ("no_common_version"
     | "file_ownership"
-    | "repository_deleted_incoming_changed"
-    | "incoming_deleted_repository_changed"
+    | "yours_deleted_generated_changed"
+    | "generated_deleted_yours_changed"
     | "overlapping_text"
     | "too_large_to_merge"
     | "binary_changed"
     | "file_mode_changed") | (string & {});
   /**
-   * Where the incoming version comes from: the new Generation, commits on the default branch, or
-   * the code of a Draft whose branch was rebased, reset, or deleted (its old branch is preserved).
-   * The merge applies previous_draft, then default_branch, then generation, and stops at the first
-   * stage with conflicts, so applying one stage's decisions can report conflicts from the next.
+   * Where the code in this Draft comes from: newly generated files, commits on the default branch,
+   * or edits from a Draft whose branch was rebased, reset, or deleted. Typeship may find another
+   * conflict after these decisions are applied.
    */
   source: ("generation" | "default_branch" | "previous_draft") | (string & {});
   /**
-   * Decision saved for this conflict on head_revision; null when none. Saved decisions apply when
-   * the Target is generated.
+   * Decision saved for this conflict on head_sha; null when none. Typeship continues when every
+   * conflict has a decision.
    */
-  decision: ("repository" | "incoming" | "content" | null) | (string & {}) | null;
+  decision: ("yours" | "generated" | "content" | null) | (string & {}) | null;
 }
 
 export interface DraftFileHistory {
   /**
-   * How the rewritten default branch differs from the last accepted package; null when only the
-   * Draft differs.
+   * How the rewritten default branch differs from the last merged package; null when only the Draft
+   * differs.
    */
   change: "added" | "edited" | "deleted" | "mode_changed" | null;
   /**
@@ -4589,8 +4464,8 @@ export interface DraftFileHistory {
 /** Response shape for DraftFileHistory. */
 export interface DraftFileHistoryRead {
   /**
-   * How the rewritten default branch differs from the last accepted package; null when only the
-   * Draft differs.
+   * How the rewritten default branch differs from the last merged package; null when only the Draft
+   * differs.
    */
   change: ("added" | "edited" | "deleted" | "mode_changed" | null) | (string & {}) | null;
   /**
@@ -4604,15 +4479,12 @@ export interface DraftFile {
   object: "draft_file";
   /** Path relative to the Target's package directory. */
   path: string;
-  /** How the Draft differs from the last accepted package at this path; null when it does not. */
+  /** How the Draft differs from the last merged package at this path; null when it does not. */
   customization: "added" | "edited" | "deleted" | "mode_changed" | null;
   conflict: DraftFileConflict | null;
   history: DraftFileHistory | null;
-  /**
-   * Sides of the comparison to read with retrieveDraftFileContent. A missing side means the file is
-   * absent there. Listed for conflicts and history files.
-   */
-  sides: DraftFileSideSummary[];
+  /** File IDs to read with getFile for a conflict or history file; null for other customized files. */
+  sides: DraftFileSides | null;
 }
 
 /** Response shape for DraftFile. */
@@ -4620,15 +4492,12 @@ export interface DraftFileRead {
   object: "draft_file" | (string & {});
   /** Path relative to the Target's package directory. */
   path: string;
-  /** How the Draft differs from the last accepted package at this path; null when it does not. */
+  /** How the Draft differs from the last merged package at this path; null when it does not. */
   customization: ("added" | "edited" | "deleted" | "mode_changed" | null) | (string & {}) | null;
   conflict: DraftFileConflictRead | null;
   history: DraftFileHistoryRead | null;
-  /**
-   * Sides of the comparison to read with retrieveDraftFileContent. A missing side means the file is
-   * absent there. Listed for conflicts and history files.
-   */
-  sides: DraftFileSideSummaryRead[];
+  /** File IDs to read with getFile for a conflict or history file; null for other customized files. */
+  sides: DraftFileSides | null;
 }
 
 export interface DraftFileList {
@@ -4648,64 +4517,10 @@ export interface DraftFileListRead {
   request_id: RequestId;
 }
 
-export interface DraftFileContent {
-  object: "draft_file_content";
-  target_id: TargetId;
-  path: string;
-  side: DraftFileSide;
-  /** utf8 means content is text; base64 means content is base64-encoded binary bytes. */
-  encoding: "utf8" | "base64";
-  /**
-   * At most 24 KiB of the file starting at offset. Text chunks never split a character; concatenate
-   * chunks in order.
-   */
-  content: string;
-  mode: GitFileMode;
-  /** Size of the whole file in bytes. */
-  size_bytes: number;
-  /** Byte offset of this chunk in the file. */
-  offset: number;
-  /**
-   * Pass as cursor, with the same path and side, to read the next chunk; null at the end of the
-   * file.
-   */
-  next_cursor: string | null;
-}
-
-/** Response shape for DraftFileContent. */
-export interface DraftFileContentRead {
-  object: "draft_file_content" | (string & {});
-  target_id: TargetId;
-  path: string;
-  side: DraftFileSide | (string & {});
-  /** utf8 means content is text; base64 means content is base64-encoded binary bytes. */
-  encoding: ("utf8" | "base64") | (string & {});
-  /**
-   * At most 24 KiB of the file starting at offset. Text chunks never split a character; concatenate
-   * chunks in order.
-   */
-  content: string;
-  mode: GitFileMode | (string & {});
-  /** Size of the whole file in bytes. */
-  size_bytes: number;
-  /** Byte offset of this chunk in the file. */
-  offset: number;
-  /**
-   * Pass as cursor, with the same path and side, to read the next chunk; null at the end of the
-   * file.
-   */
-  next_cursor: string | null;
-}
-
-export type DraftFileContentResponse = DraftFileContent & ResponseMetadata;
-
-/** Response shape for DraftFileContentResponse. */
-export type DraftFileContentResponseRead = DraftFileContentRead & ResponseMetadata;
-
 export type DraftConflictDecision = {
   path: string;
   /** Keep that version of the file exactly. Keeping an absent version deletes the path. */
-  keep: "repository" | "incoming";
+  keep: "yours" | "generated";
 }
   | {
       path: string;
@@ -4732,7 +4547,7 @@ export type DraftConflictDecision = {
 export type DraftConflictDecisionRead = {
   path: string;
   /** Keep that version of the file exactly. Keeping an absent version deletes the path. */
-  keep: ("repository" | "incoming") | (string & {});
+  keep: ("yours" | "generated") | (string & {});
 }
   | {
       path: string;
@@ -4755,153 +4570,37 @@ export type DraftConflictDecisionRead = {
       content: null;
     };
 
-export interface ResolveDraftConflicts {
-  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without saving. */
-  expected_head_revision: string;
+export interface DraftResolveRequest {
+  /** The Draft's head_sha. A newer Draft commit returns 409 resource_changed without saving. */
+  expected_head_sha: string;
   /**
-   * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
+   * Unique current conflict or customized paths. Choose generated to discard a customization,
+   * including a Draft-only file. Final file content must total at most 2 MiB. Decisions apply
    * together or not at all.
    */
   resolutions: DraftConflictDecision[];
-  /**
-   * Validate the decisions and return the planned files without saving.
-   * Default: false
-   */
-  dry_run?: boolean;
 }
 
-/** Response shape for ResolveDraftConflicts. */
-export interface ResolveDraftConflictsRead {
-  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without saving. */
-  expected_head_revision: string;
+/** Response shape for DraftResolveRequest. */
+export interface DraftResolveRequestRead {
+  /** The Draft's head_sha. A newer Draft commit returns 409 resource_changed without saving. */
+  expected_head_sha: string;
   /**
-   * Unique current conflict paths. Final file content must total at most 2 MiB. Decisions save
+   * Unique current conflict or customized paths. Choose generated to discard a customization,
+   * including a Draft-only file. Final file content must total at most 2 MiB. Decisions apply
    * together or not at all.
    */
   resolutions: DraftConflictDecisionRead[];
-  /**
-   * Validate the decisions and return the planned files without saving.
-   * Default: false
-   */
-  dry_run?: boolean;
 }
-
-export interface DiscardDraftCustomizations {
-  /** The Draft's head_revision. A newer Draft commit returns 409 stale_draft without committing. */
-  expected_head_revision: string;
-  /**
-   * Customized paths that are not conflicts, to replace with the generated files. A listed file
-   * that exists only on the Draft is deleted.
-   */
-  paths: string[];
-  /**
-   * Return the planned writes and deletions without committing.
-   * Default: false
-   */
-  dry_run?: boolean;
-}
-
-export interface DraftPlannedFile {
-  path: string;
-  /** keep: the Draft's version stays. write: the file gets new content. delete: the path is removed. */
-  action: "keep" | "write" | "delete";
-  mode: GitFileMode | null;
-  /** Size of the resulting file; null when it is deleted. */
-  size_bytes: number | null;
-}
-
-/** Response shape for DraftPlannedFile. */
-export interface DraftPlannedFileRead {
-  path: string;
-  /** keep: the Draft's version stays. write: the file gets new content. delete: the path is removed. */
-  action: ("keep" | "write" | "delete") | (string & {});
-  mode: GitFileMode | (string & {}) | null;
-  /** Size of the resulting file; null when it is deleted. */
-  size_bytes: number | null;
-}
-
-export interface DraftConflictResolution {
-  object: "draft_conflict_resolution";
-  target_id: TargetId;
-  /** Draft commit the decisions belong to. */
-  head_revision: string;
-  /**
-   * preview: nothing was saved. saved: the decisions are stored and apply when the Target is
-   * generated.
-   */
-  status: "preview" | "saved";
-  files: DraftPlannedFile[];
-  /**
-   * Conflicts without a decision once these are saved. At 0 the Draft status becomes
-   * needs_generation.
-   */
-  remaining_conflicts: number;
-}
-
-/** Response shape for DraftConflictResolution. */
-export interface DraftConflictResolutionRead {
-  object: "draft_conflict_resolution" | (string & {});
-  target_id: TargetId;
-  /** Draft commit the decisions belong to. */
-  head_revision: string;
-  /**
-   * preview: nothing was saved. saved: the decisions are stored and apply when the Target is
-   * generated.
-   */
-  status: ("preview" | "saved") | (string & {});
-  files: DraftPlannedFileRead[];
-  /**
-   * Conflicts without a decision once these are saved. At 0 the Draft status becomes
-   * needs_generation.
-   */
-  remaining_conflicts: number;
-}
-
-export type DraftConflictResolutionResponse = DraftConflictResolution & ResponseMetadata;
-
-/** Response shape for DraftConflictResolutionResponse. */
-export type DraftConflictResolutionResponseRead = DraftConflictResolutionRead & ResponseMetadata;
-
-export interface DraftCustomizationDiscard {
-  object: "draft_customization_discard";
-  target_id: TargetId;
-  /** preview: the inspected Draft commit. committed: the new Draft commit. */
-  head_revision: string;
-  /**
-   * preview: nothing was written. committed: one commit was added to the Draft branch; the Draft
-   * status is branch_changed until Typeship integrates it.
-   */
-  status: "preview" | "committed";
-  files: DraftPlannedFile[];
-}
-
-/** Response shape for DraftCustomizationDiscard. */
-export interface DraftCustomizationDiscardRead {
-  object: "draft_customization_discard" | (string & {});
-  target_id: TargetId;
-  /** preview: the inspected Draft commit. committed: the new Draft commit. */
-  head_revision: string;
-  /**
-   * preview: nothing was written. committed: one commit was added to the Draft branch; the Draft
-   * status is branch_changed until Typeship integrates it.
-   */
-  status: ("preview" | "committed") | (string & {});
-  files: DraftPlannedFileRead[];
-}
-
-export type DraftCustomizationDiscardResponse = DraftCustomizationDiscard & ResponseMetadata;
-
-/** Response shape for DraftCustomizationDiscardResponse. */
-export type DraftCustomizationDiscardResponseRead = DraftCustomizationDiscardRead & ResponseMetadata;
 
 export interface GenerateProjectRequest {
   /** Generate only this active Target. Omit to generate all active Targets in the Project. */
   target_id?: TargetId;
 }
 
-/** The stage that failed. A delivery failure does not change a Generation's succeeded status. */
+/** The stage that failed. A delivery failure does not change a completed Generation's status. */
 export const FailurePhase = {
-  DEFINITION: "definition",
+  SPEC: "spec",
   GENERATION: "generation",
   DELIVERY: "delivery",
   PUBLICATION: "publication",
@@ -4917,43 +4616,9 @@ export type DomainErrorRead = ErrorDetailRead & {
   phase: FailurePhase | (string & {});
 };
 
-export interface RecoverDraftHistory {
-  /** The Draft's history_recovery.default_revision. */
-  expected_default_revision: string;
-  /** The Draft's history_recovery.head_revision; null when the Draft branch is absent. */
-  expected_head_revision: string | null;
+export interface DraftRecoverRequest {
+  /** The Draft's history_recovery.default_sha. */
+  expected_default_sha: string;
+  /** The Draft's history_recovery.head_sha; null when the Draft branch is absent. */
+  expected_head_sha: string | null;
 }
-
-export interface DraftHistoryRecovery {
-  object: "draft_history_recovery";
-  target_id: TargetId;
-  /**
-   * approved: recovery is saved and the Draft status is needs_generation. not_needed: the default
-   * branch still contains the accepted package.
-   */
-  status: "approved" | "not_needed";
-  default_revision: string;
-  head_revision: string | null;
-  /** Existing Draft branch that stays available when Generate opens the recovered Draft. */
-  preserved_branch: string | null;
-}
-
-/** Response shape for DraftHistoryRecovery. */
-export interface DraftHistoryRecoveryRead {
-  object: "draft_history_recovery" | (string & {});
-  target_id: TargetId;
-  /**
-   * approved: recovery is saved and the Draft status is needs_generation. not_needed: the default
-   * branch still contains the accepted package.
-   */
-  status: ("approved" | "not_needed") | (string & {});
-  default_revision: string;
-  head_revision: string | null;
-  /** Existing Draft branch that stays available when Generate opens the recovered Draft. */
-  preserved_branch: string | null;
-}
-
-export type DraftHistoryRecoveryResponse = DraftHistoryRecovery & ResponseMetadata;
-
-/** Response shape for DraftHistoryRecoveryResponse. */
-export type DraftHistoryRecoveryResponseRead = DraftHistoryRecoveryRead & ResponseMetadata;

@@ -1,0 +1,310 @@
+# Installed by Typeship. This repository owns subsequent changes.
+name: Typeship release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Exact accepted Target ID
+        required: true
+      version:
+        description: Exact accepted version
+        required: true
+      accepted_commit:
+        description: Exact accepted commit
+        required: true
+
+permissions: {}
+
+jobs:
+  discover:
+    if: github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.accepted_commit || github.sha }}
+      - name: Resolve canonical republish source
+        if: github.event_name == 'workflow_dispatch' && inputs.accepted_commit == ''
+        env: { TARGET_ID: "${{ inputs.target_id }}", VERSION: "${{ inputs.version }}" }
+        run: |
+          node <<'NODE'
+          const cp = require('child_process');
+          const target = process.env.TARGET_ID;
+          const version = process.env.VERSION;
+          if (!/^tgt_[a-z0-9]+$/.test(target || '') || !/^[0-9]+[.][0-9]+[.][0-9]+(?:-[0-9A-Za-z.-]+)?(?:[+][0-9A-Za-z.-]+)?$/.test(version || '')) throw new Error('An exact Target and version are required');
+          const tags = cp.execFileSync('git', ['tag', '--list', '*v' + version], {encoding: 'utf8'}).trim().split(String.fromCharCode(10)).filter(Boolean);
+          const matching = tags.filter(tag => {
+            try {
+              const path = tag + ':.typeship/targets/' + target + '.json';
+              const manifest = JSON.parse(cp.execFileSync('git', ['show', path], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']}));
+              return manifest.target_id === target && manifest.version === version && manifest.canonical_tag === tag;
+            } catch { return false; }
+          });
+          if (matching.length !== 1) throw new Error('Expected one accepted tag for this Target and version');
+          cp.execFileSync('git', ['checkout', 'refs/tags/' + matching[0]], {stdio: 'inherit'});
+          NODE
+      - id: targets
+        env:
+          REQUESTED_TARGET: ${{ inputs.target_id }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const cp = require('child_process');
+          const requested = process.env.REQUESTED_TARGET;
+          const requestedVersion = process.env.REQUESTED_VERSION;
+          if (!/^tgt_[a-z0-9]+$/.test(requested || '')) throw new Error('A valid Target ID is required.');
+          const paths = [`.typeship/targets/${requested}.json`];
+          const include = paths.flatMap(path => {
+            const value = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (value.schema !== 2 || !/^tgt_[a-z0-9]+$/.test(value.target_id) || !/^[0-9]+[.][0-9]+[.][0-9]+(?:-[0-9A-Za-z.-]+)?(?:[+][0-9A-Za-z.-]+)?$/.test(value.version)) throw new Error('Invalid Typeship manifest: ' + path);
+            if (requestedVersion && value.version !== requestedVersion) throw new Error('Requested version does not match accepted manifest: ' + path);
+            if (typeof value.directory !== 'string' || value.directory.startsWith('/') || value.directory.split('/').includes('..')) throw new Error('Unsafe package directory: ' + path);
+            const entries = Object.entries(value.source_files || {}).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
+            const modes = value.source_modes && typeof value.source_modes === 'object' ? value.source_modes : null;
+            for (const [sourcePath, expected] of entries) {
+              if (typeof sourcePath !== 'string' || sourcePath.startsWith('/') || sourcePath.split('/').includes('..')) throw new Error('Unsafe source path: ' + sourcePath);
+              const stat = fs.lstatSync(sourcePath);
+              const bytes = stat.isSymbolicLink() ? Buffer.from(fs.readlinkSync(sourcePath)) : fs.readFileSync(sourcePath);
+              const actual = crypto.createHash('sha256').update(bytes).digest('hex');
+              if (actual !== expected) throw new Error('Accepted source differs from manifest: ' + sourcePath);
+              if (modes) {
+                const listed = cp.execFileSync('git', ['ls-files', '--stage', '--', sourcePath], {encoding: 'utf8'}).trim();
+                const actualMode = listed.match(/^(100644|100755|120000) /)?.[1];
+                if (!actualMode || actualMode !== modes[sourcePath]) throw new Error('Accepted source mode differs from manifest: ' + sourcePath);
+              }
+            }
+            const digestEntries = modes ? entries.map(([sourcePath, hash]) => [sourcePath, modes[sourcePath], hash]) : entries;
+            const digest = crypto.createHash('sha256').update(JSON.stringify(digestEntries)).digest('hex');
+            if (digest !== value.source_digest) throw new Error('Manifest source digest is invalid: ' + path);
+            const accepted_commit = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
+            const publication = {...value};
+            delete publication.release_notes;
+            return value.destinations.map(destination => ({...publication, destination, manifest: path, accepted_commit}));
+          });
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'matrix=' + JSON.stringify({include}) + String.fromCharCode(10));
+          NODE
+
+  publish:
+    needs: discover
+    if: fromJSON(needs.discover.outputs.matrix).include[0] != null
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    environment: typeship-release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          ref: ${{ matrix.accepted_commit }}
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        if: matrix.destination == 'pypi'
+        with:
+          python-version: '3.13.7'
+      - name: Bind accepted release identity
+        env:
+          CANONICAL_TAG: "${{ matrix.canonical_tag }}"
+          EXPECTED_COMMIT: "${{ matrix.accepted_commit }}"
+        run: |
+          accepted_commit=$(git rev-parse HEAD)
+          test "$accepted_commit" = "$(git rev-parse "$EXPECTED_COMMIT")"
+          echo "ACCEPTED_COMMIT=$accepted_commit" >> "$GITHUB_ENV"
+          echo "CANONICAL_TAG=$CANONICAL_TAG" >> "$GITHUB_ENV"
+      - name: Report publication start
+        continue-on-error: true
+        env:
+          TARGET_ID: "${{ matrix.target_id }}"
+          VERSION: "${{ matrix.version }}"
+          DESTINATION: "${{ matrix.destination }}"
+          GENERATION_ID: "${{ matrix.generation_id }}"
+          DEFINITION_REVISION_ID: "${{ matrix.spec_revision_id }}"
+          SOURCE_DIGEST: "${{ matrix.source_digest }}"
+          REPORT_URL: "https://typeship.dev/api/publications/report"
+        run: |
+          token=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=typeship-publication" | node -pe 'JSON.parse(fs.readFileSync(0)).value')
+          payload=$(node -e 'process.stdout.write(JSON.stringify({target_id:process.env.TARGET_ID,version:process.env.VERSION,destination:process.env.DESTINATION,state:"publishing",accepted_commit:process.env.ACCEPTED_COMMIT,generation_id:process.env.GENERATION_ID,spec_revision_id:process.env.DEFINITION_REVISION_ID,source_digest:process.env.SOURCE_DIGEST,run_url:"https://github.com/"+process.env.GITHUB_REPOSITORY+"/actions/runs/"+process.env.GITHUB_RUN_ID}))')
+          curl --retry 8 --retry-delay 5 --retry-all-errors --retry-max-time 90 -fsSL -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data "$payload" "$REPORT_URL"
+      - name: Create canonical tag and GitHub Release
+        if: matrix.destination == 'github'
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          TARGET_ID: "${{ matrix.target_id }}"
+          VERSION: "${{ matrix.version }}"
+          DIRECTORY: "${{ matrix.directory }}"
+        run: |
+          release_sha=$(git rev-parse HEAD)
+          git fetch --tags --force
+          if git rev-parse "$CANONICAL_TAG" >/dev/null 2>&1; then
+            test "$(git rev-list -n1 "$CANONICAL_TAG")" = "$release_sha"
+          else
+            git tag -a "$CANONICAL_TAG" "$release_sha" -m "Typeship $VERSION"
+            git push origin "$CANONICAL_TAG" || { git fetch --force origin "refs/tags/$CANONICAL_TAG"; test "$(git rev-list -n1 "$CANONICAL_TAG")" = "$release_sha"; }
+          fi
+          node <<'NODE'
+          const fs = require('fs');
+          const target = process.env.TARGET_ID;
+          if (!/^tgt_[a-z0-9]+$/.test(target || '')) throw new Error('Invalid Target ID');
+          const manifest = JSON.parse(fs.readFileSync('.typeship/targets/' + target + '.json', 'utf8'));
+          if (manifest.target_id !== target || manifest.canonical_tag !== process.env.CANONICAL_TAG || manifest.version !== process.env.VERSION) throw new Error('Release notes do not match the accepted version');
+          // Older accepted manifests have no stored notes. They remain republishable.
+          const notes = manifest.release_notes ?? ('Release ' + manifest.version + '.');
+          if (typeof notes !== 'string') throw new Error('Invalid release notes');
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/typeship-release-notes.md', notes.trim() + String.fromCharCode(10));
+          NODE
+          if gh release view "$CANONICAL_TAG" >/dev/null 2>&1; then
+            test "$(gh release view "$CANONICAL_TAG" --json tagName --jq .tagName)" = "$CANONICAL_TAG"
+          else
+            gh release create "$CANONICAL_TAG" --title "$VERSION" --notes-file "$RUNNER_TEMP/typeship-release-notes.md" --verify-tag
+          fi
+          echo "ARTIFACT_DIGEST=git:$release_sha" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=https://github.com/$GITHUB_REPOSITORY/releases/tag/$CANONICAL_TAG" >> "$GITHUB_ENV"
+      - name: Build and publish npm package
+        if: matrix.destination == 'npm'
+        working-directory: ${{ matrix.directory || '.' }}
+        env: { VERSION: "${{ matrix.version }}" }
+        run: |
+          npm install --global npm@11.5.1
+          npm ci
+          npm test --if-present
+          npm run build --if-present
+          package_name=$(node -p 'require("./package.json").name')
+          package_version=$(node -p 'require("./package.json").version')
+          test "$package_version" = "$VERSION"
+          pack_json=$(npm pack --json)
+          tarball=$(printf '%s' "$pack_json" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8"))[0].filename')
+          local_integrity=$(printf '%s' "$pack_json" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8"))[0].integrity')
+          if remote_json=$(npm view "$package_name@$VERSION" dist.integrity --json 2>/dev/null); then
+            remote_integrity=$(printf '%s' "$remote_json" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8"))')
+            test "$local_integrity" = "$remote_integrity"
+          else
+            tag=latest; case "$VERSION" in *-*) tag=next;; esac
+            npm publish "$tarball" --tag "$tag"
+          fi
+          echo "ARTIFACT_DIGEST=$local_integrity" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=https://www.npmjs.com/package/$package_name/v/$VERSION" >> "$GITHUB_ENV"
+      - name: Build Python distributions
+        if: matrix.destination == 'pypi'
+        working-directory: ${{ matrix.directory || '.' }}
+        run: |
+          # Derive archive timestamps from the accepted commit so recovery
+          # rebuilds produce the same immutable wheel and sdist bytes.
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$ACCEPTED_COMMIT")"
+          export PYTHONHASHSEED=0
+          export TZ=UTC
+          export LC_ALL=C.UTF-8
+          python -m pip install --disable-pip-version-check build==1.3.0 setuptools==80.9.0 wheel==0.45.1
+          python -m build --no-isolation
+      - name: Check Python publication
+        id: pypi
+        if: matrix.destination == 'pypi'
+        working-directory: ${{ matrix.directory || '.' }}
+        env: { PACKAGE_NAME: "${{ matrix.package_name }}", VERSION: "${{ matrix.version }}" }
+        run: |
+          python <<'PY'
+          import hashlib, json, os, pathlib, tomllib, urllib.error, urllib.parse, urllib.request
+          name = os.environ.get("PACKAGE_NAME", "").strip()
+          if not name:
+              name = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["name"]
+          version = os.environ["VERSION"]
+          files = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in pathlib.Path("dist").iterdir() if path.is_file()}
+          if not files:
+              raise SystemExit("Python build produced no distributions")
+          try:
+              with urllib.request.urlopen(f"https://pypi.org/pypi/{urllib.parse.quote(name, safe='')}/{urllib.parse.quote(version, safe='')}/json") as response:
+                  release = json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              release = None
+          if release is None:
+              publish = True
+          else:
+              remote = {item["filename"]: item["digests"]["sha256"] for item in release["urls"]}
+              if remote != files:
+                  raise SystemExit(f"PyPI already contains different artifacts for {name} {version}")
+              publish = False
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"publish={'true' if publish else 'false'}", file=output)
+              aggregate = hashlib.sha256(json.dumps(sorted(files.items()), separators=(",", ":")).encode()).hexdigest()
+              print(f"digest=sha256:{aggregate}", file=output)
+              print(f"registry_url=https://pypi.org/project/{name}/{version}/", file=output)
+          PY
+      - name: Publish Python distributions
+        if: matrix.destination == 'pypi' && steps.pypi.outputs.publish == 'true'
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: ${{ format('{0}/dist', matrix.directory || '.') }}
+      - name: Bind Python artifact identity
+        if: matrix.destination == 'pypi'
+        env: { DIGEST: "${{ steps.pypi.outputs.digest }}", REGISTRY: "${{ steps.pypi.outputs.registry_url }}" }
+        run: |
+          echo "ARTIFACT_DIGEST=$DIGEST" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=$REGISTRY" >> "$GITHUB_ENV"
+      - name: Publish Go module tag
+        if: matrix.destination == 'go'
+        env: { DIRECTORY: "${{ matrix.directory }}", VERSION: "${{ matrix.version }}", TARGET_ID: "${{ matrix.target_id }}" }
+        run: |
+          tag="${DIRECTORY:+$DIRECTORY/}v$VERSION"
+          release_sha=$(git rev-parse HEAD)
+          git fetch --tags --force
+          if git rev-parse "$tag" >/dev/null 2>&1; then test "$(git rev-list -n1 "$tag")" = "$release_sha"; else git tag -a "$tag" -m "Typeship $TARGET_ID $VERSION" && { git push origin "$tag" || { git fetch --force origin "refs/tags/$tag"; test "$(git rev-list -n1 "$tag")" = "$release_sha"; }; }; fi
+          echo "ARTIFACT_DIGEST=git:$release_sha" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=https://pkg.go.dev/${{ matrix.module_path }}@v$VERSION" >> "$GITHUB_ENV"
+      - name: Install MCP publisher
+        if: matrix.destination == 'mcp'
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz" -o mcp-publisher.tar.gz
+          echo "ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac  mcp-publisher.tar.gz" | sha256sum --check
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+      - name: Publish MCP registry entry
+        if: matrix.destination == 'mcp'
+        working-directory: ${{ matrix.directory || '.' }}
+        env: { PACKAGE_NAME: "${{ matrix.package_name }}", VERSION: "${{ matrix.version }}" }
+        run: |
+          test "$(node -p 'require("./server.json").version')" = "$VERSION"
+          for attempt in $(seq 1 24); do
+            npm view "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1 && break
+            sleep 5
+          done
+          npm view "$PACKAGE_NAME@$VERSION" version >/dev/null
+          server_name=$(node -p 'require("./server.json").name')
+          encoded_name=$(node -p 'encodeURIComponent(process.argv[1])' "$server_name")
+          encoded_version=$(node -p 'encodeURIComponent(process.argv[1])' "$VERSION")
+          if curl -fsSL "https://registry.modelcontextprotocol.io/v0.1/servers/$encoded_name/versions/$encoded_version" >/dev/null; then
+            echo "MCP Registry already contains $server_name $VERSION"
+          else
+            "$GITHUB_WORKSPACE/mcp-publisher" login github-oidc
+            "$GITHUB_WORKSPACE/mcp-publisher" publish server.json
+          fi
+          server_digest=$(sha256sum server.json | cut -d' ' -f1)
+          npm_integrity=$(npm view "$PACKAGE_NAME@$VERSION" dist.integrity)
+          echo "ARTIFACT_DIGEST=sha256:$server_digest+npm:$npm_integrity" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=https://registry.modelcontextprotocol.io/v0.1/servers/$encoded_name/versions/$encoded_version" >> "$GITHUB_ENV"
+      - name: Report publication result
+        if: always()
+        env:
+          TARGET_ID: "${{ matrix.target_id }}"
+          VERSION: "${{ matrix.version }}"
+          DESTINATION: "${{ matrix.destination }}"
+          GENERATION_ID: "${{ matrix.generation_id }}"
+          DEFINITION_REVISION_ID: "${{ matrix.spec_revision_id }}"
+          SOURCE_DIGEST: "${{ matrix.source_digest }}"
+          REPORT_URL: "https://typeship.dev/api/publications/report"
+          JOB_STATUS: "${{ job.status }}"
+        run: |
+          token=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=typeship-publication" | node -pe 'JSON.parse(fs.readFileSync(0)).value')
+          state=failed; test "$JOB_STATUS" = success && state=published
+          export STATE="$state"
+          payload=$(node -e 'process.stdout.write(JSON.stringify({target_id:process.env.TARGET_ID,version:process.env.VERSION,destination:process.env.DESTINATION,state:process.env.STATE,accepted_commit:process.env.ACCEPTED_COMMIT,generation_id:process.env.GENERATION_ID,spec_revision_id:process.env.DEFINITION_REVISION_ID,source_digest:process.env.SOURCE_DIGEST,artifact_digest:process.env.ARTIFACT_DIGEST||null,registry_url:process.env.REGISTRY_URL||null,run_url:"https://github.com/"+process.env.GITHUB_REPOSITORY+"/actions/runs/"+process.env.GITHUB_RUN_ID}))')
+          curl --retry 8 --retry-delay 5 --retry-all-errors --retry-max-time 90 -fsSL -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data "$payload" "$REPORT_URL"

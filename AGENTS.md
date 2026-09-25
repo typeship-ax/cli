@@ -1,8 +1,8 @@
 # typeship — agent context
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.20.0).
+This package contains the generated CLI for **typeship** (API v1.0.0, package v0.21.0).
 
-Resolve an OpenAPI or GraphQL Definition, diagnose it, and keep every
+Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.
 
 Every operation but one requires a bearer credential: an organization
@@ -14,7 +14,7 @@ which works anonymously with the free plan's limits.
 
 Examples use Parcel, a fictional delivery service. Replace its domains,
 repository names, and resource identifiers with your own. The hosted
-petstore Definition is a runnable sample.
+petstore Spec is a runnable sample.
 
 ## Ground rules
 - Maintaining this package: when its repository receives reviewed regeneration pull requests, committed customizations are preserved and edits that overlap a generated change stop for review. Regenerating into a directory replaces its files.

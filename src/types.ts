@@ -597,8 +597,26 @@ export interface SpecPatchRead {
   reason?: string | null;
 }
 
-/** One exact place where a Diagnostic rule found evidence. */
+/**
+ * One exact place where a Diagnostic rule found evidence, with its own state under the Spec's
+ * Diagnostic policy.
+ */
 export interface DiagnosticLocation {
+  /**
+   * Whether this location fails the Spec's Diagnostic policy. Fix these locations to pass the
+   * policy.
+   */
+  blocking: boolean;
+  /**
+   * Whether this location is new since baseline_spec_revision_id in the Diagnostic summary. Always
+   * true when there is no baseline.
+   */
+  introduced: boolean;
+  /**
+   * Whether a reviewed exception in the Spec's Diagnostic policy covers this location, by its path
+   * or for the whole rule. Suppressed locations never block.
+   */
+  suppressed: boolean;
   /** Source file path from the Spec Revision when the finding maps to a captured file. */
   file_path?: string;
   /** The captured source file, present with file_path. Read it with getFile. */
@@ -650,13 +668,14 @@ export interface Diagnostic {
   id: string;
   object: "diagnostic";
   /**
-   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
-   * only_new is set, occurrences present in the baseline never block.
+   * Whether any location fails the Spec's Diagnostic policy. Each location's blocking field names
+   * which ones. Suppressed locations and, when only_new is set, locations present in the baseline
+   * never block.
    */
   blocking: boolean;
   /**
-   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
-   * true when there is no baseline.
+   * Whether any location is new since baseline_spec_revision_id in the Diagnostic summary. Each
+   * location's introduced field names which ones. Always true when there is no baseline.
    */
   introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
@@ -671,7 +690,10 @@ export interface Diagnostic {
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
   /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** All affected coordinates, kept under one grouped diagnostic. */
+  /**
+   * The affected coordinates, kept under one grouped Diagnostic. With a filter, only the matching
+   * locations.
+   */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFix;
   /**
@@ -687,13 +709,14 @@ export interface DiagnosticRead {
   id: string;
   object: "diagnostic" | (string & {});
   /**
-   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
-   * only_new is set, occurrences present in the baseline never block.
+   * Whether any location fails the Spec's Diagnostic policy. Each location's blocking field names
+   * which ones. Suppressed locations and, when only_new is set, locations present in the baseline
+   * never block.
    */
   blocking: boolean;
   /**
-   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
-   * true when there is no baseline.
+   * Whether any location is new since baseline_spec_revision_id in the Diagnostic summary. Each
+   * location's introduced field names which ones. Always true when there is no baseline.
    */
   introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
@@ -708,7 +731,10 @@ export interface DiagnosticRead {
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
   /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** All affected coordinates, kept under one grouped diagnostic. */
+  /**
+   * The affected coordinates, kept under one grouped Diagnostic. With a filter, only the matching
+   * locations.
+   */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFixRead;
   /**

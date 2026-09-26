@@ -287,12 +287,13 @@ Get a Spec Revision
 
 Safety: **read** · Authentication: **required**
 
-Returns metadata for a saved Spec Revision with a Diagnostics summary. Pass `include=diagnostics` to add every Diagnostic, evaluated with the Spec's current patches and Diagnostic policy. List its source files and resolved document with listSpecRevisionFiles.
+Returns metadata for a saved Spec Revision with a Diagnostics summary. Pass `include=diagnostics` to add every Diagnostic, evaluated with the Spec's current patches and Diagnostic policy. Add `filter=blocking` to receive only the locations that fail the policy, which is what to fix when `diagnostic_summary.status` is blocked. List its source files and resolved document with listSpecRevisionFiles.
 
 | Argument or flag | In | Type | Required | Description |
 | --- | --- | --- | --- | --- |
 | `<spec_revision_id>` | path | `string` | yes | — |
 | `--include` | query | `string` | no | Add related data to the response. `diagnostics` adds the `diagnostics` and `patch_diagnostics` arrays. |
+| `--filter` | query | `string` | no | Narrow the included Diagnostics to matching locations. Requires include=diagnostics. blocking: locations that fail the Diagnostic policy. introduced: locations new since the baseline. A Diagnostic with no matching location is omitted. diagnostic_summary always describes the complete revision. |
 
 ```sh
 typeship spec-revisions get srev_6m1q8v4k2p9d7h3c

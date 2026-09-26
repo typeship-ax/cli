@@ -35,6 +35,32 @@ import type {
 export class GenerationsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
+   * Get a Generation
+   *
+   * Returns the status of that Generation. `queued` and `running` mean generation is still in
+   * progress. `completed` means generated files are saved, not that repository delivery or a Draft
+   * is complete. List its files with listGenerationFiles and read each with getFile.
+   * `GET /generations/{generation_id}`
+   */
+  async get(generationId: GenerationId, options?: RequestOptions): Promise<GenerationResponseRead> {
+    return this._core.requestData<GenerationResponseRead, GenerationsGetError>({
+      method: "GET",
+      path: `/generations/${encodeURIComponent(String(generationId))}`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "generations.get",
+      options,
+    });
+  }
+
+  /**
    * List Generations
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
@@ -73,32 +99,6 @@ export class GenerationsResource {
       nextCursorField: "next_cursor",
       hasMoreField: "has_more",
       limitParam: "limit",
-    });
-  }
-
-  /**
-   * Get a Generation
-   *
-   * Returns the status of that Generation. `queued` and `running` mean generation is still in
-   * progress. `completed` means generated files are saved, not that repository delivery or a Draft
-   * is complete. List its files with listGenerationFiles and read each with getFile.
-   * `GET /generations/{generation_id}`
-   */
-  async get(generationId: GenerationId, options?: RequestOptions): Promise<GenerationResponseRead> {
-    return this._core.requestData<GenerationResponseRead, GenerationsGetError>({
-      method: "GET",
-      path: `/generations/${encodeURIComponent(String(generationId))}`,
-      security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "generations.get",
-      options,
     });
   }
 
@@ -164,6 +164,18 @@ export class GenerationsResource {
   }
 }
 
+/** Typed errors `get` can throw. */
+export type GenerationsGetError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
 export interface GenerationsListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
@@ -191,18 +203,6 @@ export interface GenerationsListParams {
 /** Typed errors `list` can throw. */
 export type GenerationsListError =
   | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-/** Typed errors `get` can throw. */
-export type GenerationsGetError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError

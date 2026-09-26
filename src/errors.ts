@@ -7,12 +7,13 @@ import type { ErrorModel, ErrorModelRead } from "./types.js";
 export { ApiError, SdkError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation } from "./core/http.js";
 
 /**
- * The request body, Spec source, target selection, or package name is invalid.
+ * A list query parameter is unknown, repeated, empty, or invalid, or the cursor is not for this
+ * list.
  * Raised for HTTP 400 responses.
  */
 export class BadRequestError extends ApiError<400, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The request body, Spec source, target selection, or package name is invalid.", 400, body, response);
+    super("A list query parameter is unknown, repeated, empty, or invalid, or the cursor is not for this list.", 400, body, response);
   }
 }
 
@@ -33,36 +34,6 @@ export class UnauthorizedError extends ApiError<401, ErrorModelRead> {
 export class ForbiddenError extends ApiError<403, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("The credentials are valid but cannot act on the requested organization.", 403, body, response);
-  }
-}
-
-/**
- * The key identifies changed intent.
- * Raised for HTTP 409 responses.
- */
-export class ConflictError extends ApiError<409, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The key identifies changed intent.", 409, body, response);
-  }
-}
-
-/**
- * Spec exceeds the 10MB limit.
- * Raised for HTTP 413 responses.
- */
-export class PayloadTooLargeError extends ApiError<413, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("Spec exceeds the 10MB limit.", 413, body, response);
-  }
-}
-
-/**
- * The Spec could not be resolved or understood.
- * Raised for HTTP 422 responses.
- */
-export class UnprocessableEntityError extends ApiError<422, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Spec could not be resolved or understood.", 422, body, response);
   }
 }
 
@@ -88,12 +59,32 @@ export class InternalServerError extends ApiError<500, ErrorModelRead> {
 }
 
 /**
- * Unexpected error.
- * Raised for "default" responses.
+ * The plan does not include another project or the requested target configuration.
+ * Raised for HTTP 402 responses.
  */
-export class ApiResponseError extends ApiError<number, ErrorModelRead> {
+export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("Unexpected error.", response.status, body, response);
+    super("The plan does not include another project or the requested target configuration.", 402, body, response);
+  }
+}
+
+/**
+ * A Delivery conflicts, or the key identifies changed intent.
+ * Raised for HTTP 409 responses.
+ */
+export class ConflictError extends ApiError<409, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("A Delivery conflicts, or the key identifies changed intent.", 409, body, response);
+  }
+}
+
+/**
+ * The configured source could not be read and analyzed, so the project was not created.
+ * Raised for HTTP 422 responses.
+ */
+export class UnprocessableEntityError extends ApiError<422, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The configured source could not be read and analyzed, so the project was not created.", 422, body, response);
   }
 }
 
@@ -104,16 +95,6 @@ export class ApiResponseError extends ApiError<number, ErrorModelRead> {
 export class NotFoundError extends ApiError<404, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("No such resource in this organization.", 404, body, response);
-  }
-}
-
-/**
- * The plan does not include another project or the requested target configuration.
- * Raised for HTTP 402 responses.
- */
-export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The plan does not include another project or the requested target configuration.", 402, body, response);
   }
 }
 
@@ -134,5 +115,25 @@ export class PreconditionFailedError extends ApiError<412, ErrorModelRead> {
 export class BadGatewayError extends ApiError<502, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("Dependent work failed while completing the request.", 502, body, response);
+  }
+}
+
+/**
+ * The Spec exceeds the supported size.
+ * Raised for HTTP 413 responses.
+ */
+export class PayloadTooLargeError extends ApiError<413, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The Spec exceeds the supported size.", 413, body, response);
+  }
+}
+
+/**
+ * Unexpected error.
+ * Raised for "default" responses.
+ */
+export class ApiResponseError extends ApiError<number, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("Unexpected error.", response.status, body, response);
   }
 }

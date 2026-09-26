@@ -10,70 +10,6 @@ Use `--fields id,name` to project response fields. `--base-url <url>` overrides 
 
 For complete input and output schemas, use [`api.json`](./api.json), the machine-readable companion to this reference.
 
-## generate
-
-### `typeship generate run [flags]`
-
-Generate a package
-
-`POST /generate`
-
-Safety: **write** · Authentication: **optional**
-
-Returns one generated package without creating a Project.
-
-Supports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.
-
-Use `download.url` to save the complete ZIP, verify `download.sha256`, and extract it into an empty directory. The link expires at `download.expires_at` and grants access to anyone who has it. CLI, MCP, and SDK calls supply an idempotency key automatically. Agents should request `fields=["download","coverage","warnings","claim"]` to keep the MCP result compact; files can exceed the response limit. Download the ZIP instead of repeating generation to retrieve omitted files.
-
-Anonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `coverage` for omitted operations; an invalid API key returns `401`.
-
-An anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--spec` | body | `json` | yes | A Spec for one-shot generation, provided as exactly one URL or inline entrypoint. |
-| `--target` | body | `object` | yes | One-shot generator descriptor; no persisted Target is created. |
-| `--package-name` | body | `string` | no | npm package or Python distribution override. Valid only for the TypeScript and Python SDK targets. |
-| `--module-path` | body | `string` | no | Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI Targets. Projects derive this from the Go destination repository by default. |
-| `--go-sdk` | body | `object` | no | The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing. |
-| `--config` | body | `object` | no | Everything Typeship needs beyond the Spec, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Spec. |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
-
-Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
-
-```sh
-typeship generate run --spec '{"url":"https://typeship.dev/examples/petstore/openapi.yaml"}' --target '{"type":"cli"}'
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs generate run --json`.
-
-### `typeship generate download-package [flags]`
-
-Download a generated package
-
-`GET /generate/download`
-
-Safety: **read** · Authentication: **none**
-
-Download the complete ZIP referenced by `generate_run`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.
-
-The local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--query-token` | query | `string` | yes | Private download token from download.url in the generation result. |
-
-```sh
-typeship generate download-package --query-token parcel_download_example_token_1234567890123
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs generate download-package --json`.
-
 ## projects
 
 ### `typeship projects list [flags]`
@@ -555,6 +491,210 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs targets adopt --json`.
 
+## deliveries
+
+### `typeship deliveries list [flags]`
+
+List Deliveries
+
+`GET /deliveries`
+
+Safety: **read** · Authentication: **required**
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+| `--target-id` | query | `string` | no | Only Deliveries of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
+
+```sh
+typeship deliveries list
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs deliveries list --json`.
+
+### `typeship deliveries create [flags]`
+
+Create a Delivery
+
+`POST /deliveries`
+
+Safety: **write** · Authentication: **required**
+
+Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each type; a `409 delivery_exists` means it already has one, so update that Delivery instead.
+With Project auto_generate enabled, adding a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
+
+A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
+A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+
+Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
+
+```sh
+typeship deliveries create --data '{"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}'
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries create --json`.
+
+### `typeship deliveries get <delivery_id> [flags]`
+
+Get a Delivery
+
+`GET /deliveries/{delivery_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 resource_not_found.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+
+```sh
+typeship deliveries get dlv_4q8m2v7k1p9d5h6c
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries get --json`.
+
+### `typeship deliveries delete <delivery_id> [flags]`
+
+Delete a Delivery
+
+`DELETE /deliveries/{delivery_id}`
+
+Safety: **destructive** · Authentication: **required**
+
+Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
+
+A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+```sh
+typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries delete --json`.
+
+### `typeship deliveries update <delivery_id> [flags]`
+
+Update a Delivery
+
+`PATCH /deliveries/{delivery_id}`
+
+Safety: **write** · Authentication: **required**
+
+Replaces a repository Delivery's settings. Omitted optional settings reset to their defaults. Hosted MCP Deliveries have no settings to update.
+With Project auto_generate enabled, changing a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
+Omitting If-Match applies the update to the current Delivery; with If-Match, a stale ETag returns 412 precondition_failed without saving.
+
+A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
+A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+| `--repository` | body | `object` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
+
+```sh
+typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":true}'
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries update --json`.
+
+## generations
+
+### `typeship generations get <generation_id> [flags]`
+
+Get a Generation
+
+`GET /generations/{generation_id}`
+
+Safety: **read** · Authentication: **required**
+
+Returns the status of that Generation. `queued` and `running` mean generation is still in progress. `completed` means generated files are saved, not that repository delivery or a Draft is complete. List its files with listGenerationFiles and read each with getFile.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<generation_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via generations_list). IDs come from generations_list. |
+
+```sh
+typeship generations get gen_7h2p5d9c3m8w1k6q
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs generations get --json`.
+
+### `typeship generations list [flags]`
+
+List Generations
+
+`GET /generations`
+
+Safety: **read** · Authentication: **required**
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+| `--project-id` | query | `string` | no | Only Generations in this Project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
+| `--target-id` | query | `string` | no | Only Generations of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
+| `--status` | query | `string` | no | Only Generations with this status. |
+
+```sh
+typeship generations list
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs generations list --json`.
+
+### `typeship generations list-files <generation_id> [flags]`
+
+List a Generation's files
+
+`GET /generations/{generation_id}/files`
+
+Safety: **read** · Authentication: **required**
+
+Lists the generated package's files, ordered by path. Read content with getFile.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<generation_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via generations_list). IDs come from generations_list. |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+
+```sh
+typeship generations list-files gen_7h2p5d9c3m8w1k6q
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs generations list-files --json`.
+
 ## drafts
 
 ### `typeship drafts list [flags]`
@@ -788,162 +928,7 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs releases retry --json`.
 
-## deliveries
-
-### `typeship deliveries list [flags]`
-
-List Deliveries
-
-`GET /deliveries`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--target-id` | query | `string` | no | Only Deliveries of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
-
-```sh
-typeship deliveries list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs deliveries list --json`.
-
-### `typeship deliveries create [flags]`
-
-Create a Delivery
-
-`POST /deliveries`
-
-Safety: **write** · Authentication: **required**
-
-Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each type; a `409 delivery_exists` means it already has one, so update that Delivery instead.
-With Project auto_generate enabled, adding a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
-
-A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
-A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
-
-Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
-
-```sh
-typeship deliveries create --data '{"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}'
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs deliveries create --json`.
-
-### `typeship deliveries get <delivery_id> [flags]`
-
-Get a Delivery
-
-`GET /deliveries/{delivery_id}`
-
-Safety: **read** · Authentication: **required**
-
-Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another organization returns 404 resource_not_found.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<delivery_id>` | path | `string` | yes | — |
-
-```sh
-typeship deliveries get dlv_4q8m2v7k1p9d5h6c
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs deliveries get --json`.
-
-### `typeship deliveries delete <delivery_id> [flags]`
-
-Delete a Delivery
-
-`DELETE /deliveries/{delivery_id}`
-
-Safety: **destructive** · Authentication: **required**
-
-Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
-
-A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
-See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<delivery_id>` | path | `string` | yes | — |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
-
-```sh
-typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs deliveries delete --json`.
-
-### `typeship deliveries update <delivery_id> [flags]`
-
-Update a Delivery
-
-`PATCH /deliveries/{delivery_id}`
-
-Safety: **write** · Authentication: **required**
-
-Replaces a repository Delivery's settings. Omitted optional settings reset to their defaults. Hosted MCP Deliveries have no settings to update.
-With Project auto_generate enabled, changing a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
-Omitting If-Match applies the update to the current Delivery; with If-Match, a stale ETag returns 412 precondition_failed without saving.
-
-A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
-A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
-See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<delivery_id>` | path | `string` | yes | — |
-| `--repository` | body | `object` | yes | — |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
-
-Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
-
-```sh
-typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":true}'
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs deliveries update --json`.
-
 ## publications
-
-### `typeship publications list [flags]`
-
-List Publications
-
-`GET /publications`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--release-id` | query | `string` | no | Only publications of this release. |
-| `--status` | query | `string` | no | Only publications with this status. |
-
-```sh
-typeship publications list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs publications list --json`.
 
 ### `typeship publications get <publication_id> [flags]`
 
@@ -967,13 +952,11 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs publications get --json`.
 
-## generations
+### `typeship publications list [flags]`
 
-### `typeship generations list [flags]`
+List Publications
 
-List Generations
-
-`GET /generations`
+`GET /publications`
 
 Safety: **read** · Authentication: **required**
 
@@ -981,63 +964,16 @@ Safety: **read** · Authentication: **required**
 | --- | --- | --- | --- | --- |
 | `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
 | `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--project-id` | query | `string` | no | Only Generations in this Project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
-| `--target-id` | query | `string` | no | Only Generations of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
-| `--status` | query | `string` | no | Only Generations with this status. |
+| `--release-id` | query | `string` | no | Only publications of this release. |
+| `--status` | query | `string` | no | Only publications with this status. |
 
 ```sh
-typeship generations list
+typeship publications list
 ```
 
 Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
 
-Read the full command contract with `typeship docs generations list --json`.
-
-### `typeship generations get <generation_id> [flags]`
-
-Get a Generation
-
-`GET /generations/{generation_id}`
-
-Safety: **read** · Authentication: **required**
-
-Returns the status of that Generation. `queued` and `running` mean generation is still in progress. `completed` means generated files are saved, not that repository delivery or a Draft is complete. List its files with listGenerationFiles and read each with getFile.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<generation_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via generations_list). IDs come from generations_list. |
-
-```sh
-typeship generations get gen_7h2p5d9c3m8w1k6q
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs generations get --json`.
-
-### `typeship generations list-files <generation_id> [flags]`
-
-List a Generation's files
-
-`GET /generations/{generation_id}/files`
-
-Safety: **read** · Authentication: **required**
-
-Lists the generated package's files, ordered by path. Read content with getFile.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<generation_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via generations_list). IDs come from generations_list. |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-
-```sh
-typeship generations list-files gen_7h2p5d9c3m8w1k6q
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs generations list-files --json`.
+Read the full command contract with `typeship docs publications list --json`.
 
 ## files
 
@@ -1063,6 +999,70 @@ typeship files get file_4k8m2v7q1p9d5h6c
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs files get --json`.
+
+## generate
+
+### `typeship generate run [flags]`
+
+Generate a package
+
+`POST /generate`
+
+Safety: **write** · Authentication: **optional**
+
+Returns one generated package without creating a Project.
+
+Supports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.
+
+Use `download.url` to save the complete ZIP, verify `download.sha256`, and extract it into an empty directory. The link expires at `download.expires_at` and grants access to anyone who has it. CLI, MCP, and SDK calls supply an idempotency key automatically. Agents should request `fields=["download","coverage","warnings","claim"]` to keep the MCP result compact; files can exceed the response limit. Download the ZIP instead of repeating generation to retrieve omitted files.
+
+Anonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `coverage` for omitted operations; an invalid API key returns `401`.
+
+An anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--spec` | body | `json` | yes | A Spec for one-shot generation, provided as exactly one URL or inline entrypoint. |
+| `--target` | body | `object` | yes | One-shot generator descriptor; no persisted Target is created. |
+| `--package-name` | body | `string` | no | npm package or Python distribution override. Valid only for the TypeScript and Python SDK targets. |
+| `--module-path` | body | `string` | no | Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI Targets. Projects derive this from the Go destination repository by default. |
+| `--go-sdk` | body | `object` | no | The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing. |
+| `--config` | body | `object` | no | Everything Typeship needs beyond the Spec, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Spec. |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+
+Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
+
+```sh
+typeship generate run --spec '{"url":"https://typeship.dev/examples/petstore/openapi.yaml"}' --target '{"type":"cli"}'
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs generate run --json`.
+
+### `typeship generate download-package [flags]`
+
+Download a generated package
+
+`GET /generate/download`
+
+Safety: **read** · Authentication: **none**
+
+Download the complete ZIP referenced by `generate_run`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.
+
+The local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--query-token` | query | `string` | yes | Private download token from download.url in the generation result. |
+
+```sh
+typeship generate download-package --query-token parcel_download_example_token_1234567890123
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs generate download-package --json`.
 
 ## organization
 

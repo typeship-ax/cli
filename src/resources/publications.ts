@@ -29,6 +29,31 @@ import type {
 export class PublicationsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
+   * Get a Publication
+   *
+   * Returns the registry publishing status for a release. A status in another organization returns
+   * 404 resource_not_found.
+   * `GET /publications/{publication_id}`
+   */
+  async get(publicationId: PublicationId, options?: RequestOptions): Promise<PublicationResponseRead> {
+    return this._core.requestData<PublicationResponseRead, PublicationsGetError>({
+      method: "GET",
+      path: `/publications/${encodeURIComponent(String(publicationId))}`,
+      security: [{"apiKey":[]}],
+      errors: {
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "publications.get",
+      options,
+    });
+  }
+
+  /**
    * List Publications
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
@@ -68,32 +93,19 @@ export class PublicationsResource {
       limitParam: "limit",
     });
   }
-
-  /**
-   * Get a Publication
-   *
-   * Returns the registry publishing status for a release. A status in another organization returns
-   * 404 resource_not_found.
-   * `GET /publications/{publication_id}`
-   */
-  async get(publicationId: PublicationId, options?: RequestOptions): Promise<PublicationResponseRead> {
-    return this._core.requestData<PublicationResponseRead, PublicationsGetError>({
-      method: "GET",
-      path: `/publications/${encodeURIComponent(String(publicationId))}`,
-      security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "publications.get",
-      options,
-    });
-  }
 }
+
+/** Typed errors `get` can throw. */
+export type PublicationsGetError =
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
 
 export interface PublicationsListParams {
   /**
@@ -120,18 +132,6 @@ export interface PublicationsListParams {
 /** Typed errors `list` can throw. */
 export type PublicationsListError =
   | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-/** Typed errors `get` can throw. */
-export type PublicationsGetError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError

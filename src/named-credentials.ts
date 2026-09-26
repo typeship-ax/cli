@@ -34,7 +34,7 @@ export function resolveNamedCredentials(schemes: CredentialSchemes, layers: { na
   for (const layer of layers) {
     for (const [name, scheme] of Object.entries(schemes)) {
       for (const option of scheme.options) {
-        if (option === "clientCredentials") continue;
+        if (option === "clientCredentials" || option === "refreshToken") continue;
         const value = layer.options?.[option];
         if (value !== undefined) resolved[name] = value as NamedCredential;
       }
@@ -57,7 +57,7 @@ export function namedCredentialAvailability(schemes: CredentialSchemes, options:
  * bearer token belongs to that scheme, so the session must be passed to each
  * OAuth scheme by name. Empty: the session is the convenience bearer token. */
 export function oauthSessionSchemes(schemes: CredentialSchemes): string[] {
-  return Object.entries(schemes).filter(([, scheme]) => scheme.options.includes("clientCredentials") && !scheme.options.includes("bearerToken")).map(([name]) => name);
+  return Object.entries(schemes).filter(([, scheme]) => (scheme.options.includes("clientCredentials") || scheme.options.includes("refreshToken")) && !scheme.options.includes("bearerToken")).map(([name]) => name);
 }
 
 /** Whether resolved client options satisfy one complete credential alternative

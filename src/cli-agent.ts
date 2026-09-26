@@ -21,6 +21,7 @@ import { dirname, join, resolve } from "node:path";
 export type IssueCode =
   | "NO_AUTH"               // no credential resolved and the API said 401
   | "AUTH_INVALID"          // a credential was sent and the API said 401/403
+  | "INSUFFICIENT_SCOPE"    // 403 (or missing_scope) on an operation that requires OAuth scopes
   | "PLAN_LIMIT"            // 402: the account's plan stops here
   | "NOT_FOUND"             // 404
   | "INVALID_REQUEST"       // 400/422 the API rejected the input
@@ -94,7 +95,7 @@ export function exitCodeFor(code: IssueCode): 1 | 2 {
 /** Interpret an SDK error result: HTTP status, body, transport, validation. */
 export function classifyApiError(
   error: unknown,
-  context: { bin: string; hadCredential: boolean; docsUrl: string | null },
+  context: { bin: string; hadCredential: boolean; docsUrl: string | null; requiredScopes?: string[]; canLogin?: boolean },
 ): EnvelopeInput {
   const e = (error ?? {}) as { name?: string; message?: string; status?: number; code?: unknown; body?: unknown; violations?: unknown; direction?: string; target?: string; rateLimit?: { retryAt?: Date }; response?: { requestId?: string } };
   // The message is the API's own words when it sent any, else the SDK's
@@ -137,7 +138,13 @@ export function classifyApiError(
     return { status: "action_required", code: "RATE_LIMITED", message, detail: { ...detail, ...(e.rateLimit?.retryAt ? { retry_at: isoSeconds(e.rateLimit.retryAt) } : {}) }, nextSteps: [rateLimitNextStep(e.rateLimit?.retryAt, "run the same command again")] };
   }
   // A failure the API reported inside a 2xx body: classify by its code.
+  const scopes = context.requiredScopes ?? [];
+  const scopeFailure = (): EnvelopeInput => ({ code: "INSUFFICIENT_SCOPE", message: message + " This operation requires the OAuth scopes: " + scopes.join(", ") + ".", detail: { ...detail, required_scopes: scopes }, nextSteps: [
+    context.canLogin ? "Sign in again with those scopes: '" + context.bin + " login --scopes " + scopes.join(",") + "'." : "Use a token granted those scopes.",
+    "If the token already has them, the account may lack access to this resource.",
+  ] });
   if (e.name === "PayloadError") {
+    if (scopes.length && /^missing_scope$/i.test(String(e.code))) return scopeFailure();
     const reported = payloadFailureCode(e.code);
     if (reported === "AUTH_INVALID") return { code: "AUTH_INVALID", message, detail, nextSteps: ["The API rejected the credential (" + String(e.code) + "). Check it is current: '" + context.bin + " auth check'."] };
     if (reported === "RATE_LIMITED") return { status: "action_required", code: "RATE_LIMITED", message, detail, nextSteps: ["Wait, then run the same command again."] };
@@ -148,6 +155,7 @@ export function classifyApiError(
       ? { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential was rejected. Check it is current: '" + context.bin + " auth check', then '" + context.bin + " login --help' to store a new one."] }
       : { status: "action_required", code: "NO_AUTH", message, detail, nextSteps: ["No credential was sent. Set the auth env var, pass --token, or run '" + context.bin + " login'.", "'" + context.bin + " auth check' shows what the CLI would send."] };
   }
+  if (status === 403 && scopes.length) return scopeFailure();
   if (status === 403) return { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential lacks access to this operation."] };
   if (status === 402) {
     return { status: "action_required", code: "PLAN_LIMIT", message, detail, nextSteps: [upgradeUrl ? "Lift the limit at " + upgradeUrl + ", then run the same command again." : "The account's plan stops here; upgrade it, then run the same command again.", "Do not retry the same call as is."] };
@@ -171,7 +179,10 @@ export function classifyAuthFailure(
   for (let node = error as { name?: unknown; message?: unknown; code?: unknown; cause?: unknown } | undefined, depth = 0; node && typeof node === "object" && depth < 4; node = node.cause as typeof node, depth++) {
     const message = typeof node.message === "string" && node.message ? node.message : "Login failed.";
     switch (node.name) {
+      case "DeviceFlowUnavailableError":
+        return { status: "action_required", code: "LOGIN_FAILED", message, nextSteps: ["Run " + login + " without --device to sign in through the browser.", ...environment] };
       case "LoginPollingError":
+        if (node.code === "request_failed" && typeof (node as { providerError?: unknown }).providerError === "string") return { code: "LOGIN_FAILED", message, nextSteps: ["The provider rejected the login request. Check the client ID and that the application is registered for this sign-in flow, then run " + login + " again.", ...environment] };
         if (node.code === "request_failed") return { code: "LOGIN_FAILED", message, nextSteps: ["Check the network and the login service, then run " + login + " again.", ...environment] };
         if (node.code === "invalid_response") return { code: "LOGIN_FAILED", message, nextSteps: ["The login service's response did not match its contract. Retry " + login + " once; if it persists, report it to the API owner.", ...environment] };
         return { code: "LOGIN_FAILED", message, nextSteps: ["Run " + login + " again and approve the new request.", ...environment] };
@@ -810,4 +821,9 @@ export function summarizeDoctor(checks: DoctorCheck[]): { status: "ok" | "action
     checks,
     next_steps: failing.map((c) => c.fix).filter((f): f is string => Boolean(f)),
   };
+}
+
+/** Every OAuth scope an operation's security requirements name, in order. */
+export function requiredScopes(security: Record<string, string[]>[] | undefined): string[] {
+  return [...new Set((security ?? []).flatMap((requirement) => Object.values(requirement).flat()))];
 }

@@ -34,9 +34,10 @@ export interface ClientOptions {
   baseUrl?: string;
   /**
    * Sent as `Authorization: Bearer <token>`. Pass a callback for tokens that expire; it is resolved
-   * before every attempt.
+   * before every attempt, and after a 401 it is called once more with `{ rejected: true }` so it
+   * can refresh instead of returning the rejected token.
    */
-  bearerToken?: string | (() => string | Promise<string>);
+  bearerToken?: AuthValue;
   /**
    * Credentials keyed by the Spec's security scheme names. Only one complete alternative is sent
    * for each operation. Named values take precedence over convenience options.
@@ -204,6 +205,7 @@ export * from "./errors.js";
 export {
   formatDebugEvent,
   type AuthValue,
+  type CredentialContext,
   type DebugEvent,
   type RequestContext,
   type RequestOptions,

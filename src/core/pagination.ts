@@ -7,13 +7,15 @@
 
 import {
   HttpCore,
+  SdkError,
   type CoreRequest,
   type ResponseMeta,
 } from "./http.js";
 
 export interface PageConfig {
-  style: "cursor" | "cursorFromLastId" | "page" | "offset";
-  /** Response field holding the item array ("data", "items", …). */
+  style: "cursor" | "cursorFromLastId" | "page" | "offset" | "nextUrl" | "link";
+  /** Response field holding the item array ("data", "items", …); "" when
+   * the body is the array itself. */
   itemsField: string;
   cursorParam?: string;
   /** Dot-path into the response body ("next_cursor", "meta.next_cursor"). */
@@ -24,16 +26,35 @@ export interface PageConfig {
   pageParam?: string;
   offsetParam?: string;
   limitParam?: string;
+  /** nextUrl: dot-path of the next page's URL ("next_page_uri", "next"). */
+  nextUrlField?: string;
+  /** page: the first page number when it is not 1. */
+  firstPage?: number;
+  /** Dot-path of the total item count: iteration stops once it is reached. */
+  totalField?: string;
+  /** Dot-path of the total page count: page iteration stops at the last page. */
+  totalPagesField?: string;
+}
+
+/** A list response the pagination rules cannot read. */
+export class PaginationError extends SdkError {
+  constructor(message: string, response?: ResponseMeta) {
+    super(message, "pagination_error", response?.status ?? null, response?.rawBody, response?.requestId);
+  }
 }
 
 type FetchPage<Item, E> = (
   query: Record<string, unknown>,
+  url?: string,
+  before?: number,
 ) => Promise<Page<Item, E>>;
 
 export class Page<Item, E = unknown> {
   private readonly fetchPage: FetchPage<Item, E>;
   private readonly config: PageConfig;
   private readonly params: Record<string, unknown>;
+  /** Items on the pages before this one, for the total-count stop. */
+  private readonly before: number;
   readonly body: unknown;
   readonly response: ResponseMeta;
 
@@ -43,16 +64,18 @@ export class Page<Item, E = unknown> {
     params: Record<string, unknown>,
     body: unknown,
     response: ResponseMeta,
+    before = 0,
   ) {
     this.fetchPage = fetchPage;
     this.config = config;
     this.params = params;
     this.body = body;
     this.response = response;
+    this.before = before;
   }
 
   get items(): Item[] {
-    const value = getPath(this.body, this.config.itemsField);
+    const value = this.config.itemsField === "" ? this.body : getPath(this.body, this.config.itemsField);
     return Array.isArray(value) ? (value as Item[]) : [];
   }
 
@@ -60,14 +83,19 @@ export class Page<Item, E = unknown> {
     return this.nextPageParams() !== null;
   }
 
+  /** The next page's URL, for styles that follow one (a response field or
+   * the Link header); null on the last page and for the other styles. */
+  nextPageUrl(): string | null {
+    if (this.finished()) return null;
+    switch (this.config.style) {
+    }
+    return null;
+  }
+
   nextPageParams(): Record<string, unknown> | null {
     const { config, params } = this;
     const items = this.items;
-
-    if (config.hasMoreField !== undefined) {
-      const hasMore = getPath(this.body, config.hasMoreField);
-      if (hasMore === false) return null;
-    }
+    if (this.finished()) return null;
 
     switch (config.style) {
       case "cursor": {
@@ -77,14 +105,26 @@ export class Page<Item, E = unknown> {
         return { ...params, [config.cursorParam!]: next };
       }
     }
-    return null;
+    // URL styles: the next request is the URL itself; its query is what a
+    // caller passes to fetch that page through the operation's parameters.
+    const url = this.nextPageUrl();
+    if (url === null) return null;
+    const next: Record<string, unknown> = {};
+    for (const [key, value] of new URL(url, "http://base.invalid").searchParams) {
+      const existing = next[key];
+      next[key] = existing === undefined ? value : Array.isArray(existing) ? [...existing, value] : [existing, value];
+    }
+    return next;
   }
 
   /** Fetch the next page, or null when this is the last one. Throws the typed error on failure. */
   async getNextPage(): Promise<Page<Item, E> | null> {
+    const url = this.nextPageUrl();
+    if (url !== null) return this.fetchPage({}, url, this.before + this.items.length);
+    if (this.config.style === "nextUrl" || this.config.style === "link") return null;
     const next = this.nextPageParams();
     if (next === null) return null;
-    return this.fetchPage(next);
+    return this.fetchPage(next, undefined, this.before + this.items.length);
   }
 
   /** Iterate every item on this page and all following pages. */
@@ -94,6 +134,16 @@ export class Page<Item, E = unknown> {
       for (const item of page.items) yield item;
       page = await page.getNextPage();
     }
+  }
+
+  /** Signals every style shares: has_more false, or the total reached. */
+  private finished(): boolean {
+    if (this.config.hasMoreField !== undefined && getPath(this.body, this.config.hasMoreField) === false) return true;
+    if (this.config.totalField !== undefined) {
+      const total = getPath(this.body, this.config.totalField);
+      if (typeof total === "number" && this.before + this.items.length >= total) return true;
+    }
+    return false;
   }
 
   private looksLikeMore(items: Item[]): boolean {
@@ -137,11 +187,31 @@ export function paginate<Item, E>(
 ): PagePromise<Item, E> {
   const isGraphql = false
   ;
-  const fetchPage: FetchPage<Item, E> = async (params) => {
+  const fetchPage: FetchPage<Item, E> = async (params, url, before = 0) => {
     let nextReq: CoreRequest = { ...req, query: params };
+    if (url !== undefined) {
+      // A next-page URL is followed verbatim, but only on the API's own
+      // origin: the request carries the client's credentials.
+      const base = new URL(core.config.baseUrl);
+      const target = new URL(url, base);
+      if (target.origin !== base.origin) {
+        throw new PaginationError("The next page is on another origin (" + target.origin + "); refusing to send credentials there. Fetch it yourself if you trust it.");
+      }
+      nextReq = { ...req, query: undefined, url: target.toString() };
+    }
     const result = await core.request<unknown, E>(nextReq);
     if (!result.ok) throw result.error instanceof Error ? result.error : new Error(String(result.error));
-    return new Page<Item, E>(fetchPage, config, params, result.data, result.response);
+    // A page without its item array is a contract break, not an empty page:
+    // iterating it would silently end the walk. A null array is empty.
+    const items = config.itemsField === "" ? result.data : getPath(result.data, config.itemsField);
+    if (!Array.isArray(items) && !(items === null && config.itemsField !== "") && result.response.status !== 304) {
+      throw new PaginationError(
+        (config.itemsField === "" ? "The list response is not an array" : "The list response has no " + JSON.stringify(config.itemsField) + " array")
+          + ". Check the API response against the spec, or configure this operation's pagination.",
+        result.response,
+      );
+    }
+    return new Page<Item, E>(fetchPage, config, params, result.data, result.response, before);
   };
   const initial: Record<string, unknown> = {};
   let seed = req.query ?? {};
@@ -150,6 +220,7 @@ export function paginate<Item, E>(
   }
   return new PagePromise<Item, E>(fetchPage(initial));
 }
+
 
 function getPath(body: unknown, path: string): unknown {
   let node: unknown = body;

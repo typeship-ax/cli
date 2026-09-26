@@ -1,6 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
-import { oauthJsonRequest, OAuthResponseError } from "./oauth-request.js";
+import { oauthJsonRequest, OAuthResponseError, providerErrorOf } from "./oauth-request.js";
 
 /** Browser OAuth login did not complete; the message names the cause. */
 export class OAuthLoginError extends Error {
@@ -8,7 +8,9 @@ export class OAuthLoginError extends Error {
 }
 
 export interface OAuthLoginConfig {
-  issuer: string;
+  /** Exact issuer, when the provider publishes metadata. Without one, the
+   * explicit authorization and token URLs from the API Spec are used. */
+  issuer?: string | null;
   clientId: string;
   discoveryUrl?: string;
   authorizationUrl?: string;
@@ -26,7 +28,7 @@ export interface OAuthLoginSession {
   accessToken: string;
   refreshToken?: string;
   expiresAt?: number;
-  issuer: string;
+  issuer?: string;
   clientId: string;
   tokenUrl: string;
   /** The actual native callback used for this exchange, including its port. */
@@ -52,6 +54,11 @@ function endpoint(value: string): URL {
 }
 
 async function metadata(config: OAuthLoginConfig, signal: AbortSignal) {
+  // The Spec's authorizationCode flow names both endpoints; no discovery.
+  if (!config.issuer) {
+    if (config.authorizationUrl && config.tokenUrl) return { authorizationUrl: endpoint(config.authorizationUrl), tokenUrl: endpoint(config.tokenUrl).href };
+    throw new OAuthLoginError("Browser login needs the provider's authorization and token URLs, or an issuer that publishes them.");
+  }
   const issuer = endpoint(config.issuer);
   if (issuer.search) throw new OAuthLoginError("The OAuth issuer must not contain a query.");
   const path = issuer.pathname.replace(/\/$/, "");
@@ -125,12 +132,15 @@ export async function oauthBrowserLogin(config: OAuthLoginConfig, interaction: O
       response.writeHead(400).end("Invalid login state. Return to the terminal and try again."); return;
     }
     const returnedIssuer = incoming.searchParams.get("iss");
-    if (returnedIssuer !== null && (incoming.searchParams.getAll("iss").length !== 1 || returnedIssuer !== config.issuer)) {
+    if (returnedIssuer !== null && config.issuer && (incoming.searchParams.getAll("iss").length !== 1 || returnedIssuer !== config.issuer)) {
       response.writeHead(400).end("The login issuer did not match."); return;
     }
     accepted = true;
     if (incoming.searchParams.has("error")) {
-      response.writeHead(400).end("Login was not approved. Return to the terminal.", () => rejectCode(new OAuthLoginError("OAuth authorization was denied or cancelled. Run login again to retry.")));
+      const provider = providerErrorOf({ error: incoming.searchParams.get("error"), error_description: incoming.searchParams.get("error_description") ?? undefined });
+      const denied = incoming.searchParams.get("error") === "access_denied";
+      response.writeHead(400).end("Login was not approved. Return to the terminal.", () => rejectCode(new OAuthLoginError(
+        (provider ? "The provider returned " + provider + ". " : "") + (denied ? "OAuth authorization was denied or cancelled. Run login again to retry." : "Check the client ID, the registered redirect URI and the requested scopes, then run login again."))));
       return;
     }
     const code = incoming.searchParams.get("code");
@@ -170,14 +180,14 @@ export async function oauthBrowserLogin(config: OAuthLoginConfig, interaction: O
     });
     const data = response.data;
     if (response.status !== 200 || !data || typeof data.access_token !== "string" || !data.access_token || typeof data.token_type !== "string" || data.token_type.toLowerCase() !== "bearer") {
-      throw new OAuthLoginError(`OAuth token exchange failed (HTTP ${response.status}). Check the public client registration and run login again.`);
+      throw new OAuthLoginError(`OAuth token exchange failed (HTTP ${response.status}${response.providerError ? ": " + response.providerError : ""}). Check the public client registration and run login again.`);
     }
     if (data.expires_in !== undefined && (typeof data.expires_in !== "number" || !Number.isFinite(data.expires_in) || data.expires_in <= 0)) throw new OAuthLoginError("OAuth provider returned an invalid token lifetime.");
     return {
       accessToken: data.access_token,
       ...(typeof data.refresh_token === "string" && data.refresh_token ? { refreshToken: data.refresh_token } : {}),
       ...(typeof data.expires_in === "number" ? { expiresAt: Date.now() + data.expires_in * 1000 } : {}),
-      issuer: config.issuer, clientId: config.clientId, tokenUrl: endpoints.tokenUrl, redirectUri: redirect.href,
+      ...(config.issuer ? { issuer: config.issuer } : {}), clientId: config.clientId, tokenUrl: endpoints.tokenUrl, redirectUri: redirect.href,
       ...(endpoints.revocationUrl ? { revocationUrl: endpoints.revocationUrl } : {}),
       ...(typeof data.scope === "string" ? { scopes: data.scope.split(/\s+/).filter(Boolean) } : {}),
     };

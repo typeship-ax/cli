@@ -2,9 +2,12 @@ import { createHash, randomBytes } from "node:crypto";
 import { oauthJsonRequest, oauthDeviceRequest, OAuthResponseError } from "./oauth-request.js";
 
 export class LoginPollingError extends Error {
-  constructor(readonly code: "cancelled" | "expired" | "denied" | "consumed" | "invalid_response" | "request_failed") {
-    super({ cancelled: "Login was cancelled.", expired: "Login expired. Run login again and approve the new request.", denied: "Login was denied. Run login again if you want to retry.", consumed: "This approval was already used. Run login again.", invalid_response: "The login service returned an invalid response. Check its configuration.", request_failed: "The login request failed. Check the service and start a new login." }[code]);
+  /** The provider's own `error: error_description`, when it sent one. */
+  readonly providerError?: string;
+  constructor(readonly code: "cancelled" | "expired" | "denied" | "consumed" | "invalid_response" | "request_failed", providerError?: string) {
+    super((providerError ? "The provider returned " + providerError + ". " : "") + { cancelled: "Login was cancelled.", expired: "Login expired. Run login again and approve the new request.", denied: "Login was denied. Run login again if you want to retry.", consumed: "This approval was already used. Run login again.", invalid_response: "The login service returned an invalid response. Check its configuration.", request_failed: "The login request failed. Check the service and start a new login." }[code]);
     this.name = "LoginPollingError";
+    if (providerError) this.providerError = providerError;
   }
 }
 
@@ -50,6 +53,11 @@ async function pause(ms: number, signal: AbortSignal): Promise<void> {
 }
 const form = (params: Record<string, string>, signal: AbortSignal): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" }, body: new URLSearchParams(params), signal });
 
+/** Neither the API Spec nor the provider's metadata declares a device endpoint. */
+export class DeviceFlowUnavailableError extends Error {
+  constructor() { super("This provider does not declare device authorization. Use browser login instead."); this.name = "DeviceFlowUnavailableError"; }
+}
+
 export interface DeviceLoginConfig {
   clientId: string; issuer?: string | null; discoveryUrls: string[];
   deviceUrl?: string | null; tokenUrl?: string | null;
@@ -84,11 +92,11 @@ export async function oauthDeviceLogin(config: DeviceLoginConfig, interaction: {
       if (!tokenUrl && typeof data.token_endpoint === "string") tokenUrl = loginEndpoint(data.token_endpoint).href;
       if (data.revocation_endpoint !== undefined) revocationUrl = loginEndpoint(data.revocation_endpoint as string).href;
     }
-    if (!deviceUrl || !tokenUrl) throw new LoginPollingError("invalid_response");
+    if (!deviceUrl || !tokenUrl) throw new DeviceFlowUnavailableError();
     const params = { ...(config.audience ? { audience: config.audience } : {}), ...(config.resource ? { resource: config.resource } : {}) };
     const start = await oauthJsonRequest(deviceUrl, form({ client_id: config.clientId, ...(config.scopes.length ? { scope: config.scopes.join(" ") } : {}), ...params }, flow.signal));
     const data = start.data;
-    if (start.status !== 200) throw new LoginPollingError("request_failed");
+    if (start.status !== 200) throw new LoginPollingError("request_failed", start.providerError);
     if (!data || !text(data.device_code) || !text(data.user_code, 512) || !text(data.verification_uri, 8192) || !seconds(data.expires_in)) throw new LoginPollingError("invalid_response");
     loginEndpoint(data.verification_uri);
     const verificationUri = loginEndpoint((data.verification_uri_complete ?? data.verification_uri) as string).href;
@@ -112,7 +120,7 @@ export async function oauthDeviceLogin(config: DeviceLoginConfig, interaction: {
       if (response.status === 400 && response.error === "slow_down") { intervalMs += 5000; continue; }
       if (response.status === 400 && response.error === "access_denied") throw new LoginPollingError("denied");
       if (response.status === 400 && response.error === "expired_token") throw new LoginPollingError("expired");
-      if (response.status !== 200) throw new LoginPollingError("request_failed");
+      if (response.status !== 200) throw new LoginPollingError("request_failed", response.providerError);
       const token = response.data!;
       if (!text(token.access_token) || typeof token.token_type !== "string" || token.token_type.toLowerCase() !== "bearer" || token.error !== undefined || token.refresh_token !== undefined && !text(token.refresh_token) || token.expires_in !== undefined && !seconds(token.expires_in) || token.scope !== undefined && typeof token.scope !== "string") throw new LoginPollingError("invalid_response");
       return { accessToken: token.access_token, ...(typeof token.refresh_token === "string" ? { refreshToken: token.refresh_token } : {}), ...(typeof token.expires_in === "number" ? { expiresAt: Date.now() + token.expires_in * 1000 } : {}), clientId: config.clientId, tokenUrl, ...(config.issuer ? { issuer: config.issuer } : {}), ...(revocationUrl ? { revocationUrl } : {}), ...(typeof token.scope === "string" ? { scopes: token.scope.split(/\s+/).filter(Boolean) } : {}) };
@@ -138,7 +146,7 @@ export async function customBrowserApproval(config: { authUrl: string; name: str
     const verifier = randomBytes(32).toString("base64url"), challenge = createHash("sha256").update(verifier).digest("base64url");
     const post = (body: unknown): RequestInit => ({ method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body), signal: flow.signal });
     const response = await oauthJsonRequest(url + "/start", post({ code_challenge: challenge, name: config.name, source: config.source }), 15_000);
-    if (response.status !== 200) throw new LoginPollingError("request_failed");
+    if (response.status !== 200) throw new LoginPollingError("request_failed", response.providerError);
     const start = response.data!;
     if (!text(start.session) || !text(start.verification_url, 8192) || start.expires_in !== undefined && !seconds(start.expires_in)) throw new LoginPollingError("invalid_response");
     const verificationUrl = loginEndpoint(start.verification_url).href;
@@ -161,7 +169,7 @@ export async function customBrowserApproval(config: { authUrl: string; name: str
       }
       flow.check();
       if (Date.now() >= deadline) throw new LoginPollingError("expired");
-      if (result.status !== 200) throw new LoginPollingError("request_failed");
+      if (result.status !== 200) throw new LoginPollingError("request_failed", result.providerError);
       const poll = result.data!;
       if (poll.status === "pending") continue;
       if (poll.status === "denied") throw new LoginPollingError("denied");

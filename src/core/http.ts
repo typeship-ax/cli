@@ -99,7 +99,12 @@ function rateLimitStep(info: RateLimitInfo): string {
  * A static credential or a callback resolved before every attempt. Use a
  * callback for tokens that expire (OAuth access tokens, STS, Vault).
  */
-export type AuthValue = string | (() => string | Promise<string>);
+export type AuthValue = string | ((context: CredentialContext) => string | Promise<string>);
+
+/** Passed to credential callbacks. `rejected` is true once, on the attempt
+ * after the API answered 401 to the value this callback last returned:
+ * refresh or replace the token instead of returning it again. */
+export interface CredentialContext { rejected: boolean }
 
 /** Passed to onRequest/onResponse hooks. Mutations to headers and url in
  * onRequest apply to the outgoing request. */
@@ -431,6 +436,9 @@ export interface CoreRequest {
   security?: Record<string, string[]>[];
   method: string;
   path: string;
+  /** A full URL on the API's origin (a next-page link), sent instead of
+   * path and query. */
+  url?: string;
   query?: Record<string, unknown>;
   headers?: Record<string, string | undefined>;
   body?: unknown;
@@ -815,7 +823,7 @@ export class HttpCore {
     for (const value of [...Object.values(selected.headers ?? {}), ...Object.values(selected.query ?? {})]) {
       if (typeof value !== "function") continue;
       refreshable = true;
-      (value as RefreshableAuth).invalidate?.();
+      markRejected(value as RefreshableAuth);
     }
     return refreshable;
   }
@@ -939,7 +947,7 @@ export class HttpCore {
 
   private async buildUrl(req: CoreRequest, authQuery?: Record<string, AuthValue>): Promise<string> {
     const base = this.config.baseUrl.replace(/\/+$/, "");
-    const url = new URL(base + req.path);
+    const url = req.url !== undefined ? new URL(req.url, base) : new URL(base + req.path);
     for (const [k, v] of Object.entries(req.query ?? {})) {
       if (v === undefined || v === null) continue;
       if (Array.isArray(v)) {
@@ -966,7 +974,7 @@ class CredentialCallbackFailure {
 async function resolveAuthValue(value: AuthValue): Promise<string> {
   if (typeof value !== "function") return value;
   try {
-    return await value();
+    return await callCredential(value);
   } catch (error) {
     // The SDK's own token request failures keep the transport retry path.
     if (error instanceof TransportError) throw error;
@@ -976,7 +984,18 @@ async function resolveAuthValue(value: AuthValue): Promise<string> {
 
 /** A refreshable credential: a callback, or a cached client-credentials
  * token that can be dropped before one resend after a 401. */
-type RefreshableAuth = (() => string | Promise<string>) & { invalidate?: () => void };
+type RefreshableAuth = ((context: CredentialContext) => string | Promise<string>) & { invalidate?: () => void };
+
+/** Callbacks without their own invalidate learn of a 401 on their next call. */
+const rejectedCallbacks = new WeakSet<object>();
+function markRejected(value: RefreshableAuth): void {
+  if (value.invalidate) value.invalidate();
+  else rejectedCallbacks.add(value);
+}
+function callCredential(value: RefreshableAuth): string | Promise<string> {
+  const rejected = rejectedCallbacks.delete(value);
+  return value({ rejected });
+}
 
 
 /** Default rendering for debug events (the boolean debug:true sink). */
@@ -992,7 +1011,7 @@ export function formatDebugEvent(name: string, event: DebugEvent): string {
 /** Wrap a bearer credential (static or callback) as an Authorization value. */
 export function bearerAuth(token: AuthValue): AuthValue {
   if (typeof token === "function") {
-    return Object.assign(async () => "Bearer " + (await token()), { invalidate: () => (token as RefreshableAuth).invalidate?.() });
+    return Object.assign(async () => "Bearer " + (await callCredential(token)), { invalidate: () => markRejected(token) });
   }
   return "Bearer " + token;
 }

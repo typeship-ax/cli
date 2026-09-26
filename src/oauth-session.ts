@@ -220,15 +220,17 @@ function validSession(credentials: StoredCredentials | null, config: SessionConf
 /** Re-read on every request attempt; only one process may rotate the token.
  * A failed or interrupted exchange requires login, since the server may have
  * consumed its refresh token even when no response reached this process. */
-export async function oauthSessionToken(store: CredentialStore, config: SessionConfiguration, sessionId: string, tokenParams: Record<string, string> = {}): Promise<string> {
-  const fresh = (session: StoredOAuthSession) => session.expiresAt === undefined || (Number.isFinite(session.expiresAt) && session.expiresAt > Date.now() + 60_000);
+export async function oauthSessionToken(store: CredentialStore, config: SessionConfiguration, sessionId: string, tokenParams: Record<string, string> = {}, rejected?: string): Promise<string> {
+  // A token the API just rejected (401) is refreshed once even if unexpired;
+  // another process may already have replaced it, which is fine.
+  const fresh = (session: StoredOAuthSession) => session.accessToken !== rejected && (session.expiresAt === undefined || (Number.isFinite(session.expiresAt) && session.expiresAt > Date.now() + 60_000));
   const first = validSession(store.read(), config, sessionId, true);
   if (!first.refreshPending && fresh(first)) return first.accessToken;
   return store.withLock(async (locked) => {
     const credentials = locked.read();
     const session = validSession(credentials, config, sessionId);
     if (fresh(session)) return session.accessToken;
-    if (!session.refreshToken || !session.tokenUrl || !session.clientId) throw new OAuthSessionError("The OAuth session expired and cannot be refreshed. Log in again.");
+    if (!session.refreshToken || !session.tokenUrl || !session.clientId) throw new OAuthSessionError(session.accessToken === rejected ? "The API rejected the saved OAuth session and it has no refresh token. Log in again." : "The OAuth session expired and cannot be refreshed. Log in again.");
     const endpoint = new URL(session.tokenUrl);
     if ((endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname))) || endpoint.username || endpoint.password || endpoint.hash) throw new Error("The OAuth token endpoint requires HTTPS; loopback HTTP is allowed for development.");
     locked.write({ ...credentials, oauth: { ...session, refreshPending: true } });
@@ -262,4 +264,13 @@ export async function oauthSessionToken(store: CredentialStore, config: SessionC
       throw new OAuthSessionError("The OAuth session could not be refreshed safely. Log in again.");
     }
   });
+}
+
+/** A saved-session token for the request runtime: resolved before every
+ * attempt, and after a 401 (invalidate) the next resolve forces one refresh
+ * of the token the API rejected. */
+export function sessionCredential(resolve: (rejected?: string) => Promise<string>): (() => Promise<string>) & { invalidate(): void } {
+  let last: string | undefined, rejected: string | undefined;
+  const token = async () => { const previous = rejected; rejected = undefined; last = await resolve(previous); return last; };
+  return Object.assign(token, { invalidate() { rejected = last; } });
 }

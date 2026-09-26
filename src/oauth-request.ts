@@ -16,9 +16,23 @@ export class OAuthResponseError extends Error {
 }
 
 export type DeviceOAuthError = "authorization_pending" | "slow_down" | "access_denied" | "expired_token";
-interface AuthenticationResponse { status: number; data?: Record<string, unknown>; error?: DeviceOAuthError }
+interface AuthenticationResponse {
+  status: number; data?: Record<string, unknown>; error?: DeviceOAuthError;
+  /** RFC 6749 `error` and `error_description` from a 400 or 401 body, as
+   * "code: description". Only those two fields, printable ASCII, bounded. */
+  providerError?: string;
+}
 
-/** Error bodies and transport causes may contain credentials and are discarded. */
+/** The provider's standard error fields, never any other body content. */
+export function providerErrorOf(data: Record<string, unknown>): string | undefined {
+  const code = typeof data.error === "string" && /^[\x20-\x21\x23-\x5b\x5d-\x7e]{1,64}$/.test(data.error) ? data.error : undefined;
+  if (!code) return undefined;
+  const description = typeof data.error_description === "string" ? data.error_description.replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 300) : "";
+  return description ? code + ": " + description : code;
+}
+
+/** Transport causes and error bodies beyond the standard OAuth `error` and
+ * `error_description` fields may contain credentials and are discarded. */
 export function oauthJsonRequest(url: string | URL, init: RequestInit = {}, timeoutMs = 30_000): Promise<AuthenticationResponse> {
   return boundedRequest(url, init, timeoutMs, "json");
 }
@@ -39,6 +53,9 @@ async function boundedRequest(url: string | URL, init: RequestInit, timeoutMs: n
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let interrupted: "timed_out" | "cancelled" | undefined;
+  // An error status is already an answer: its body only adds the provider's
+  // explanation, so a stalled or malformed error body never becomes a failure.
+  let errorStatus: number | undefined;
   let rejectDeadline!: (reason: Error) => void;
   const deadline = new Promise<never>((_, reject) => { rejectDeadline = reject; });
   const stop = (code: "timed_out" | "cancelled") => { interrupted ??= code; rejectDeadline(new OAuthResponseError(interrupted)); controller.abort(); };
@@ -56,7 +73,8 @@ async function boundedRequest(url: string | URL, init: RequestInit, timeoutMs: n
       }), deadline,
     ]);
     if (response.redirected) { void response.body?.cancel().catch(() => {}); throw new OAuthResponseError("request_failed"); }
-    if (mode === "status" || response.status !== 200 && !(mode === "device" && response.status === 400)) { void response.body?.cancel().catch(() => {}); return { status: response.status }; }
+    if (mode === "status" || response.status !== 200 && response.status !== 400 && response.status !== 401) { void response.body?.cancel().catch(() => {}); return { status: response.status }; }
+    if (response.status !== 200) errorStatus = response.status;
     if (!response.body) throw new OAuthResponseError("invalid_response");
     reader = response.body.getReader();
     let size = 0, text = "";
@@ -72,14 +90,22 @@ async function boundedRequest(url: string | URL, init: RequestInit, timeoutMs: n
     try { text += decoder.decode(); }
     catch { throw new OAuthResponseError("invalid_response"); }
     let data: unknown;
-    try { data = JSON.parse(text); } catch { throw new OAuthResponseError("invalid_response"); }
-    if (!data || typeof data !== "object" || Array.isArray(data)) throw new OAuthResponseError("invalid_response");
+    try { data = JSON.parse(text); } catch {
+      if (response.status !== 200) return { status: response.status };
+      throw new OAuthResponseError("invalid_response");
+    }
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      if (response.status !== 200) return { status: response.status };
+      throw new OAuthResponseError("invalid_response");
+    }
     if (response.status !== 200) {
       const error = (data as Record<string, unknown>).error;
-      return { status: response.status, ...(["authorization_pending", "slow_down", "access_denied", "expired_token"].includes(String(error)) && typeof error === "string" ? { error: error as DeviceOAuthError } : {}) };
+      const providerError = providerErrorOf(data as Record<string, unknown>);
+      return { status: response.status, ...(providerError ? { providerError } : {}), ...(mode === "device" && ["authorization_pending", "slow_down", "access_denied", "expired_token"].includes(String(error)) && typeof error === "string" ? { error: error as DeviceOAuthError } : {}) };
     }
     return { status: response.status, data: data as Record<string, unknown> };
   } catch (error) {
+    if (errorStatus !== undefined && interrupted !== "cancelled") return { status: errorStatus };
     if (interrupted) throw new OAuthResponseError(interrupted);
     if (error instanceof OAuthResponseError) throw error;
     throw new OAuthResponseError("request_failed");

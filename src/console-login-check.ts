@@ -61,7 +61,7 @@ export async function checkConsoleBrowserLogin(input: {
     input.progress("This check runs a temporary browser login. Typeship will receive only the access token and any additional credentials required for the identity read; refresh tokens stay on this computer.");
     const session = await input.login(Math.max(1, Date.parse(check.expiresAt) - Date.now()));
     try {
-      const evidence = { method: "oauth_browser" as const, issuer: session.issuer, clientId: session.clientId, redirectUri: session.redirectUri };
+      const evidence = { method: "oauth_browser" as const, issuer: session.issuer ?? "", clientId: session.clientId, redirectUri: session.redirectUri };
       if (!matchesConsoleBrowserEvidence(input.configuration, evidence)) throw new Error("The browser login did not use the Target's client registration and native callback.");
       const credentials: NamedCredentials = Object.fromEntries(Object.keys(requirement).map((name) => [name, input.schemes[name]!.kind === "bearer" ? session.accessToken : supplied[name]! ]));
       await input.verify(credentials, check.expectations);

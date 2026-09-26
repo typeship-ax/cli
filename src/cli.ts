@@ -10,7 +10,7 @@ import { oauthBrowserLogin, type OAuthLoginSession } from "./oauth-login.js";
 import { oauthDeviceLogin, customBrowserApproval, loginEndpoint, type ApprovedCredential } from "./polling-login.js";
 import { oauthStatusRequest } from "./oauth-request.js";
 import { checkConsoleBrowserLogin } from "./console-login-check.js";
-import { type FileCredentialStore, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
+import { type FileCredentialStore, sessionCredential, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
 import { createCredentialStore } from "./credential-storage.js";
 import { identityPolicyOf, identityFetch, identityResult, verifyApiIdentity, verifyClientIdentity, readApiIdentity, assertApiIdentity, type ApiIdentity, type IdentityConfiguration, type IdentityPolicy, type VerifiedIdentity } from "./api-identity.js";
 import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, missingCredentials, oauthSessionSchemes, parseExtraHeaders, applyExtraHeaders, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
@@ -25,7 +25,7 @@ import { asApiResult, mediaTypeForPath, validateAgainstSchema, ValidationError, 
 import { SCHEMAS, DEFS } from "./schemas.js";
 import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
-  MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, classifyAuthFailure, collectionProperty, detectHarness, envelope,
+  MCP_CLIENTS, requiredScopes, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, classifyAuthFailure, collectionProperty, detectHarness, envelope,
   exitCodeFor, findMcpClient, installSkills, mcpConfigured, pendingClaims, recordClaim, summarizeDoctor, upsertAgentBlock, writeBundle, writeMcpConfig,
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
@@ -77,6 +77,9 @@ const OAUTH_DISCOVERY_URLS: string[] = [];
 const OAUTH_DEVICE_URL: string | null = null;
 const HAS_OAUTH_LOGIN = OAUTH_TOKEN_URL !== null || OAUTH_DISCOVERY_URLS.length > 0;
 const OAUTH_LOGIN_METHOD: string = "device";
+/** The loopback port browser login listens on unless the redirect URI names
+ * one: fixed per CLI, so it can be registered with the provider. */
+const OAUTH_DEFAULT_REDIRECT_PORT = 49910;
 const OAUTH_REDIRECT_URI: string | undefined = undefined;
 const OAUTH_ORGANIZATION_PARAMETER: "organization" | "organization_id" | undefined = undefined;
 const OAUTH_AUTHORIZATION_URL: string | undefined = undefined;
@@ -112,7 +115,7 @@ const BUILTIN_BOOLEAN_FLAGS: Record<string, string[]> = {
   mcp: ["claude", "cursor", "claude-desktop", "codex", "vscode", "windsurf", "gemini", "opencode", "zed", "all", "read-only"],
   docs: ["web", "schema"],
   init: ["all", "yes", "no-skills", "no-mcp", "no-agents-md", "no-browser"],
-  auth: ["live"],
+  auth: ["live", "offline"],
   doctor: [],
 };
 
@@ -347,8 +350,10 @@ function fail(code: number, message: string, extra?: unknown, nextSteps?: string
 }
 
 /** An SDK error result as an envelope: status-derived code, the API's body as detail, concrete next steps. */
+/** OAuth scopes of the operation being run, so a 403 can name them. */
+let CURRENT_SCOPES: string[] = [];
 function failApi(error: unknown, hadCredential: boolean): never {
-  return failWith(classifyAuthFailure(error, authFailureContext()) ?? classifyApiError(error, { bin: BIN, hadCredential, docsUrl: DOCS_URL_DEFAULT }));
+  return failWith(classifyAuthFailure(error, authFailureContext()) ?? classifyApiError(error, { bin: BIN, hadCredential, docsUrl: DOCS_URL_DEFAULT, requiredScopes: CURRENT_SCOPES, canLogin: HAS_OAUTH_LOGIN }));
 }
 
 /** What a login, saved-session or credential-store failure names as alternatives. */
@@ -510,9 +515,10 @@ async function deviceLogin(clientId: string, parsed: Parsed): Promise<void> {
   if (!apiBaseUrl) fail(2, "Set the API base URL before logging in.");
   const loginConfiguration = sessionConfiguration(apiBaseUrl!);
   await credentialStore().prepare();
+  if (!OAUTH_DEVICE_URL && !OAUTH_ISSUER && !OAUTH_DISCOVERY_URL) fail(2, "This API does not declare device authorization. Run '" + BIN + " login' without --device to sign in through the browser.");
   const session = await withLoginCancellation((signal) => oauthDeviceLogin({
     clientId, issuer: OAUTH_ISSUER, discoveryUrls: OAUTH_DISCOVERY_URLS,
-    deviceUrl: OAUTH_DEVICE_URL, tokenUrl: OAUTH_TOKEN_URL, scopes: OAUTH_SCOPES,
+    deviceUrl: OAUTH_DEVICE_URL, tokenUrl: OAUTH_TOKEN_URL, scopes: loginScopes(parsed.flags),
     audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
   }, { signal, authorize({ verificationUri, userCode, expiresIn }) {
     process.stderr.write("Open " + paintErr("cyan", verificationUri) + " and enter code: " + paintErr("bold", userCode) + "\n");
@@ -621,8 +627,29 @@ async function browserLogin(headless: boolean, target: LoginTarget, flags: Map<s
   await flushExit(0);
 }
 
+/** The callback URL browser login uses: the configured redirect URI, else
+ * http://127.0.0.1:<port>/callback. --redirect-port or
+ * TYPESHIP_OAUTH_REDIRECT_PORT picks another port. */
+function oauthRedirectUri(flags: Map<string, string | boolean>): string {
+  const requested = typeof flags.get("redirect-port") === "string" ? flags.get("redirect-port") as string : process.env["TYPESHIP_OAUTH_REDIRECT_PORT"];
+  const redirect = new URL(OAUTH_REDIRECT_URI ?? "http://127.0.0.1:" + OAUTH_DEFAULT_REDIRECT_PORT + "/callback");
+  if (requested !== undefined) {
+    if (!/^[1-9][0-9]{0,4}$/.test(requested) || Number(requested) > 65535) fail(2, "--redirect-port expects a port number from 1 to 65535.");
+    redirect.port = requested;
+  }
+  return redirect.href;
+}
+
+/** --scopes a,b narrows (or widens) what this login asks for. */
+function loginScopes(flags: Map<string, string | boolean>): string[] {
+  const requested = flags.get("scopes");
+  if (requested === undefined) return OAUTH_SCOPES;
+  if (typeof requested !== "string" || !requested.trim()) fail(2, "--scopes expects a comma- or space-separated list of scopes.");
+  return [...new Set((requested as string).split(/[\s,]+/).filter(Boolean))];
+}
+
 async function acquireOAuthBrowserSession(parsed: Parsed, clientId: string): Promise<void> {
-  if (!OAUTH_ISSUER) fail(2, "Browser OAuth requires the exact auth.oauth_issuer configured by the API owner.");
+  if (!OAUTH_ISSUER && !OAUTH_AUTHORIZATION_URL) fail(2, "Browser OAuth needs an authorization URL: the API Spec's authorizationCode flow, or auth.oauth_server.issuer configured by the API owner.");
   const apiBaseUrl = resolveBaseUrl(parsed.flags);
   if (!apiBaseUrl) fail(2, "Set the API base URL before logging in.");
   const loginConfiguration = sessionConfiguration(apiBaseUrl!);
@@ -642,9 +669,9 @@ async function startOAuthBrowserSession(parsed: Parsed, clientId: string, timeou
   process.once("SIGTERM", cancel);
   try {
     return await oauthBrowserLogin({
-      issuer: OAUTH_ISSUER!, clientId, discoveryUrl: OAUTH_DISCOVERY_URL,
+      issuer: OAUTH_ISSUER, clientId, discoveryUrl: OAUTH_DISCOVERY_URL,
       authorizationUrl: OAUTH_AUTHORIZATION_URL, tokenUrl: OAUTH_TOKEN_URL ?? undefined,
-      redirectUri: OAUTH_REDIRECT_URI, scopes: OAUTH_SCOPES,
+      redirectUri: oauthRedirectUri(parsed.flags), scopes: loginScopes(parsed.flags),
       audience: OAUTH_TOKEN_PARAMS.audience, resource: OAUTH_TOKEN_PARAMS.resource,
       organization: requestedLoginOrganization(parsed.flags),
     }, { signal: controller.signal, timeoutMs, authorize(url) {
@@ -703,8 +730,10 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
       ...(CLI_AUTH_URL && target && !target.basic ? ["  " + BIN + " login                        approve in the browser: a key is minted for you (add --no-browser to print the link instead of opening it)"] : []),
       ...(target ? ["  " + BIN + " login --with-token           read the " + target.label + " from stdin" + (target.basic ? " as one username:password line" : "") + " (CI)"] : []),
       ...(Object.keys(NAMED_SCHEMES).length > 1 || (!target && Object.keys(NAMED_SCHEMES).length) ? ["  " + BIN + " login --scheme <name>        choose the scheme --with-token, the prompt" + (CLI_AUTH_URL ? " and browser approval" : "") + " store" + (target ? " (default: " + target.storedAs + ")" : "") + "; a Basic scheme reads username:password"] : []),
-      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --client-id <id>       OAuth " + OAUTH_LOGIN_METHOD + " login" + (OAUTH_CLIENT_ID ? " (a default id is built in)" : "")] : []),
-      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --no-browser           print the approval URL instead of opening a browser", "  " + BIN + " login --device               use device authorization when your provider supports it"] : []),
+      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --client-id <id>       OAuth " + (OAUTH_LOGIN_METHOD === "browser" ? "browser (authorization code + PKCE)" : "device") + " login" + (OAUTH_CLIENT_ID ? " (a default id is built in)" : "; register an application with the provider for its client ID, or set " + ENV_PREFIX + "_CLIENT_ID")] : []),
+      ...(HAS_OAUTH_LOGIN && OAUTH_LOGIN_METHOD === "browser" ? ["  " + BIN + " login --no-browser           print the sign-in URL instead of opening a browser", "  " + BIN + " login --redirect-port <n>    listen on another loopback port (default callback " + oauthRedirectUri(new Map()) + "; register it with the provider)"] : []),
+      ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --scopes <a,b>         request these scopes instead of " + (OAUTH_SCOPES.length ? OAUTH_SCOPES.join(" ") : "the provider's defaults")] : []),
+      ...(HAS_OAUTH_LOGIN && (OAUTH_DEVICE_URL || OAUTH_ISSUER || OAUTH_DISCOVERY_URL) ? ["  " + BIN + " login --device               use device authorization when your provider supports it"] : []),
       ...(BASIC ? ["  " + BIN + " login --username <u> --password <p>"] : []),
       ...(CLI_AUTH_URL || HAS_OAUTH_LOGIN || !target ? [] : ["  " + BIN + " login                        interactive prompt" + (target.basic ? " for username and hidden password" : "") + " (TTY only)"]),
       "",
@@ -1198,24 +1227,26 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
   }
   if (parsed.help || sub !== "check") {
     process.stdout.write([
-      BIN + " auth check [--live] — report the credential the CLI would use, as JSON: {status: ok|action_required, authenticated, source, ...}",
+      BIN + " auth check [--offline] — report the credential the CLI would use and verify it with the API's identity read, as JSON: {status: ok|action_required, authenticated, verification: verified|unverified|rejected, source, ...}",
       "  " + BIN + " auth profiles                 list profiles without unlocking credentials",
       "  " + BIN + " auth use <name>               select the default profile",
       "  " + BIN + " auth remove <name>            remove a profile after logout",
       "  --profile <name> overrides TYPESHIP_PROFILE, then the saved selection, then default.",
-      "  --live   also call the API's identity endpoint" + (WHOAMI ? "" : " (none in this API; --live is a no-op)"),
+      "  --offline  skip the identity read; the credential is then reported as unverified" + (WHOAMI ? "" : " (this API has no identity read, so credentials are always unverified)"),
       "",
       "Precedence: flags > env vars > stored credentials (" + credsPath() + ").",
     ].join("\n") + "\n");
     await flushExit(parsed.help ? 0 : 2);
   }
   const source = credentialSource(parsed.flags) ?? "none";
-  const authenticated = source !== "none";
+  const present = source !== "none";
   const savedIdentity = source === "login" ? readCreds() : null;
   if (savedIdentity) assertStoredIdentity(savedIdentity, identityConfiguration());
+  // A credential counts as authenticated only once the API accepted it.
   const report: Record<string, unknown> = {
-    status: authenticated ? "ok" : "action_required",
-    authenticated,
+    status: present ? "ok" : "action_required",
+    authenticated: false,
+    verification: present ? "unverified" : "none",
     source,
     credentials_path: existsSync(credsPath()) ? credsPath() : null,
     credential_storage: credentialStore().backend,
@@ -1223,13 +1254,13 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
     profile: PROFILE.name, profile_source: PROFILE.source,
     auth_env_vars: agentContext().authEnvVars,
     base_url: resolveBaseUrl(parsed.flags) ?? null,
-    next_steps: authenticated ? [] : [
+    next_steps: present ? [WHOAMI ? "Run '" + BIN + " auth check' without --offline to verify the credential." : "This API has no identity read, so the credential was not checked. Run a read command to confirm the API accepts it."] : [
       ...AUTH_SCALARS.map((a) => "Set " + a.env + " in the environment, or run '" + BIN + " login --" + a.flag + " <value>'."),
       ...(AUTH_UNDECLARED ? ["The API Spec does not declare authentication. Add another header with --header \"Name: value\" or TYPESHIP_HEADERS."] : []),
-      ...(WHOAMI ? ["Then run '" + BIN + " auth check --live'."] : []),
+      ...(WHOAMI ? ["Then run '" + BIN + " auth check'."] : []),
     ],
   };
-  if (authenticated && parsed.flags.get("live") === true && WHOAMI) {
+  if (present && parsed.flags.get("offline") !== true && WHOAMI) {
     const op = OPS.find((o) => o.resource === WHOAMI.resource && o.method === WHOAMI.method);
     if (op) {
       const client = await makeClient(parsed.flags, op);
@@ -1238,9 +1269,12 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
       if (result.ok) {
         if (identityConfiguration() && savedIdentity?.identity) assertApiIdentity(savedIdentity.identity.values, readApiIdentity(result.data, IDENTITY_POLICY));
         report.identity = result.data;
+        // An identity read that also answers anonymous callers proves nothing.
+        if (op.auth !== "none") { report.authenticated = true; report.verification = "verified"; report.next_steps = []; }
       }
       else {
         const why = classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT });
+        report.verification = "rejected";
         report.status = "action_required";
         report.live = { ok: false, code: why.code, message: why.message };
         report.next_steps = why.nextSteps ?? [];
@@ -1396,7 +1430,7 @@ async function cmdInit(parsed: Parsed): Promise<void> {
     report.agents_md = { status: result.updated ? "updated" : "written", file: result.file };
   }
 
-  nextSteps.push("Run '" + BIN + " auth check --live'" + (WHOAMI ? "" : " (or any read command)") + " to confirm the connection.");
+  nextSteps.push("Run '" + BIN + " auth check'" + (WHOAMI ? "" : " (or any read command)") + " to confirm the connection.");
   nextSteps.push("Run '" + BIN + " agent-guide' for the conventions, or '" + BIN + " --help' for commands.");
   out({ ...report, next_steps: nextSteps });
   await flushExit(0);
@@ -2152,6 +2186,8 @@ function printOp(op: OpSpec): void {
   lines.push(paintOut("bold", usageLine(op)));
   if (op.summary) lines.push(helpSentence(op.summary));
   lines.push(wireOf(op) + authNote(op));
+  const scopes = requiredScopes(op.security);
+  if (scopes.length) lines.push("Requires OAuth scopes: " + scopes.join(", ") + (HAS_OAUTH_LOGIN ? " (login --scopes " + scopes.join(",") + ")" : ""));
   lines.push("");
   const rows = op.params.filter((p) => p.kind !== "path");
   const extras = commandExtras(op);
@@ -2426,6 +2462,7 @@ function withOAuthSession(options: ClientOptions & Record<string, unknown>, acce
 }
 
 async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, candidate?: StoredCreds, forIdentity = false): Promise<TypeshipClient> {
+  CURRENT_SCOPES = requiredScopes(op.security);
   const flagNamed = flagCredentials(flags), envNamed = environmentCredentials();
   const explicitOptions = new Set(AUTH_SCALARS.filter((a) => typeof flags.get(a.flag) === "string" || process.env[a.env] !== undefined).map((a) => a.option));
   if (BASIC && (typeof flags.get("username") === "string" || process.env[BASIC.envUser] !== undefined) && (typeof flags.get("password") === "string" || process.env[BASIC.envPass] !== undefined)) explicitOptions.add("basicAuth");
@@ -2468,10 +2505,10 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
   ]);
   if (stored?.oauth) {
     const sessionId = stored.oauth.sessionId;
-    const token = forIdentity ? stored.oauth.accessToken : () => oauthSessionToken(credentialStore(), {
+    const token = forIdentity ? stored.oauth.accessToken : sessionCredential((rejected) => oauthSessionToken(credentialStore(), {
       ...sessionConfiguration(baseUrl, config),
       ...(identityConfiguration() && WHOAMI ? { verifyIdentity: (accessToken: string) => verifyClientIdentity((values) => new TypeshipClient(values as unknown as ClientOptions), withOAuthSession(options, accessToken), WHOAMI!, IDENTITY_POLICY) } : {}),
-    }, sessionId, OAUTH_TOKEN_PARAMS);
+    }, sessionId, OAUTH_TOKEN_PARAMS, rejected));
     applyOAuthSession(options, token, forIdentity);
   }
   if (flags.get("debug") === true || process.env["TYPESHIP_DEBUG"] === "1") {
@@ -2720,6 +2757,11 @@ async function main(): Promise<void> {
   if (op.rawResponse === "binary" && outputFlag === undefined && process.stdout.isTTY) {
     fail(2, op.command.join(" ") + " returns binary data. Pass --output <file>, or redirect stdout to a file.");
   }
+  // --all on a list the generator could not page would print one page and
+  // exit 0, which reads as "that is everything".
+  if (!op.paginated && parsed.flags.get("all") === true) {
+    fail(2, op.command.join(" ") + " does not paginate, so --all has nothing to walk. Run it without --all; it returns the whole response.");
+  }
   const client = await makeClient(parsed.flags, op);
 
   // Destructive commands need --force. A person gets asked; an agent gets
@@ -2751,7 +2793,10 @@ async function main(): Promise<void> {
   const selectValue = typeof parsed.flags.get("select") === "string" ? (parsed.flags.get("select") as string) : undefined;
   const args = buildArgs(op, values, dataBody, selectValue);
   const target = (client as unknown as Record<string, Record<string, (...a: unknown[]) => unknown>>)[op.resource]!;
-  const callResult = target[op.method]!(...args);
+  // --stream true on an operation with a streaming twin prints its events
+  // as NDJSON as they arrive, instead of failing on the event stream.
+  const streaming = op.streamMethod !== undefined && values[op.streamMethod.flag] === op.streamMethod.value;
+  const callResult = target[streaming ? op.streamMethod!.method : op.method]!(...args);
 
   if (op.paginated && parsed.flags.get("all") === true) {
     try {
@@ -2777,7 +2822,7 @@ async function main(): Promise<void> {
     result = { ...result, data: { ...batch, data: completed } };
   }
   if (result.ok) {
-    if (op.sse) {
+    if (op.sse || streaming) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.
       try {
         for await (const event of result.data as AsyncIterable<{ event?: string; id?: string; data: string }>) {

@@ -20,14 +20,14 @@ import type {
   FileListRead,
   FileModel,
   FileModelRead,
+  Generation,
   GenerationId,
   GenerationList,
   GenerationListRead,
+  GenerationRead,
   GenerationResponse,
   GenerationResponseRead,
   GenerationStatus,
-  GenerationSummary,
-  GenerationSummaryRead,
   ProjectId,
   TargetId,
 } from "../types.js";
@@ -35,7 +35,7 @@ import type {
 export class GenerationsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List generations
+   * List Generations
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /generations`
@@ -43,8 +43,8 @@ export class GenerationsResource {
   list(
     params?: GenerationsListParams,
     options?: RequestOptions,
-  ): PagePromise<GenerationSummaryRead, GenerationsListError> {
-    return paginate<GenerationSummaryRead, GenerationsListError>(this._core, {
+  ): PagePromise<GenerationRead, GenerationsListError> {
+    return paginate<GenerationRead, GenerationsListError>(this._core, {
       method: "GET",
       path: "/generations",
       security: [{"apiKey":[]}],
@@ -77,7 +77,7 @@ export class GenerationsResource {
   }
 
   /**
-   * Get a generation
+   * Get a Generation
    *
    * Returns the status of that Generation. `queued` and `running` mean generation is still in
    * progress. `completed` means generated files are saved, not that repository delivery or a Draft

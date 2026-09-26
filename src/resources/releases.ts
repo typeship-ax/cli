@@ -31,7 +31,7 @@ import type {
 export class ReleasesResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List releases
+   * List Releases
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /releases`
@@ -68,7 +68,7 @@ export class ReleasesResource {
   }
 
   /**
-   * Get a release
+   * Get a Release
    * `GET /releases/{release_id}`
    */
   async get(releaseId: ReleaseId, options?: RequestOptions): Promise<ReleaseResponseRead> {
@@ -90,7 +90,7 @@ export class ReleasesResource {
   }
 
   /**
-   * Retry publishing a release
+   * Retry publishing a Release
    *
    * Queues every failed or queued Publication of the release and starts its repository publishing
    * workflow again. Publishing uses that release's version and accepted commit, even if a newer

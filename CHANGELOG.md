@@ -34,12 +34,28 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.list()`
+  - `return-type-changed`: response.data\[\].config added: ProjectConfigResponse \| null \(required\)
+  - `return-type-changed`: response.data\[\].request\_id added: RequestId \(optional\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.create()`
+  - **breaking** `return-type-changed`: response type changed: Project -&gt; ProjectResponse
+  - `return-type-changed`: response intersection added: Project
+  - `return-type-changed`: response intersection added: ResponseMetadata
+  - **breaking** `return-type-changed`: response.auto\_generate removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.config removed \(was ProjectConfigResponse \| null\)
+  - **breaking** `return-type-changed`: response.created\_at removed \(was string\)
+  - **breaking** `return-type-changed`: response.id removed \(was ProjectId\)
+  - **breaking** `return-type-changed`: response.name removed \(was string\)
+  - **breaking** `return-type-changed`: response.object removed \(was "project" \| \(string &amp; \{\}\)\)
+  - **breaking** `return-type-changed`: response.request\_id removed \(was RequestId\)
+  - **breaking** `return-type-changed`: response.spec\_id removed \(was SpecId\)
+  - **breaking** `return-type-changed`: response.updated\_at removed \(was string\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -49,12 +65,26 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.get()`
+  - **breaking** `return-type-changed`: response type changed: Project -&gt; ProjectResponse
+  - `return-type-changed`: response intersection added: Project
+  - `return-type-changed`: response intersection added: ResponseMetadata
+  - **breaking** `return-type-changed`: response.auto\_generate removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.config removed \(was ProjectConfigResponse \| null\)
+  - **breaking** `return-type-changed`: response.created\_at removed \(was string\)
+  - **breaking** `return-type-changed`: response.id removed \(was ProjectId\)
+  - **breaking** `return-type-changed`: response.name removed \(was string\)
+  - **breaking** `return-type-changed`: response.object removed \(was "project" \| \(string &amp; \{\}\)\)
+  - **breaking** `return-type-changed`: response.request\_id removed \(was RequestId\)
+  - **breaking** `return-type-changed`: response.spec\_id removed \(was SpecId\)
+  - **breaking** `return-type-changed`: response.updated\_at removed \(was string\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.delete()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -64,6 +94,19 @@
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.update()`
+  - **breaking** `return-type-changed`: response type changed: Project -&gt; ProjectResponse
+  - `return-type-changed`: response intersection added: Project
+  - `return-type-changed`: response intersection added: ResponseMetadata
+  - **breaking** `return-type-changed`: response.auto\_generate removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.config removed \(was ProjectConfigResponse \| null\)
+  - **breaking** `return-type-changed`: response.created\_at removed \(was string\)
+  - **breaking** `return-type-changed`: response.id removed \(was ProjectId\)
+  - **breaking** `return-type-changed`: response.name removed \(was string\)
+  - **breaking** `return-type-changed`: response.object removed \(was "project" \| \(string &amp; \{\}\)\)
+  - **breaking** `return-type-changed`: response.request\_id removed \(was RequestId\)
+  - **breaking** `return-type-changed`: response.spec\_id removed \(was SpecId\)
+  - **breaking** `return-type-changed`: response.updated\_at removed \(was string\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -76,7 +119,25 @@
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `projects.generate()`
-  - **breaking** `return-type-changed`: response.data\[\].errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
+  - **breaking** `return-type-changed`: response.data\[\] intersection removed: Generation
+  - `return-type-changed`: response.data\[\].coverage added: GenerationCoverage \| null \(required\)
+  - `return-type-changed`: response.data\[\].created\_at added: string \(required\)
+  - `return-type-changed`: response.data\[\].errors added: DomainError\[\] \(required\)
+  - `return-type-changed`: response.data\[\].file\_count added: number \(required\)
+  - `return-type-changed`: response.data\[\].id added: GenerationId \(required\)
+  - `return-type-changed`: response.data\[\].name added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].object added: "generation" \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].project\_id added: ProjectId \(required\)
+  - `return-type-changed`: response.data\[\].runtime\_ms added: number \| null \(required\)
+  - `return-type-changed`: response.data\[\].spec\_revision\_id added: SpecRevisionId \| null \(required\)
+  - `return-type-changed`: response.data\[\].status added: GenerationStatus \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].target\_id added: TargetId \| null \(required\)
+  - `return-type-changed`: response.data\[\].trigger added: GenerationTrigger \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].type added: GeneratorKind \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].updated\_at added: string \(required\)
+  - `return-type-changed`: response.data\[\].version added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].warnings added: GenerationWarning\[\] \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -95,6 +156,7 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `specs.update()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -105,6 +167,7 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `specs.refresh()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -143,6 +206,8 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `targets.create()`
+  - **breaking** `body-field-removed`: request body.spec\_id removed \(was SpecId\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 402.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -159,6 +224,7 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `targets.delete()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -190,6 +256,7 @@
   - `return-type-changed`: response.publications\[\].type added: \("github" \| "npm" \| "pypi" \| "go" \| "mcp"\) \| \(string &amp; \{\}\) \(required\)
   - `return-type-changed`: response.release\_channel added: \("stable" \| "prerelease"\) \| \(string &amp; \{\}\) \(required\)
   - `return-type-changed`: response.updated\_at added: string \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -236,6 +303,7 @@
   - `return-type-changed`: response.compatibility added: DraftCompatibility \| null \(required\)
   - `return-type-changed`: response.errors added: ErrorDetail\[\] \(required\)
   - `return-type-changed`: response.version added: DraftVersion \| null \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -247,6 +315,7 @@
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `drafts.listFiles()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -262,6 +331,7 @@
   - `return-type-changed`: response.compatibility added: DraftCompatibility \| null \(required\)
   - `return-type-changed`: response.errors added: ErrorDetail\[\] \(required\)
   - `return-type-changed`: response.version added: DraftVersion \| null \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -277,6 +347,7 @@
   - `return-type-changed`: response.compatibility added: DraftCompatibility \| null \(required\)
   - `return-type-changed`: response.errors added: ErrorDetail\[\] \(required\)
   - `return-type-changed`: response.version added: DraftVersion \| null \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -293,6 +364,7 @@
   - `return-type-changed`: response.data\[\].publications\[\].type added: \("github" \| "npm" \| "pypi" \| "go" \| "mcp"\) \| \(string &amp; \{\}\) \(required\)
   - `return-type-changed`: response.data\[\].release\_channel added: \("stable" \| "prerelease"\) \| \(string &amp; \{\}\) \(required\)
   - `return-type-changed`: response.data\[\].updated\_at added: string \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -334,6 +406,7 @@
   - `return-type-changed`: response.data\[\].status enum values removed: "disabled", "pending", "published", "publishing"
   - **breaking** `return-type-changed`: response.data\[\].status enum values added: "completed", "queued", "running"
   - `return-type-changed`: response.data\[\].type added: \("github" \| "npm" \| "pypi" \| "go" \| "mcp"\) \| \(string &amp; \{\}\) \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -353,7 +426,25 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `generations.list()`
-  - **breaking** `return-type-changed`: response.data\[\].errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
+  - **breaking** `return-type-changed`: response.data\[\] intersection removed: Generation
+  - `return-type-changed`: response.data\[\].coverage added: GenerationCoverage \| null \(required\)
+  - `return-type-changed`: response.data\[\].created\_at added: string \(required\)
+  - `return-type-changed`: response.data\[\].errors added: DomainError\[\] \(required\)
+  - `return-type-changed`: response.data\[\].file\_count added: number \(required\)
+  - `return-type-changed`: response.data\[\].id added: GenerationId \(required\)
+  - `return-type-changed`: response.data\[\].name added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].object added: "generation" \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].project\_id added: ProjectId \(required\)
+  - `return-type-changed`: response.data\[\].runtime\_ms added: number \| null \(required\)
+  - `return-type-changed`: response.data\[\].spec\_revision\_id added: SpecRevisionId \| null \(required\)
+  - `return-type-changed`: response.data\[\].status added: GenerationStatus \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].target\_id added: TargetId \| null \(required\)
+  - `return-type-changed`: response.data\[\].trigger added: GenerationTrigger \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].type added: GeneratorKind \| \(string &amp; \{\}\) \(required\)
+  - `return-type-changed`: response.data\[\].updated\_at added: string \(required\)
+  - `return-type-changed`: response.data\[\].version added: string \| null \(required\)
+  - `return-type-changed`: response.data\[\].warnings added: GenerationWarning\[\] \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -362,6 +453,7 @@
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `generations.get()`
   - **breaking** `return-type-changed`: response.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -375,6 +467,7 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `files.get()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -382,6 +475,7 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `organization.get()`
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"

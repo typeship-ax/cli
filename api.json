@@ -1006,7 +1006,7 @@
       "example_command": "typeship generate run --spec '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"type\":\"cli\"}'",
       "method": "POST",
       "path": "/generate",
-      "summary": "Generate a package from a Spec",
+      "summary": "Generate a package",
       "description": "Returns one generated package without creating a Project.\n\nSupports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.\n\nUse `download.url` to save the complete ZIP, verify `download.sha256`, and extract it into an empty directory. The link expires at `download.expires_at` and grants access to anyone who has it. CLI, MCP, and SDK calls supply an idempotency key automatically. Agents should request `fields=[\"download\",\"coverage\",\"warnings\",\"claim\"]` to keep the MCP result compact; files can exceed the response limit. Download the ZIP instead of repeating generation to retrieve omitted files.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `coverage` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
       "safety": "write",
       "auth": "optional",
@@ -2038,7 +2038,7 @@
       "example_command": "typeship projects list",
       "method": "GET",
       "path": "/projects",
-      "summary": "List projects",
+      "summary": "List Projects",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -2072,7 +2072,7 @@
           "items": {
             "type": "array",
             "items": {
-              "description": "Lean Project identity returned by collection endpoints. Retrieve the Project for shared configuration and list its Targets for the complete canonical child collection.",
+              "description": "Project-owned identity, Spec reference, generation controls, and shared configuration. Targets and Deliveries are available only through their canonical Target endpoints.",
               "properties": {
                 "id": {
                   "description": "Unique identifier for a project.",
@@ -2099,7 +2099,71 @@
                   "type": "string"
                 },
                 "auto_generate": {
+                  "description": "Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects. Set false to generate only when requested.",
                   "type": "boolean"
+                },
+                "config": {
+                  "description": "Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL settings remain Spec-owned.",
+                  "anyOf": [
+                    {
+                      "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on the Project's Spec and are rejected in both stored config scopes.",
+                      "properties": {
+                        "globals": {
+                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
+                          "maxItems": 20,
+                          "type": "array"
+                        },
+                        "retries": {
+                          "description": "Retry behavior. Top-level fields adjust every operation; operations maps operationId or \"METHOD /path\" keys to per-operation overrides.",
+                          "type": "object"
+                        },
+                        "pagination": {
+                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
+                          "type": "object"
+                        },
+                        "auth": {
+                          "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                          "type": "object"
+                        },
+                        "cli": {
+                          "description": "How the generated CLI behaves. Part of Config.",
+                          "type": "object"
+                        },
+                        "mcp": {
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
+                          "type": "object"
+                        },
+                        "readme": {
+                          "description": "Generated README behavior. Part of Config.",
+                          "type": "object"
+                        },
+                        "package": {
+                          "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
+                          "type": "object"
+                        },
+                        "docs_url": {
+                          "format": "uri",
+                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs URL.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "docs_index_url": {
+                          "format": "uri",
+                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "created_at": {
                   "format": "date-time",
@@ -2107,6 +2171,15 @@
                 },
                 "updated_at": {
                   "format": "date-time",
+                  "description": "When the project configuration last changed.",
+                  "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
                   "type": "string"
                 }
               },
@@ -2186,7 +2259,7 @@
       "example_command": "typeship projects create --name 'Parcel API' --spec '{\"source\":{\"type\":\"url\",\"url\":{\"url\":\"https://api.parcel.example/openapi.json\"}}}' --targets '[{\"name\":\"Parcel CLI\",\"type\":\"cli\",\"deliveries\":[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}]}]'",
       "method": "POST",
       "path": "/projects",
-      "summary": "Create a project",
+      "summary": "Create a Project",
       "description": "Creates a Project from a URL or GitHub Spec.\nAutomatic generation is enabled by default for a saved Project.\n\nFree includes one saved Project, all selected Targets, and the first 25 operations per Target, with regeneration, history, delivery pull requests, and previews. Pro supports additional Projects and all operations. One-shot generation does not use a Project slot.",
       "safety": "write",
       "auth": "required",
@@ -3040,7 +3113,6 @@
         ]
       },
       "output_schema": {
-        "description": "Project-owned identity, Spec reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -3202,7 +3274,7 @@
       "example_command": "typeship projects get prj_4f8k2m7x9q1v6b3n",
       "method": "GET",
       "path": "/projects/{project_id}",
-      "summary": "Get a project",
+      "summary": "Get a Project",
       "description": "Returns the Project's settings and Spec ID. List its Targets separately to retrieve Target configuration and Deliveries.",
       "safety": "read",
       "auth": "required",
@@ -3229,7 +3301,6 @@
         ]
       },
       "output_schema": {
-        "description": "Project-owned identity, Spec reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -3373,7 +3444,7 @@
       "example_command": "typeship projects delete prj_4f8k2m7x9q1v6b3n --force",
       "method": "DELETE",
       "path": "/projects/{project_id}",
-      "summary": "Delete a project",
+      "summary": "Delete a Project",
       "description": "A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "destructive",
       "auth": "required",
@@ -3486,7 +3557,7 @@
       "example_command": "typeship projects update prj_4f8k2m7x9q1v6b3n --auto-generate false",
       "method": "PATCH",
       "path": "/projects/{project_id}",
-      "summary": "Update a project",
+      "summary": "Update a Project",
       "description": "Omitted fields keep their current values. A supplied config replaces the entire stored object; null or an empty object clears it.\nWith auto_generate enabled, changing shared config queues a Generation for each Target whose effective config changes. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\n\nA `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to finish, reconcile your update, and retry.\nA `502 follow_up_failed` means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
@@ -3880,7 +3951,6 @@
         ]
       },
       "output_schema": {
-        "description": "Project-owned identity, Spec reference, generation controls, and shared configuration.",
         "properties": {
           "id": {
             "description": "Unique identifier for a project.",
@@ -4032,7 +4102,7 @@
       "example_command": "typeship projects generate prj_4f8k2m7x9q1v6b3n --target-id tgt_5m8q2v7k1p9d4h6c",
       "method": "POST",
       "path": "/projects/{project_id}/generate",
-      "summary": "Start generation for active Targets",
+      "summary": "Generate a Project's Targets",
       "description": "Queues one Generation per active Target and returns their IDs. Retrieve each Generation until its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means generated files are saved; check Delivery and Draft status separately for repository delivery and pull requests. A Target already queued or running is returned without starting another Generation. A `409 targets_inactive` means the Project has no active Target to generate. A matching Idempotency-Key replay returns the same Generations with their current statuses.\n\nIf the package already matches a destination and no Draft is open, delivery creates no commit, branch, or pull request. An existing Draft stays open. Automatic generation uses the same workflow.",
       "safety": "write",
       "auth": "required",
@@ -4078,7 +4148,6 @@
         "properties": {
           "data": {
             "items": {
-              "description": "Generation metadata returned by collection endpoints.",
               "properties": {
                 "id": {
                   "description": "Unique identifier for a generation.",
@@ -4634,7 +4703,7 @@
       "example_command": "typeship specs update spec_2p8m4q7k1v9d6h3c --source '{\"type\":\"url\",\"url\":{\"url\":\"https://api.parcel.example/openapi.json\"}}'",
       "method": "PATCH",
       "path": "/specs/{spec_id}",
-      "summary": "Update and resolve a Spec",
+      "summary": "Update a Spec",
       "description": "Resolves the source files before saving the update and records a new Spec Revision when the source changes.\nOmitted fields remain unchanged; supplied objects and arrays replace the whole field.\nIf the Spec or its Project configuration changes during validation, returns 409 resource_changed without saving the rejected update. Retrieve the current Spec and Project, reconcile your changes,\nand submit a new request with a new Idempotency-Key if using one.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
@@ -5275,7 +5344,7 @@
       "example_command": "typeship specs refresh spec_2p8m4q7k1v9d6h3c",
       "method": "POST",
       "path": "/specs/{spec_id}/refresh",
-      "summary": "Refresh a Spec from its configured source",
+      "summary": "Refresh a Spec",
       "description": "Fetches the configured source now and creates a new Spec Revision only when its content changes. Diagnostics then reads that revision. If automatic generation is enabled, refresh queues generation for active Targets even when the source is unchanged. A `502 follow_up_failed` means the new Spec Revision was recorded but generation could not be queued.",
       "safety": "write",
       "auth": "required",
@@ -6804,13 +6873,6 @@
           "required": true
         },
         {
-          "name": "spec_id",
-          "flag": "--spec-id",
-          "in": "body",
-          "type": "string",
-          "required": true
-        },
-        {
           "name": "type",
           "flag": "--type",
           "in": "body",
@@ -6860,10 +6922,10 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --spec-id spec_2p8m4q7k1v9d6h3c --type cli --config '{\"cli\":{\"command_name\":\"parcel\"}}' --deliveries '[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}]'",
+      "example_command": "typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{\"cli\":{\"command_name\":\"parcel\"}}' --deliveries '[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}]'",
       "method": "POST",
       "path": "/targets",
-      "summary": "Create an independently configured Target",
+      "summary": "Create a Target",
       "description": "Creates a Target with its own configuration, Deliveries, and release history. Multiple Targets can use the same generator.",
       "safety": "write",
       "auth": "required",
@@ -6896,15 +6958,6 @@
             "maxLength": 80,
             "type": "string",
             "example": "Parcel CLI"
-          },
-          "spec_id": {
-            "description": "Unique identifier for a project's logical API Spec.",
-            "examples": [
-              "spec_2p8m4q7k1v9d6h3c"
-            ],
-            "pattern": "^spec_[a-z0-9]{16}$",
-            "type": "string",
-            "example": "spec_2p8m4q7k1v9d6h3c"
           },
           "type": {
             "enum": [
@@ -7409,7 +7462,6 @@
         "required": [
           "project_id",
           "name",
-          "spec_id",
           "type"
         ]
       },
@@ -7653,7 +7705,6 @@
       "example_arguments": {
         "project_id": "prj_4f8k2m7x9q1v6b3n",
         "name": "Parcel CLI",
-        "spec_id": "spec_2p8m4q7k1v9d6h3c",
         "type": "cli",
         "config": {
           "cli": {
@@ -7986,7 +8037,7 @@
       "example_command": "typeship targets delete tgt_5m8q2v7k1p9d4h6c --force",
       "method": "DELETE",
       "path": "/targets/{target_id}",
-      "summary": "Delete an unused Target",
+      "summary": "Delete a Target",
       "description": "Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "destructive",
       "auth": "required",
@@ -8815,7 +8866,7 @@
       "example_command": "typeship targets adopt tgt_5m8q2v7k1p9d4h6c --body-version 1.0.0 --tag v1.0.0",
       "method": "POST",
       "path": "/targets/{target_id}/adopt",
-      "summary": "Adopt a verified existing package as the latest release",
+      "summary": "Adopt a package release",
       "description": "Checks the repository tag, package metadata, and registry artifact, then records the package as an Imported latest release. Opens the first Typeship Draft at the next major version; review it to establish the baseline for preserving existing code.",
       "safety": "write",
       "auth": "required",
@@ -9878,7 +9929,7 @@
       "example_command": "typeship drafts update drf_3q7m1v8k2p5d9h4c --version-next 1.1.0",
       "method": "PATCH",
       "path": "/drafts/{draft_id}",
-      "summary": "Select an exact Draft version or return to automatic versioning",
+      "summary": "Update a Draft",
       "description": "Checks your version choice against the required version bump, then regenerates the existing Draft pull request.\n\nSend the Draft's `ETag` in `If-Match` to reject an intervening change with 412 precondition_failed before saving or regenerating. Omitting `If-Match` applies the selection to the current Draft. version_next is required; null restores automatic selection.\n\nA `502` response means the selected version was saved, but regeneration failed. Follow the error's retryable and suggested_action fields. Repeating an unfinished selection resumes generation; repeating a completed selection starts no new work. If using If-Match, retrieve the Draft and confirm the saved selection before retrying with its current ETag.\nA `409 draft_merged` means the Draft merged; retrieve the Target and select a version on its `draft_id`. A `409 target_busy` means the Target is publishing; wait and retry. A `409 version_occupied` means the version is already released; retrieve the Draft and releases, choose a new version, and retry.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
@@ -10197,7 +10248,7 @@
       "example_command": "typeship drafts list-files drf_3q7m1v8k2p5d9h4c",
       "method": "GET",
       "path": "/drafts/{draft_id}/files",
-      "summary": "List customized and conflicted files on a Draft",
+      "summary": "List a Draft's files",
       "description": "Lists the Draft's files that differ from the last merged package or need a conflict decision, ordered by path, without file content. Each conflict names its kind, the saved decision, and the sides you can read with getFile. With `filter=history`, lists files affected by a default-branch history rewrite; the list is empty when none is pending.\n\nReturns `409 resource_changed` while Typeship is carrying the Draft's latest commit forward (status working), or when the Draft changes between pages.",
       "safety": "read",
       "auth": "required",
@@ -10470,7 +10521,7 @@
       "example_command": "typeship drafts resolve drf_3q7m1v8k2p5d9h4c --expected-head-sha 0123456789abcdef0123456789abcdef01234567 --resolutions '[{\"path\":\"src/index.ts\",\"keep\":\"content\",\"mode\":\"100644\",\"content\":\"export { ParcelClient } from \\\"./client.js\\\";\\nexport type { Shipment, Label } from \\\"./types.js\\\";\\nexport { createParcelClient } from \\\"./helper.js\\\";\\n\"}]'",
       "method": "POST",
       "path": "/drafts/{draft_id}/resolve",
-      "summary": "Resolve selected Draft files",
+      "summary": "Resolve Draft conflicts",
       "description": "Resolves conflicts on the Draft's head_sha: keep yours or generated, or supply final content as text or, for binary files, base64. Choosing generated for a customized path replaces it with the generated file, or deletes a Draft-only file.\n\nConflict decisions are saved together and can be replaced until applied. Choosing generated for customized paths commits those changes together on the Draft branch. Returns the Draft. When every conflict has a decision, `conflicts.decided` equals `conflicts.total` and Typeship continues the Draft and runs checks. Paths that already match the Draft change nothing.",
       "safety": "write",
       "auth": "required",
@@ -10915,7 +10966,7 @@
       "example_command": "typeship drafts recover drf_3q7m1v8k2p5d9h4c --expected-default-sha 89abcdef0123456789abcdef0123456789abcdef --expected-head-sha 0123456789abcdef0123456789abcdef01234567",
       "method": "POST",
       "path": "/drafts/{draft_id}/recover",
-      "summary": "Approve recovery from rewritten default-branch history",
+      "summary": "Recover a Draft's history",
       "description": "When the Draft has status `action_required` and reason `history_rewritten`, review affected files with `listDraftFiles` and `filter=history`, then approve with the Draft's `history_recovery` revisions. Approval saves the recovery without changing Git and returns the Draft; the next generation rebuilds it from the rewritten default branch. The previous Draft branch stays available, and overlapping code comes back as conflicts to resolve. A rewritten Draft branch alone needs no approval.",
       "safety": "write",
       "auth": "required",
@@ -11230,7 +11281,7 @@
       "example_command": "typeship releases list",
       "method": "GET",
       "path": "/releases",
-      "summary": "List releases",
+      "summary": "List Releases",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -11655,7 +11706,7 @@
       "example_command": "typeship releases get rel_7m2q8v4k1p9d5h6c",
       "method": "GET",
       "path": "/releases/{release_id}",
-      "summary": "Get a release",
+      "summary": "Get a Release",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -12058,7 +12109,7 @@
       "example_command": "typeship releases retry rel_7m2q8v4k1p9d5h6c",
       "method": "POST",
       "path": "/releases/{release_id}/retry",
-      "summary": "Retry publishing a release",
+      "summary": "Retry publishing a Release",
       "description": "Queues every failed or queued Publication of the release and starts its repository publishing workflow again. Publishing uses that release's version and accepted commit, even if a newer Draft or release exists. Completed Publications are not repeated.\n\nReturns `202` with the Release. Get the Release until each Publication reaches `completed` or `failed`.\n\nA `409 publication_not_retryable` means no Publication is queued or failed. A `502 repository_unavailable` means the repository publishing workflow could not be dispatched, and nothing was changed.",
       "safety": "write",
       "auth": "required",
@@ -13699,7 +13750,7 @@
       "example_command": "typeship publications list",
       "method": "GET",
       "path": "/publications",
-      "summary": "List publications",
+      "summary": "List Publications",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -14022,7 +14073,7 @@
       "example_command": "typeship publications get pub_2m8q4v7k1p9d5h6c",
       "method": "GET",
       "path": "/publications/{publication_id}",
-      "summary": "Get a publication",
+      "summary": "Get a Publication",
       "description": "Returns the registry publishing status for a release. A status in another organization returns 404 resource_not_found.",
       "safety": "read",
       "auth": "required",
@@ -14340,7 +14391,7 @@
       "example_command": "typeship generations list",
       "method": "GET",
       "path": "/generations",
-      "summary": "List generations",
+      "summary": "List Generations",
       "safety": "read",
       "auth": "required",
       "security": [
@@ -14400,7 +14451,6 @@
           "items": {
             "type": "array",
             "items": {
-              "description": "Generation metadata returned by collection endpoints.",
               "properties": {
                 "id": {
                   "description": "Unique identifier for a generation.",
@@ -14761,7 +14811,7 @@
       "example_command": "typeship generations get gen_7h2p5d9c3m8w1k6q",
       "method": "GET",
       "path": "/generations/{generation_id}",
-      "summary": "Get a generation",
+      "summary": "Get a Generation",
       "description": "Returns the status of that Generation. `queued` and `running` mean generation is still in progress. `completed` means generated files are saved, not that repository delivery or a Draft is complete. List its files with listGenerationFiles and read each with getFile.",
       "safety": "read",
       "auth": "required",
@@ -15311,7 +15361,7 @@
       "example_command": "typeship files get file_4k8m2v7q1p9d5h6c",
       "method": "GET",
       "path": "/files/{file_id}",
-      "summary": "Get a file",
+      "summary": "Get a File",
       "description": "Returns one bounded chunk of an immutable file: at most 24 KiB, as UTF-8 text or, for binary bytes, base64. When next_cursor is not null, repeat the request with cursor and concatenate the chunks in order. A file ID always returns the same bytes.",
       "safety": "read",
       "auth": "required",
@@ -15444,7 +15494,7 @@
       "example_command": "typeship organization get",
       "method": "GET",
       "path": "/organization",
-      "summary": "The organization behind the presented credentials",
+      "summary": "Get the Organization",
       "description": "Returns the organization associated with your credential. The Typeship CLI uses this endpoint for `whoami`.",
       "safety": "read",
       "auth": "required",

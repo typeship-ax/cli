@@ -23,7 +23,7 @@ import type { GenerateRequest, GenerationResult, GenerationResultRead } from "..
 export class GenerateResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * Generate a package from a Spec
+   * Generate a package
    *
    * Returns one generated package without creating a Project.
    *

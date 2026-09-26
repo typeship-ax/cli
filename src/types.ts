@@ -456,17 +456,6 @@ export type RepositoryProvider = (typeof RepositoryProvider)[keyof typeof Reposi
 /** Provider-native repository identity, opaque outside its adapter. */
 export type RepositoryIdentifier = string;
 
-export interface RepositoryReference {
-  provider: RepositoryProvider;
-  identifier: RepositoryIdentifier;
-}
-
-/** Response shape for RepositoryReference. */
-export interface RepositoryReferenceRead {
-  provider: RepositoryProvider | (string & {});
-  identifier: RepositoryIdentifier;
-}
-
 export interface RepositorySpecSourceSettings {
   provider: RepositoryProvider;
   identifier: RepositoryIdentifier;
@@ -1216,7 +1205,6 @@ export interface TargetChecksRead {
 export interface TargetCreateRequest {
   project_id: ProjectId;
   name: string;
-  spec_id: SpecId;
   type: GeneratorKind;
   /** Default: "active" */
   status?: "active" | "disabled";
@@ -1235,7 +1223,6 @@ export interface TargetCreateRequest {
 export interface TargetCreateRequestRead {
   project_id: ProjectId;
   name: string;
-  spec_id: SpecId;
   type: GeneratorKind | (string & {});
   /** Default: "active" */
   status?: ("active" | "disabled") | (string & {});
@@ -2130,7 +2117,7 @@ export interface Project {
    * Format: date-time
    */
   updated_at: string;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
 /** Request shape for Project. */
@@ -2147,7 +2134,7 @@ export interface ProjectWrite {
    * settings remain Spec-owned.
    */
   config: ProjectConfigResponse | null;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
 /** Response shape for Project. */
@@ -2173,37 +2160,16 @@ export interface ProjectRead {
    * Format: date-time
    */
   updated_at: string;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
-/**
- * Lean Project identity returned by collection endpoints. Retrieve the Project for shared
- * configuration and list its Targets for the complete canonical child collection.
- */
-export interface ProjectSummary {
-  id: ProjectId;
-  object: "project";
-  name: string;
-  spec_id: SpecId;
-  auto_generate: boolean;
-  /** Format: date-time */
-  created_at: string;
-  /** Format: date-time */
-  updated_at: string;
-}
+export type ProjectResponse = Project & ResponseMetadata;
 
-/** Response shape for ProjectSummary. */
-export interface ProjectSummaryRead {
-  id: ProjectId;
-  object: "project" | (string & {});
-  name: string;
-  spec_id: SpecId;
-  auto_generate: boolean;
-  /** Format: date-time */
-  created_at: string;
-  /** Format: date-time */
-  updated_at: string;
-}
+/** Request shape for ProjectResponse. */
+export type ProjectResponseWrite = ProjectWrite & ResponseMetadata;
+
+/** Response shape for ProjectResponse. */
+export type ProjectResponseRead = ProjectRead & ResponseMetadata;
 
 export interface CreateProjectRequest {
   name: string;
@@ -3014,19 +2980,6 @@ export interface PaginationRuleRead {
   limit_param?: string;
 }
 
-export interface FileStub {
-  path: string;
-  bytes: number;
-  mode: "100644" | "100755";
-}
-
-/** Response shape for FileStub. */
-export interface FileStubRead {
-  path: string;
-  bytes: number;
-  mode: ("100644" | "100755") | (string & {});
-}
-
 /**
  * A Generation moves from queued to running, then completes when its files are saved or fails.
  * Delivery and Draft status are separate.
@@ -3138,15 +3091,6 @@ export interface GenerationRead {
   updated_at: string;
 }
 
-/** Generation metadata returned by collection endpoints. */
-export type GenerationSummary = Generation;
-
-/** Request shape for GenerationSummary. */
-export type GenerationSummaryWrite = GenerationWrite;
-
-/** Response shape for GenerationSummary. */
-export type GenerationSummaryRead = GenerationRead;
-
 export type GenerationResponse = Generation & ResponseMetadata;
 
 /** Request shape for GenerationResponse. */
@@ -3155,42 +3099,24 @@ export type GenerationResponseWrite = GenerationWrite & ResponseMetadata;
 /** Response shape for GenerationResponse. */
 export type GenerationResponseRead = GenerationRead & ResponseMetadata;
 
-/** A selected target that did not generate in a multi-target run. */
-export interface GenerationFailure {
-  target_id: TargetId;
-  type: GeneratorKind;
-  status: "failed";
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainError[];
-}
-
-/** Response shape for GenerationFailure. */
-export interface GenerationFailureRead {
-  target_id: TargetId;
-  type: GeneratorKind | (string & {});
-  status: "failed" | (string & {});
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainErrorRead[];
-}
-
 /**
  * One Generation per selected Target. Retrieve each Generation for current status and generated
  * files.
  */
 export interface GenerationBatch {
-  data: GenerationSummary[];
+  data: Generation[];
   request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
-  data: GenerationSummaryWrite[];
+  data: GenerationWrite[];
   request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
-  data: GenerationSummaryRead[];
+  data: GenerationRead[];
   request_id: RequestId;
 }
 
@@ -3361,7 +3287,18 @@ export type SpecRevisionResponseRead = SpecRevisionRead & ResponseMetadata;
 
 export interface ProjectList {
   object: ListObject;
-  data: ProjectSummary[];
+  data: Project[];
+  /** Whether another page is available after this one. */
+  has_more: boolean;
+  /** Pass this value as cursor to retrieve the next page; null on the last page. */
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Request shape for ProjectList. */
+export interface ProjectListWrite {
+  object: ListObject;
+  data: ProjectWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3372,7 +3309,7 @@ export interface ProjectList {
 /** Response shape for ProjectList. */
 export interface ProjectListRead {
   object: ListObject;
-  data: ProjectSummaryRead[];
+  data: ProjectRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3382,7 +3319,7 @@ export interface ProjectListRead {
 
 export interface GenerationList {
   object: ListObject;
-  data: GenerationSummary[];
+  data: Generation[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3393,7 +3330,7 @@ export interface GenerationList {
 /** Request shape for GenerationList. */
 export interface GenerationListWrite {
   object: ListObject;
-  data: GenerationSummaryWrite[];
+  data: GenerationWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3404,7 +3341,7 @@ export interface GenerationListWrite {
 /** Response shape for GenerationList. */
 export interface GenerationListRead {
   object: ListObject;
-  data: GenerationSummaryRead[];
+  data: GenerationRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -4124,79 +4061,6 @@ export interface PackageBehaviorResponse {
 }
 
 /**
- * Everything Typeship needs beyond the Spec, in one object: generation customization (globals,
- * retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url).
- * Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot
- * generation also accepts GraphQL settings here; stored projects keep those settings on their Spec.
- */
-export interface ConfigResponse {
-  /**
-   * Wire names of query/header parameters that become settable once on the generated client and
-   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
-   * are reported as generation warnings.
-   */
-  globals?: string[];
-  retries?: RetryTuningResponse;
-  /**
-   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
-   * reported as generation warnings.
-   */
-  pagination?: Record<string, PaginationRuleResponse | boolean>;
-  graphql?: GraphqlSettingsResponse;
-  auth?: AuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
-  mcp?: McpBehaviorResponse;
-  readme?: ReadmeBehaviorResponse;
-  package?: PackageBehaviorResponse;
-  /**
-   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
-   * URL.
-   * Format: uri
-   */
-  docs_url?: string | null;
-  /**
-   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
-   * Format: uri
-   */
-  docs_index_url?: string | null;
-}
-
-/** Response shape for ConfigResponse. */
-export interface ConfigResponseRead {
-  /**
-   * Wire names of query/header parameters that become settable once on the generated client and
-   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
-   * are reported as generation warnings.
-   */
-  globals?: string[];
-  retries?: RetryTuningResponse;
-  /**
-   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
-   * reported as generation warnings.
-   */
-  pagination?: Record<string, PaginationRuleResponseRead | boolean>;
-  graphql?: GraphqlSettingsResponseRead;
-  auth?: AuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
-  mcp?: McpBehaviorResponseRead;
-  readme?: ReadmeBehaviorResponse;
-  package?: PackageBehaviorResponse;
-  /**
-   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
-   * URL.
-   * Format: uri
-   */
-  docs_url?: string | null;
-  /**
-   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
-   * Format: uri
-   */
-  docs_index_url?: string | null;
-}
-
-/**
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
  * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
@@ -4483,19 +4347,6 @@ export const GitFileMode = {
   V_120000: "120000",
 } as const;
 export type GitFileMode = (typeof GitFileMode)[keyof typeof GitFileMode];
-
-/**
- * One side of a Draft file comparison: base is the last merged version, yours is your repository
- * edit, and generated is the new version Typeship proposes for this conflict stage. The conflict
- * source identifies whether that version comes from a Generation, the default branch, or a saved
- * Draft. Missing sides represent deleted or absent files.
- */
-export const DraftFileSide = {
-  BASE: "base",
-  YOURS: "yours",
-  GENERATED: "generated",
-} as const;
-export type DraftFileSide = (typeof DraftFileSide)[keyof typeof DraftFileSide];
 
 /**
  * File IDs for each side of a conflict or history comparison. null means the file is absent on that

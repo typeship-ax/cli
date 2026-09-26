@@ -109,7 +109,7 @@ export class DraftsResource {
   }
 
   /**
-   * Select an exact Draft version or return to automatic versioning
+   * Update a Draft
    *
    * Checks your version choice against the required version bump, then regenerates the existing
    * Draft pull request.
@@ -162,7 +162,7 @@ export class DraftsResource {
   }
 
   /**
-   * List customized and conflicted files on a Draft
+   * List a Draft's files
    *
    * Lists the Draft's files that differ from the last merged package or need a conflict decision,
    * ordered by path, without file content. Each conflict names its kind, the saved decision, and
@@ -212,7 +212,7 @@ export class DraftsResource {
   }
 
   /**
-   * Resolve selected Draft files
+   * Resolve Draft conflicts
    *
    * Resolves conflicts on the Draft's head_sha: keep yours or generated, or supply final content as
    * text or, for binary files, base64. Choosing generated for a customized path replaces it with
@@ -249,7 +249,7 @@ export class DraftsResource {
   }
 
   /**
-   * Approve recovery from rewritten default-branch history
+   * Recover a Draft's history
    *
    * When the Draft has status `action_required` and reason `history_rewritten`, review affected
    * files with `listDraftFiles` and `filter=history`, then approve with the Draft's

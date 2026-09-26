@@ -14,7 +14,7 @@ For complete input and output schemas, use [`api.json`](./api.json), the machine
 
 ### `typeship generate run [flags]`
 
-Generate a package from a Spec
+Generate a package
 
 `POST /generate`
 
@@ -78,7 +78,7 @@ Read the full command contract with `typeship docs generate download-package --j
 
 ### `typeship projects list [flags]`
 
-List projects
+List Projects
 
 `GET /projects`
 
@@ -99,7 +99,7 @@ Read the full command contract with `typeship docs projects list --json`.
 
 ### `typeship projects create [flags]`
 
-Create a project
+Create a Project
 
 `POST /projects`
 
@@ -131,7 +131,7 @@ Read the full command contract with `typeship docs projects create --json`.
 
 ### `typeship projects get <project_id> [flags]`
 
-Get a project
+Get a Project
 
 `GET /projects/{project_id}`
 
@@ -153,7 +153,7 @@ Read the full command contract with `typeship docs projects get --json`.
 
 ### `typeship projects delete <project_id> [flags]`
 
-Delete a project
+Delete a Project
 
 `DELETE /projects/{project_id}`
 
@@ -177,7 +177,7 @@ Read the full command contract with `typeship docs projects delete --json`.
 
 ### `typeship projects update <project_id> [flags]`
 
-Update a project
+Update a Project
 
 `PATCH /projects/{project_id}`
 
@@ -211,7 +211,7 @@ Read the full command contract with `typeship docs projects update --json`.
 
 ### `typeship projects generate <project_id> [flags]`
 
-Start generation for active Targets
+Generate a Project's Targets
 
 `POST /projects/{project_id}/generate`
 
@@ -261,7 +261,7 @@ Read the full command contract with `typeship docs specs get --json`.
 
 ### `typeship specs update <spec_id> [flags]`
 
-Update and resolve a Spec
+Update a Spec
 
 `PATCH /specs/{spec_id}`
 
@@ -296,7 +296,7 @@ Read the full command contract with `typeship docs specs update --json`.
 
 ### `typeship specs refresh <spec_id> [flags]`
 
-Refresh a Spec from its configured source
+Refresh a Spec
 
 `POST /specs/{spec_id}/refresh`
 
@@ -416,7 +416,7 @@ Read the full command contract with `typeship docs targets list --json`.
 
 ### `typeship targets create [flags]`
 
-Create an independently configured Target
+Create a Target
 
 `POST /targets`
 
@@ -428,7 +428,6 @@ Creates a Target with its own configuration, Deliveries, and release history. Mu
 | --- | --- | --- | --- | --- |
 | `--project-id` | body | `string` | yes | Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
 | `--name` | body | `string` | yes | — |
-| `--spec-id` | body | `string` | yes | Unique identifier for a project's logical API Spec. |
 | `--type` | body | `string` | yes | Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own. |
 | `--status` | body | `string` | no | Default: "active". |
 | `--release-channel` | body | `string` | no | Default: "stable". |
@@ -440,7 +439,7 @@ Creates a Target with its own configuration, Deliveries, and release history. Mu
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --spec-id spec_2p8m4q7k1v9d6h3c --type cli --config '{"cli":{"command_name":"parcel"}}' --deliveries '[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}]'
+typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{"cli":{"command_name":"parcel"}}' --deliveries '[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}]'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -469,7 +468,7 @@ Read the full command contract with `typeship docs targets get --json`.
 
 ### `typeship targets delete <target_id> [flags]`
 
-Delete an unused Target
+Delete a Target
 
 `DELETE /targets/{target_id}`
 
@@ -531,7 +530,7 @@ Read the full command contract with `typeship docs targets update --json`.
 
 ### `typeship targets adopt <target_id> [flags]`
 
-Adopt a verified existing package as the latest release
+Adopt a package release
 
 `POST /targets/{target_id}/adopt`
 
@@ -607,7 +606,7 @@ Read the full command contract with `typeship docs drafts get --json`.
 
 ### `typeship drafts update <draft_id> [flags]`
 
-Select an exact Draft version or return to automatic versioning
+Update a Draft
 
 `PATCH /drafts/{draft_id}`
 
@@ -639,7 +638,7 @@ Read the full command contract with `typeship docs drafts update --json`.
 
 ### `typeship drafts list-files <draft_id> [flags]`
 
-List customized and conflicted files on a Draft
+List a Draft's files
 
 `GET /drafts/{draft_id}/files`
 
@@ -666,7 +665,7 @@ Read the full command contract with `typeship docs drafts list-files --json`.
 
 ### `typeship drafts resolve <draft_id> [flags]`
 
-Resolve selected Draft files
+Resolve Draft conflicts
 
 `POST /drafts/{draft_id}/resolve`
 
@@ -694,7 +693,7 @@ Read the full command contract with `typeship docs drafts resolve --json`.
 
 ### `typeship drafts recover <draft_id> [flags]`
 
-Approve recovery from rewritten default-branch history
+Recover a Draft's history
 
 `POST /drafts/{draft_id}/recover`
 
@@ -722,7 +721,7 @@ Read the full command contract with `typeship docs drafts recover --json`.
 
 ### `typeship releases list [flags]`
 
-List releases
+List Releases
 
 `GET /releases`
 
@@ -744,7 +743,7 @@ Read the full command contract with `typeship docs releases list --json`.
 
 ### `typeship releases get <release_id> [flags]`
 
-Get a release
+Get a Release
 
 `GET /releases/{release_id}`
 
@@ -764,7 +763,7 @@ Read the full command contract with `typeship docs releases get --json`.
 
 ### `typeship releases retry <release_id> [flags]`
 
-Retry publishing a release
+Retry publishing a Release
 
 `POST /releases/{release_id}/retry`
 
@@ -925,7 +924,7 @@ Read the full command contract with `typeship docs deliveries update --json`.
 
 ### `typeship publications list [flags]`
 
-List publications
+List Publications
 
 `GET /publications`
 
@@ -948,7 +947,7 @@ Read the full command contract with `typeship docs publications list --json`.
 
 ### `typeship publications get <publication_id> [flags]`
 
-Get a publication
+Get a Publication
 
 `GET /publications/{publication_id}`
 
@@ -972,7 +971,7 @@ Read the full command contract with `typeship docs publications get --json`.
 
 ### `typeship generations list [flags]`
 
-List generations
+List Generations
 
 `GET /generations`
 
@@ -996,7 +995,7 @@ Read the full command contract with `typeship docs generations list --json`.
 
 ### `typeship generations get <generation_id> [flags]`
 
-Get a generation
+Get a Generation
 
 `GET /generations/{generation_id}`
 
@@ -1044,7 +1043,7 @@ Read the full command contract with `typeship docs generations list-files --json
 
 ### `typeship files get <file_id> [flags]`
 
-Get a file
+Get a File
 
 `GET /files/{file_id}`
 
@@ -1069,7 +1068,7 @@ Read the full command contract with `typeship docs files get --json`.
 
 ### `typeship organization get [flags]`
 
-The organization behind the presented credentials
+Get the Organization
 
 `GET /organization`
 

@@ -29,7 +29,7 @@ import type {
 export class PublicationsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List publications
+   * List Publications
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /publications`
@@ -70,7 +70,7 @@ export class PublicationsResource {
   }
 
   /**
-   * Get a publication
+   * Get a Publication
    *
    * Returns the registry publishing status for a release. A status in another organization returns
    * 404 resource_not_found.

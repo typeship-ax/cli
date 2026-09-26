@@ -33,24 +33,21 @@ import type {
   ProjectList,
   ProjectListRead,
   ProjectRead,
-  ProjectSummary,
-  ProjectSummaryRead,
+  ProjectResponse,
+  ProjectResponseRead,
   UpdateProjectRequest,
 } from "../types.js";
 
 export class ProjectsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List projects
+   * List Projects
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /projects`
    */
-  list(
-    params?: ProjectsListParams,
-    options?: RequestOptions,
-  ): PagePromise<ProjectSummaryRead, ProjectsListError> {
-    return paginate<ProjectSummaryRead, ProjectsListError>(this._core, {
+  list(params?: ProjectsListParams, options?: RequestOptions): PagePromise<ProjectRead, ProjectsListError> {
+    return paginate<ProjectRead, ProjectsListError>(this._core, {
       method: "GET",
       path: "/projects",
       security: [{"apiKey":[]}],
@@ -79,7 +76,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Create a project
+   * Create a Project
    *
    * Creates a Project from a URL or GitHub Spec.
    * Automatic generation is enabled by default for a saved Project.
@@ -95,8 +92,8 @@ export class ProjectsResource {
     body: CreateProjectRequest,
     params?: ProjectsCreateParams,
     options?: RequestOptions,
-  ): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsCreateError>({
+  ): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsCreateError>({
       method: "POST",
       path: "/projects",
       security: [{"apiKey":[]}],
@@ -121,14 +118,14 @@ export class ProjectsResource {
   }
 
   /**
-   * Get a project
+   * Get a Project
    *
    * Returns the Project's settings and Spec ID. List its Targets separately to retrieve Target
    * configuration and Deliveries.
    * `GET /projects/{project_id}`
    */
-  async get(projectId: ProjectId, options?: RequestOptions): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsGetError>({
+  async get(projectId: ProjectId, options?: RequestOptions): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsGetError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
@@ -146,7 +143,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Delete a project
+   * Delete a Project
    *
    * A `502 repository_unavailable` means the Project was not deleted because its release pull
    * requests could not be retired. Retry deletion to finish retiring the remaining reviews.
@@ -184,7 +181,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Update a project
+   * Update a Project
    *
    * Omitted fields keep their current values. A supplied config replaces the entire stored object;
    * null or an empty object clears it.
@@ -207,8 +204,8 @@ export class ProjectsResource {
     body: UpdateProjectRequest,
     params?: ProjectsUpdateParams,
     options?: RequestOptions,
-  ): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsUpdateError>({
+  ): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsUpdateError>({
       method: "PATCH",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
@@ -235,7 +232,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Start generation for active Targets
+   * Generate a Project's Targets
    *
    * Queues one Generation per active Target and returns their IDs. Retrieve each Generation until
    * its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means

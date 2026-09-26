@@ -14,7 +14,7 @@ For complete input and output schemas, use [`api.json`](./api.json), the machine
 
 ### `typeship generate run [flags]`
 
-Generate one package from a Spec
+Generate a package from a Spec
 
 `POST /generate`
 
@@ -1101,6 +1101,7 @@ Lists key metadata and the last four characters of each key. Full keys are not r
 | --- | --- | --- | --- | --- |
 | `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
 | `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+| `--status` | query | `string` | no | Only keys with this status. |
 
 ```sh
 typeship api-keys list
@@ -1136,11 +1137,11 @@ Read the full command contract with `typeship docs api-keys get --json`.
 
 Revoke an API key
 
-`DELETE /api-keys/{api_key_id}`
+`POST /api-keys/{api_key_id}/revoke`
 
-Safety: **destructive** · Authentication: **required**
+Safety: **write** · Authentication: **required**
 
-Revokes a key. Repeating the request returns the same result.
+Revokes a key immediately. The key stays listed with `status: revoked`. Repeating the request returns the same result.
 
 With OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their organization.
 See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
@@ -1151,7 +1152,7 @@ See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writ
 | `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 ```sh
-typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3 --force
+typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.

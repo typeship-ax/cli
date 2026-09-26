@@ -938,8 +938,8 @@
           "revoke"
         ],
         "tool": "api_keys_revoke",
-        "httpMethod": "DELETE",
-        "path": "/api-keys/{api_key_id}"
+        "httpMethod": "POST",
+        "path": "/api-keys/{api_key_id}/revoke"
       }
     ]
   },
@@ -1006,7 +1006,7 @@
       "example_command": "typeship generate run --spec '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"type\":\"cli\"}'",
       "method": "POST",
       "path": "/generate",
-      "summary": "Generate one package from a Spec",
+      "summary": "Generate a package from a Spec",
       "description": "Returns one generated package without creating a Project.\n\nSupports [idempotent retries](https://typeship.dev/docs/typeship-api/idempotency); keyed responses include generated files in the replay cache.\n\nUse `download.url` to save the complete ZIP, verify `download.sha256`, and extract it into an empty directory. The link expires at `download.expires_at` and grants access to anyone who has it. CLI, MCP, and SDK calls supply an idempotency key automatically. Agents should request `fields=[\"download\",\"coverage\",\"warnings\",\"claim\"]` to keep the MCP result compact; files can exceed the response limit. Download the ZIP instead of repeating generation to retrieve omitted files.\n\nAnonymous and Free requests include the first 25 operations. Paid plans include all operations. Anonymous requests are rate limited by IP address. Check `coverage` for omitted operations; an invalid API key returns `401`.\n\nAn anonymous URL request without source headers may return `claim.url`. Sign in through that link within seven days to save the recipe as a Project.",
       "safety": "write",
       "auth": "optional",
@@ -1805,6 +1805,11 @@
       },
       "output_schema": {
         "properties": {
+          "object": {
+            "const": "package",
+            "description": "One generated package. It has no ID: download it with download.url before download.expires_at.",
+            "type": "string"
+          },
           "files": {
             "items": {
               "properties": {
@@ -15519,6 +15524,13 @@
           "in": "query",
           "type": "string",
           "required": false
+        },
+        {
+          "name": "status",
+          "flag": "--status",
+          "in": "query",
+          "type": "string",
+          "required": false
         }
       ],
       "example_command": "typeship api-keys list",
@@ -15550,6 +15562,14 @@
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string",
             "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
+          },
+          "status": {
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "type": "string",
+            "description": "Only keys with this status."
           }
         }
       },
@@ -15574,8 +15594,13 @@
                   "description": "Last four characters of the secret; the secret itself is never stored.",
                   "type": "string"
                 },
-                "revoked": {
-                  "type": "boolean"
+                "status": {
+                  "enum": [
+                    "active",
+                    "revoked"
+                  ],
+                  "description": "active: the key authenticates requests. revoked: it no longer does and cannot be restored; create a new key in the Console or with typeship login.",
+                  "type": "string"
                 },
                 "last_used_at": {
                   "format": "date-time",
@@ -15685,8 +15710,13 @@
             "description": "Last four characters of the secret; the secret itself is never stored.",
             "type": "string"
           },
-          "revoked": {
-            "type": "boolean"
+          "status": {
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "description": "active: the key authenticates requests. revoked: it no longer does and cannot be restored; create a new key in the Console or with typeship login.",
+            "type": "string"
           },
           "last_used_at": {
             "format": "date-time",
@@ -15743,12 +15773,12 @@
           "required": false
         }
       ],
-      "example_command": "typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3 --force",
-      "method": "DELETE",
-      "path": "/api-keys/{api_key_id}",
+      "example_command": "typeship api-keys revoke apikey_2nY8mR6pQ4vK9cH3",
+      "method": "POST",
+      "path": "/api-keys/{api_key_id}/revoke",
       "summary": "Revoke an API key",
-      "description": "Revokes a key. Repeating the request returns the same result.\n\nWith OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their organization.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
-      "safety": "destructive",
+      "description": "Revokes a key immediately. The key stays listed with `status: revoked`. Repeating the request returns the same result.\n\nWith OAuth, members can revoke their own keys; organization admins can revoke any key. Organization API keys can revoke any key in their organization.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "write",
       "auth": "required",
       "security": [
         {
@@ -15794,8 +15824,13 @@
             "description": "Last four characters of the secret; the secret itself is never stored.",
             "type": "string"
           },
-          "revoked": {
-            "type": "boolean"
+          "status": {
+            "enum": [
+              "active",
+              "revoked"
+            ],
+            "description": "active: the key authenticates requests. revoked: it no longer does and cannot be restored; create a new key in the Console or with typeship login.",
+            "type": "string"
           },
           "last_used_at": {
             "format": "date-time",

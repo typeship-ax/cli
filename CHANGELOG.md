@@ -17,6 +17,8 @@
 
 ### Changed
 - `generate.run()`
+  - `return-type-changed`: response.object added: "package" \| \(string &amp; \{\}\) \(required\)
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
@@ -385,18 +387,27 @@
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `apiKeys.list()`
+  - `param-added`: request parameter.status added: "active" \| "revoked" \(optional\)
+  - **breaking** `return-type-changed`: response.data\[\].revoked removed \(was boolean\)
+  - `return-type-changed`: response.data\[\].status added: \("active" \| "revoked"\) \| \(string &amp; \{\}\) \(required\)
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `apiKeys.get()`
+  - **breaking** `return-type-changed`: response.revoked removed \(was boolean\)
+  - `return-type-changed`: response.status added: \("active" \| "revoked"\) \| \(string &amp; \{\}\) \(required\)
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 404.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 429.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
 - `apiKeys.revoke()`
+  - **breaking** `return-type-changed`: response.revoked removed \(was boolean\)
+  - `return-type-changed`: response.status added: \("active" \| "revoked"\) \| \(string &amp; \{\}\) \(required\)
+  - `http-changed`: DELETE /api-keys/\{api\_key\_id\} -&gt; POST /api-keys/\{api\_key\_id\}/revoke
+  - `documentation-changed`: summary or description changed
   - **breaking** `error-schema-changed`: error 400.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 401.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"
   - **breaking** `error-schema-changed`: error 403.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid"

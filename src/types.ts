@@ -352,6 +352,8 @@ export interface SpecRevisionFileListRead {
 }
 
 export interface GenerationResult {
+  /** One generated package. It has no ID: download it with download.url before download.expires_at. */
+  object: "package";
   files: GeneratedFile[];
   download?: GenerationDownload;
   warnings: GenerationWarning[];
@@ -372,6 +374,8 @@ export interface GenerationResult {
 
 /** Response shape for GenerationResult. */
 export interface GenerationResultRead {
+  /** One generated package. It has no ID: download it with download.url before download.expires_at. */
+  object: "package" | (string & {});
   files: GeneratedFileRead[];
   download?: GenerationDownload;
   warnings: GenerationWarning[];
@@ -3196,7 +3200,11 @@ export interface ApiKey {
   name: string;
   /** Last four characters of the secret; the secret itself is never stored. */
   last4: string;
-  revoked: boolean;
+  /**
+   * active: the key authenticates requests. revoked: it no longer does and cannot be restored;
+   * create a new key in the Console or with typeship login.
+   */
+  status: "active" | "revoked";
   /** Format: date-time */
   last_used_at: string | null;
   /** Format: date-time */
@@ -3216,7 +3224,11 @@ export interface ApiKeyRead {
   name: string;
   /** Last four characters of the secret; the secret itself is never stored. */
   last4: string;
-  revoked: boolean;
+  /**
+   * active: the key authenticates requests. revoked: it no longer does and cannot be restored;
+   * create a new key in the Console or with typeship login.
+   */
+  status: ("active" | "revoked") | (string & {});
   /** Format: date-time */
   last_used_at: string | null;
   /** Format: date-time */

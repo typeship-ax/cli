@@ -38,7 +38,7 @@ test("unknown command exits 2 with a suggestion", async () => {
 });
 
 test("typeship generate run round-trips through the mock", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"files\":[{\"path\":\"example\",\"content\":\"example\",\"mode\":\"100644\"}],\"download\":{\"url\":\"https://example.com\",\"expires_at\":\"2024-01-01T00:00:00Z\",\"sha256\":\"example\",\"size_bytes\":1,\"file_count\":1},\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"claim\":null,\"request_id\":\"req_abcdef0123456789\"}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"object\":\"package\",\"files\":[{\"path\":\"example\",\"content\":\"example\",\"mode\":\"100644\"}],\"download\":{\"url\":\"https://example.com\",\"expires_at\":\"2024-01-01T00:00:00Z\",\"sha256\":\"example\",\"size_bytes\":1,\"file_count\":1},\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"claim\":null,\"request_id\":\"req_abcdef0123456789\"}" });
   try {
     const result = await run([...["generate","run","--spec","{}","--target","{}"], "--debug"], { "TYPESHIP_BASE_URL": mock.url, "TYPESHIP_CREDENTIALS": "{\"apiKey\":\"test-token\"}" });
     assert.equal(result.status, 0, result.stderr);

@@ -154,9 +154,9 @@ export class ProjectsResource {
    *
    * A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to
    * finish, reconcile your update, and retry.
-   * A `502 follow_up_failed` means the Project was saved, but an obsolete release pull request
-   * could not be retired. Retrieve the Project and retry the same update to finish retiring reviews
-   * if that update is still desired.
+   * A `502 follow_up_failed` means the Project was saved, but an obsolete Draft pull request could
+   * not be retired. Retrieve the Project and retry the same update to finish retiring reviews if
+   * that update is still desired.
    * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
    * and If-Match.
    * `PATCH /projects/{project_id}`
@@ -196,7 +196,7 @@ export class ProjectsResource {
   /**
    * Delete a Project
    *
-   * A `502 repository_unavailable` means the Project was not deleted because its release pull
+   * A `502 repository_unavailable` means the Project was not deleted because its Draft pull
    * requests could not be retired. Retry deletion to finish retiring the remaining reviews.
    * Repeating a completed deletion returns `404`.
    * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag

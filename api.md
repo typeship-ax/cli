@@ -100,7 +100,7 @@ With auto_generate enabled, changing shared config queues a Generation for each 
 Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.
 
 A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to finish, reconcile your update, and retry.
-A `502 follow_up_failed` means the Project was saved, but an obsolete release pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.
+A `502 follow_up_failed` means the Project was saved, but an obsolete Draft pull request could not be retired. Retrieve the Project and retry the same update to finish retiring reviews if that update is still desired.
 See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
@@ -129,7 +129,7 @@ Delete a Project
 
 Safety: **destructive** · Authentication: **required**
 
-A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.
+A `502 repository_unavailable` means the Project was not deleted because its Draft pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.
 See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
 
 | Argument or flag | In | Type | Required | Description |
@@ -606,7 +606,7 @@ Delete a Delivery
 
 Safety: **destructive** · Authentication: **required**
 
-Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
+Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open Draft pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
 
 A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
 See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.

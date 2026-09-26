@@ -34,7 +34,7 @@ test("generations.list GET /generations", async () => {
 });
 
 test("generations.listFiles GET /generations/{generation_id}/files", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"file_4k8m2v7q1p9d5h6c\",\"object\":\"file\",\"path\":\"example\",\"size_bytes\":1,\"sha256\":\"example\",\"encoding\":\"utf8\",\"mode\":\"100644\",\"created_at\":\"2024-01-01T00:00:00Z\"}]}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"file_4k8m2v7q1p9d5h6c\",\"object\":\"file\",\"path\":\"example\",\"size_bytes\":1,\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"encoding\":\"utf8\",\"mode\":\"100644\",\"created_at\":\"2024-01-01T00:00:00Z\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.generations.listFiles("test-generation_id", undefined);

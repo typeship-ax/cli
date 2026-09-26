@@ -3,6 +3,7 @@
 
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -137,6 +138,7 @@ export type SpecsGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -169,6 +171,7 @@ export type SpecsUpdateError =
   | UnprocessableEntityError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -195,6 +198,7 @@ export type SpecsRefreshError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

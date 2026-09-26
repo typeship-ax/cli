@@ -4,6 +4,7 @@
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -184,6 +185,7 @@ export type SpecRevisionsListError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -212,6 +214,7 @@ export type SpecRevisionsGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -243,6 +246,7 @@ export type SpecRevisionsListFilesError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

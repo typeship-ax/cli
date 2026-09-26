@@ -4,7 +4,7 @@
 import { ApiError, type ResponseMeta } from "./core/http.js";
 import type { ErrorModel, ErrorModelRead } from "./types.js";
 
-export { ApiError, SdkError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation } from "./core/http.js";
+export { ApiError, SdkError, PayloadError, RateLimitError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type RateLimitInfo, type Violation } from "./core/http.js";
 
 /**
  * Invalid name, Spec source, or field value.

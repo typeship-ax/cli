@@ -3,6 +3,7 @@
 
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -47,6 +48,7 @@ export type OrganizationGetError =
   | ForbiddenError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

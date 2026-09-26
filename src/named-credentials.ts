@@ -52,6 +52,28 @@ export function namedCredentialAvailability(schemes: CredentialSchemes, options:
   return options;
 }
 
+/** The schemes an interactive OAuth login session authenticates by name. When
+ * the API also declares a separate non-OAuth bearer scheme, the convenience
+ * bearer token belongs to that scheme, so the session must be passed to each
+ * OAuth scheme by name. Empty: the session is the convenience bearer token. */
+export function oauthSessionSchemes(schemes: CredentialSchemes): string[] {
+  return Object.entries(schemes).filter(([, scheme]) => scheme.options.includes("clientCredentials") && !scheme.options.includes("bearerToken")).map(([name]) => name);
+}
+
+/** Whether resolved client options satisfy one complete credential alternative
+ * of an operation. Returns null when satisfied (or when no credential is
+ * required); otherwise the named alternatives and the schemes each lacks. */
+export function missingCredentials(schemes: CredentialSchemes, credentialOptions: string[][] | undefined, options: Record<string, unknown>): { alternatives: string[][]; missing: string[][] } | null {
+  const supplied = (key: string, value: unknown): boolean => typeof value === "function" || (typeof value === "string" && value.length > 0)
+    || (key === "clientCredentials" && value !== null && typeof value === "object")
+    || (value !== null && typeof value === "object" && "username" in value && "password" in value && typeof value.username === "string" && value.username.length > 0 && typeof value.password === "string" && value.password.length > 0);
+  const named = Object.fromEntries(Object.entries((options.credentials ?? {}) as Record<string, unknown>).filter(([name, value]) => supplied(name, value))) as NamedCredentials;
+  const available = namedCredentialAvailability(schemes, new Set(Object.keys(options).filter((key) => key !== "credentials" && supplied(key, options[key]))), named);
+  if (credentialOptions?.some((alternative) => alternative.length > 0 && alternative.every((option) => available.has(option)))) return null;
+  const alternatives = (credentialOptions ?? []).filter((alternative) => alternative.length > 0 && alternative.every((option) => option.startsWith("credentials."))).map((alternative) => alternative.map((option) => option.slice("credentials.".length)));
+  return { alternatives, missing: alternatives.map((alternative) => alternative.filter((name) => !available.has("credentials." + name))) };
+}
+
 /** Bound file/stdin reads before allocating a full credential document. */
 export function readNamedCredentialsFile(input: string, schemes: CredentialSchemes): NamedCredentials {
   let fd: number | undefined;

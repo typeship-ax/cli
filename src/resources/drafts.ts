@@ -4,6 +4,7 @@
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -314,6 +315,7 @@ export type DraftsListError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -326,6 +328,7 @@ export type DraftsGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -352,6 +355,7 @@ export type DraftsUpdateError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -390,6 +394,7 @@ export type DraftsListFilesError =
   | ConflictError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -404,6 +409,7 @@ export type DraftsResolveError =
   | ConflictError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -418,6 +424,7 @@ export type DraftsRecoverError =
   | ConflictError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

@@ -13,7 +13,7 @@ import { checkConsoleBrowserLogin } from "./console-login-check.js";
 import { type FileCredentialStore, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
 import { createCredentialStore } from "./credential-storage.js";
 import { identityPolicyOf, identityFetch, identityResult, verifyApiIdentity, verifyClientIdentity, readApiIdentity, assertApiIdentity, type ApiIdentity, type IdentityConfiguration, type IdentityPolicy, type VerifiedIdentity } from "./api-identity.js";
-import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
+import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, missingCredentials, oauthSessionSchemes, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
 import { resolveProfile, listProfiles, selectProfile, removeProfile, readProfileConfig, updateProfileConfig, type ProfileContext } from "./auth-profiles.js";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -25,7 +25,7 @@ import { asApiResult, validateAgainstSchema, ValidationError, type Violation } f
 import { SCHEMAS, DEFS } from "./schemas.js";
 import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
-  MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, collectionProperty, detectHarness, envelope,
+  MCP_CLIENTS, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, classifyAuthFailure, collectionProperty, detectHarness, envelope,
   exitCodeFor, findMcpClient, installSkills, mcpConfigured, pendingClaims, recordClaim, summarizeDoctor, upsertAgentBlock, writeBundle, writeMcpConfig,
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
@@ -37,6 +37,9 @@ const BIN = "typeship";
 const DEFAULT_BASE_URL = "https://typeship.dev/api/v1";
 const NAMED_SCHEMES: CredentialSchemes = {"apiKey":{"kind":"bearer","options":["bearerToken"]}};
 const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_TOKEN"}];
+/** Hosted MCP request headers as name → env reference, never a literal. */
+const HOSTED_MCP_HEADERS: Record<string, string> = {"Authorization":"Bearer ${TYPESHIP_TOKEN}"};
+const HOSTED_MCP_NOTE: string | null = null;
 const BASIC: { envUser: string; envPass: string } | null = null;
 /** Operations omitted from the generated package by its plan cap. */
 const EXCLUDED_OPS = 0;
@@ -335,7 +338,12 @@ function fail(code: number, message: string, extra?: unknown, nextSteps?: string
 
 /** An SDK error result as an envelope: status-derived code, the API's body as detail, concrete next steps. */
 function failApi(error: unknown, hadCredential: boolean): never {
-  return failWith(classifyApiError(error, { bin: BIN, hadCredential, docsUrl: DOCS_URL_DEFAULT }));
+  return failWith(classifyAuthFailure(error, authFailureContext()) ?? classifyApiError(error, { bin: BIN, hadCredential, docsUrl: DOCS_URL_DEFAULT }));
+}
+
+/** What a login, saved-session or credential-store failure names as alternatives. */
+function authFailureContext(): { bin: string; envVars: string[]; storeVariable: string } {
+  return { bin: BIN, storeVariable: ENV_PREFIX + "_CREDENTIAL_STORE", envVars: [...AUTH_SCALARS.map((a) => a.env), ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []), ...(Object.keys(NAMED_SCHEMES).length ? [ENV_PREFIX + "_CREDENTIALS"] : [])] };
 }
 
 // ---------------------------------------------------------------------------
@@ -509,11 +517,40 @@ async function deviceLogin(clientId: string, parsed: Parsed): Promise<void> {
   await flushExit(0);
 }
 
-async function storePastedToken(token: string, flags: Map<string, string | boolean>): Promise<void> {
-  const first = AUTH_SCALARS[0];
-  if (!first) fail(2, "This API declares no credential the CLI can store. Use --username/--password if it uses basic auth.");
-  await saveLoginCredentials({ scalars: { [first!.option]: token } }, flags);
-  out({ ok: true, method: "paste", stored_as: first!.flag, credentials: credsPath(), ...loginIdentityReport() });
+type LoginValue = string | { username: string; password: string };
+/** What --with-token, the prompt and browser approval store. */
+interface LoginTarget { label: string; basic: boolean; storedAs: string; save(value: LoginValue): StoredCreds }
+
+/** The scheme named by --scheme, else the convenience credential that the
+ * most operations accept on its own (declared order breaks ties), else null. */
+function loginTarget(flags: Map<string, string | boolean>): LoginTarget | null {
+  const requested = flags.get("scheme");
+  if (requested !== undefined) {
+    if (typeof requested !== "string" || !Object.hasOwn(NAMED_SCHEMES, requested)) fail(2, "--scheme expects one of this API's security schemes: " + (Object.keys(NAMED_SCHEMES).join(", ") || "none") + ".");
+    const name = requested as string;
+    return { label: name, basic: NAMED_SCHEMES[name]!.kind === "basic", storedAs: name, save(value) {
+      try { return { named: parseNamedCredentials({ [name]: value }, NAMED_SCHEMES) }; } catch (error) { fail(2, (error as Error).message); }
+    } };
+  }
+  const candidates = [...AUTH_SCALARS.map((a) => a.option), ...(BASIC ? ["basicAuth"] : [])];
+  if (!candidates.length) return null;
+  const uses = (option: string) => OPS.filter((op) => op.credentialOptions?.some((alternative) => alternative.length === 1 && alternative[0] === option)).length;
+  const option = candidates.reduce((best, candidate) => uses(candidate) > uses(best) ? candidate : best);
+  if (option === "basicAuth") return { label: "username and password", basic: true, storedAs: "basic", save: (value) => ({ basic: value as { username: string; password: string } }) };
+  const scalar = AUTH_SCALARS.find((a) => a.option === option)!;
+  return { label: scalar.flag.replace(/-/g, " "), basic: false, storedAs: scalar.flag, save: (value) => ({ scalars: { [scalar.option]: value as string } }) };
+}
+
+/** Basic credentials on stdin are one line: username:password. */
+function basicFromText(text: string): { username: string; password: string } {
+  const separator = text.indexOf(":");
+  if (separator <= 0 || separator === text.length - 1) fail(2, "--with-token expects username:password on stdin for Basic auth.");
+  return { username: text.slice(0, separator), password: text.slice(separator + 1) };
+}
+
+async function storePastedToken(value: LoginValue, target: LoginTarget, flags: Map<string, string | boolean>): Promise<void> {
+  await saveLoginCredentials(target.save(value), flags);
+  out({ ok: true, method: "paste", stored_as: target.storedAs, credentials: credsPath(), ...loginIdentityReport() });
   await flushExit(0);
 }
 
@@ -547,10 +584,9 @@ async function browserApprove(headless: boolean, flags: Map<string, string | boo
 }
 
 /** Store what the browser approval minted, marked as this CLI's own. */
-async function storeMinted(minted: ApprovedCredential, flags: Map<string, string | boolean>): Promise<void> {
-  const first = AUTH_SCALARS[0]!;
+async function storeMinted(minted: ApprovedCredential, target: LoginTarget, flags: Map<string, string | boolean>): Promise<void> {
   await saveLoginCredentials({
-    scalars: { [first.option]: minted.api_key },
+    ...target.save(minted.api_key),
     minted: { via: "browser", key_name: minted.key_name, revocationUrl: minted.revocationUrl, ...(minted.org_id ? { org_id: minted.org_id } : {}) },
   }, flags, undefined, async () => {
     try {
@@ -567,11 +603,11 @@ async function storeMinted(minted: ApprovedCredential, flags: Map<string, string
   });
 }
 
-async function browserLogin(headless: boolean, flags: Map<string, string | boolean>): Promise<void> {
+async function browserLogin(headless: boolean, target: LoginTarget, flags: Map<string, string | boolean>): Promise<void> {
   await credentialStore().prepare();
   const minted = await browserApprove(headless, flags);
-  await storeMinted(minted, flags);
-  out({ ok: true, method: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), credentials: credsPath(), ...loginIdentityReport() });
+  await storeMinted(minted, target, flags);
+  out({ ok: true, method: "browser", stored_as: target.storedAs, key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), credentials: credsPath(), ...loginIdentityReport() });
   await flushExit(0);
 }
 
@@ -649,16 +685,18 @@ async function cmdConsoleLoginCheck(parsed: Parsed): Promise<void> {
 
 async function cmdLogin(parsed: Parsed): Promise<void> {
   if (parsed.help) {
+    const target = loginTarget(new Map());
     const lines = [
       BIN + " login — store credentials at " + credsPath(),
       "",
       ...AUTH_SCALARS.map((a) => "  " + BIN + " login --" + a.flag + " <value>"),
-      ...(CLI_AUTH_URL ? ["  " + BIN + " login                        approve in the browser: a key is minted for you (add --no-browser to print the link instead of opening it)"] : []),
-      "  " + BIN + " login --with-token           read the credential from stdin (CI)",
+      ...(CLI_AUTH_URL && target && !target.basic ? ["  " + BIN + " login                        approve in the browser: a key is minted for you (add --no-browser to print the link instead of opening it)"] : []),
+      ...(target ? ["  " + BIN + " login --with-token           read the " + target.label + " from stdin" + (target.basic ? " as one username:password line" : "") + " (CI)"] : []),
+      ...(Object.keys(NAMED_SCHEMES).length > 1 || (!target && Object.keys(NAMED_SCHEMES).length) ? ["  " + BIN + " login --scheme <name>        choose the scheme --with-token, the prompt" + (CLI_AUTH_URL ? " and browser approval" : "") + " store" + (target ? " (default: " + target.storedAs + ")" : "") + "; a Basic scheme reads username:password"] : []),
       ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --client-id <id>       OAuth " + OAUTH_LOGIN_METHOD + " login" + (OAUTH_CLIENT_ID ? " (a default id is built in)" : "")] : []),
       ...(HAS_OAUTH_LOGIN ? ["  " + BIN + " login --no-browser           print the approval URL instead of opening a browser", "  " + BIN + " login --device               use device authorization when your provider supports it"] : []),
       ...(BASIC ? ["  " + BIN + " login --username <u> --password <p>"] : []),
-      ...(CLI_AUTH_URL || HAS_OAUTH_LOGIN ? [] : ["  " + BIN + " login                        interactive prompt (TTY only)"]),
+      ...(CLI_AUTH_URL || HAS_OAUTH_LOGIN || !target ? [] : ["  " + BIN + " login                        interactive prompt" + (target.basic ? " for username and hidden password" : "") + " (TTY only)"]),
       "",
       "Precedence per scheme: flags > env vars > stored credentials. Named inputs beat convenience flags within the same source.",
       "  " + BIN + " login --credentials @<JSON-file>   store named credentials (use - for stdin)",
@@ -698,9 +736,11 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
   }
 
   if (parsed.flags.get("with-token") === true) {
+    const target = loginTarget(parsed.flags);
+    if (!target) fail(2, "This API declares no credential the CLI can store. See '" + BIN + " login --help'.");
     const token = (await readStdin()).trim();
     if (!token) fail(2, "--with-token expects the credential on stdin.");
-    await storePastedToken(token, parsed.flags);
+    await storePastedToken(target!.basic ? basicFromText(token) : token, target!, parsed.flags);
   }
 
   const clientId = (typeof parsed.flags.get("client-id") === "string" ? parsed.flags.get("client-id") as string : undefined)
@@ -717,8 +757,9 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
   // Browser approval: the API mints a key for this CLI once a person
   // approves in the browser. Works under an agent too (it prints the URL and
   // polls); only the explicit non-interactive switch turns it off.
-  if (CLI_AUTH_URL && AUTH_SCALARS[0] && !explicitNonInteractive(parsed)) {
-    await browserLogin(isAgentMode(parsed) || parsed.flags.get("no-browser") === true, parsed.flags);
+  const target = loginTarget(parsed.flags);
+  if (CLI_AUTH_URL && target && !target.basic && !explicitNonInteractive(parsed)) {
+    await browserLogin(isAgentMode(parsed) || parsed.flags.get("no-browser") === true, target, parsed.flags);
   }
 
   if (nonInteractive(parsed) || !process.stdin.isTTY) {
@@ -728,17 +769,24 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
       message: "login needs a terminal to prompt, and there is none.",
       nextSteps: [
         ...AUTH_SCALARS.map((a) => "Pass the credential: '" + BIN + " login --" + a.flag + " <value>', or set " + a.env + " in the environment."),
-        "Pipe it: echo \"$TOKEN\" | " + BIN + " login --with-token",
+        ...(BASIC ? ["Pass Basic credentials: '" + BIN + " login --username <u> --password <p>', or set " + BASIC.envUser + " and " + BASIC.envPass + " in the environment."] : []),
+        ...(target ? ["Pipe it: echo \"" + (target.basic ? "$USERNAME:$PASSWORD" : "$TOKEN") + "\" | " + BIN + " login --with-token" + (parsed.flags.has("scheme") ? " --scheme " + target.storedAs : "")] : []),
         ...(HAS_OAUTH_LOGIN ? ["OAuth login (or --device when supported by your provider): '" + BIN + " login --client-id <id>' (opens or prints the provider sign-in URL)."] : []),
         ...(CLI_AUTH_URL ? ["Browser approval: '" + BIN + " login --no-browser' prints a link for the user to approve and waits."] : []),
       ],
     });
   }
-  const first = AUTH_SCALARS[0];
-  if (!first) fail(2, "This API declares no credential the CLI can prompt for. See '" + BIN + " login --help'.");
-  const token = (await promptHidden("Paste " + first.flag.replace(/-/g, " ") + " (input hidden): ")).trim();
+  if (!target) fail(2, "This API declares no credential the CLI can prompt for. See '" + BIN + " login --help'.");
+  if (target!.basic) {
+    process.stderr.write("Username: ");
+    const username = (await readLine()).trim();
+    const password = await promptHidden("Password (input hidden): ");
+    if (!username || !password) fail(2, "Enter both a username and a password.");
+    await storePastedToken({ username, password }, target!, parsed.flags);
+  }
+  const token = (await promptHidden("Paste " + target!.label + " (input hidden): ")).trim();
   if (!token) fail(2, "Nothing entered.");
-  await storePastedToken(token, parsed.flags);
+  await storePastedToken(token, target!, parsed.flags);
 }
 
 async function cmdLogout(parsed: Parsed): Promise<void> {
@@ -753,8 +801,8 @@ async function cmdLogout(parsed: Parsed): Promise<void> {
   // way out, so logging out ends the credential and not just the file. A
   // pasted or CI key is someone else's to revoke, and is left alone.
   let revoked: boolean | null = null;
-  const first = AUTH_SCALARS[0];
-  const ownKey = first && stored?.minted?.via === "browser" ? stored.scalars?.[first.option] : undefined;
+  // The approval stored exactly one credential, as a scalar or a named scheme.
+  const ownKey = stored?.minted?.via === "browser" ? [...Object.values(stored.scalars ?? {}), ...Object.values(stored.named ?? {})].find((value): value is string => typeof value === "string") : undefined;
   if (ownKey) {
     try {
       const response = await oauthStatusRequest(loginEndpoint(stored!.minted!.revocationUrl!), { method: "POST", headers: { Authorization: "Bearer " + ownKey } }, 15_000);
@@ -915,12 +963,12 @@ function mcpEntryFor(url: string | undefined, readOnly = false): { entry: McpEnt
   const warnings: string[] = [];
   const hosted = url ?? MCP_URL ?? undefined;
   if (hosted) {
-    const envVar = AUTH_SCALARS[0]?.env;
     // The hosted endpoint serves its read-only twin at <url>/readonly; a
     // remote server of someone else's may not, so say so.
     const target = readOnly ? hosted.replace(/\/+$/, "") + "/readonly" : hosted;
     if (readOnly && url !== undefined && !MCP_URL) warnings.push("--read-only appended /readonly to the URL, which typeship-hosted endpoints serve; check that this server does too.");
-    return { entry: { url: target, ...(envVar ? { headers: { Authorization: "Bearer ${" + envVar + "}" } } : {}) }, warnings };
+    if (HOSTED_MCP_NOTE) warnings.push(HOSTED_MCP_NOTE);
+    return { entry: { url: target, ...(Object.keys(HOSTED_MCP_HEADERS).length ? { headers: { ...HOSTED_MCP_HEADERS } } : {}) }, warnings };
   }
   if (!HAS_MCP) {
     fail(2, "This package was generated without the MCP server target. Regenerate with it, or pass --url for a remote endpoint.");
@@ -1276,13 +1324,18 @@ async function cmdInit(parsed: Parsed): Promise<void> {
   const first = AUTH_SCALARS[0];
   const named = flagCredentials(parsed.flags), envNamed = environmentCredentials();
   const stored: StoredCreds = Object.keys(named).length || Object.keys(envNamed).length || first && process.env[first.env] ? {} : readCreds() ?? {};
-  const given = (typeof parsed.flags.get("k") === "string" ? parsed.flags.get("k") as string : undefined)
-    ?? (first && typeof parsed.flags.get(first.flag) === "string" ? parsed.flags.get(first.flag) as string : undefined);
+  // -k stores the credential login would store; --<flag> stores that scalar.
+  const target = loginTarget(parsed.flags);
+  const keyValue = typeof parsed.flags.get("k") === "string" ? parsed.flags.get("k") as string : undefined;
+  const flagValue = first && typeof parsed.flags.get(first.flag) === "string" ? parsed.flags.get(first.flag) as string : undefined;
   if (Object.keys(named).length) {
     await saveLoginCredentials({ named }, parsed.flags);
     report.credential = { status: "stored", path: credsPath() };
-  } else if (given && first) {
-    await saveLoginCredentials({ scalars: { [first.option]: given } }, parsed.flags);
+  } else if (keyValue && target && !target.basic) {
+    await saveLoginCredentials(target.save(keyValue), parsed.flags);
+    report.credential = { status: "stored", path: credsPath() };
+  } else if ((keyValue ?? flagValue) && first) {
+    await saveLoginCredentials({ scalars: { [first.option]: (keyValue ?? flagValue)! } }, parsed.flags);
     report.credential = { status: "stored", path: credsPath() };
   } else if (first && process.env[first.env]) {
     report.credential = { status: "env", variable: first.env };
@@ -1293,13 +1346,13 @@ async function cmdInit(parsed: Parsed): Promise<void> {
   } else if (first && HAS_OAUTH_LOGIN && OAUTH_LOGIN_METHOD === "browser" && (process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID) && !explicitNonInteractive(parsed)) {
     await acquireOAuthBrowserSession(parsed, (process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID)!);
     report.credential = { status: "stored", method: "oauth_browser", path: credsPath() };
-  } else if (first && CLI_AUTH_URL && !explicitNonInteractive(parsed)) {
+  } else if (target && !target.basic && CLI_AUTH_URL && !explicitNonInteractive(parsed)) {
     // Nothing anywhere: approve a credential in the browser, as `login`
     // would, then carry on. Under an agent the URL is printed for the person
     // and polled; only the explicit non-interactive switch skips this.
     await credentialStore().prepare();
     const minted = await browserApprove(isAgentMode(parsed) || parsed.flags.get("no-browser") === true, parsed.flags);
-    await storeMinted(minted, parsed.flags);
+    await storeMinted(minted, target, parsed.flags);
     report.credential = { status: "minted", method: "browser", key_name: minted.key_name, ...(minted.org_id ? { org_id: minted.org_id } : {}), path: credsPath() };
   } else {
     report.credential = { status: "none" };
@@ -2257,13 +2310,9 @@ let LAST_CLIENT_HAD_CREDENTIAL = false;
  * per-scheme flag, environment, profile, and OAuth resolution. */
 function requireOperationCredentials(op: OpSpec, options: ClientOptions & Record<string, unknown>): void {
   if (op.auth !== "required") return;
-  const supplied = (value: unknown): boolean => typeof value === "function" || (typeof value === "string" && value.length > 0)
-    || (value !== null && typeof value === "object" && "username" in value && "password" in value && typeof value.username === "string" && value.username.length > 0 && typeof value.password === "string" && value.password.length > 0);
-  const named = Object.fromEntries(Object.entries(options.credentials ?? {}).filter(([, value]) => supplied(value))) as NamedCredentials;
-  const available = namedCredentialAvailability(NAMED_SCHEMES, new Set(Object.keys(options).filter((key) => supplied(options[key]))), named);
-  if (op.credentialOptions?.some((alternative) => alternative.length > 0 && alternative.every((option) => available.has(option)))) return;
-  const alternatives = (op.credentialOptions ?? []).filter((alternative) => alternative.length > 0 && alternative.every((option) => option.startsWith("credentials.")));
-  const missing = alternatives.map((alternative) => alternative.filter((option) => !available.has(option)).map((option) => option.slice("credentials.".length)));
+  const gap = missingCredentials(NAMED_SCHEMES, op.credentialOptions, options);
+  if (!gap) return;
+  const { alternatives, missing } = gap;
   const names = new Set(missing.flat());
   const relevant = AUTH_SCALARS.filter((scalar) => [...names].some((name) => NAMED_SCHEMES[name]?.options.includes(scalar.option)));
   const needsBasic = [...names].some((name) => NAMED_SCHEMES[name]?.options.includes("basicAuth"));
@@ -2276,7 +2325,8 @@ function requireOperationCredentials(op: OpSpec, options: ClientOptions & Record
     nextSteps: alternatives.length ? [
       ...relevant.map((a) => "Set " + a.env + " in the environment, pass --" + a.flag + " <value>, or run '" + BIN + " login'."),
       ...(needsBasic && BASIC ? ["Set " + BASIC.envUser + " and " + BASIC.envPass + ", or pass --username and --password."] : []),
-      "Supply all schemes in one alternative through " + "TYPESHIP_CREDENTIALS" + " or --credentials @<JSON-file>: " + alternatives.map((alternative) => alternative.map((option) => option.slice("credentials.".length)).join(" + ")).join(" OR ") + ".",
+      ...(HAS_OAUTH_LOGIN && [...names].some((name) => OAUTH_SESSION_SCHEMES.includes(name)) ? ["Sign in with OAuth: '" + BIN + " login'."] : []),
+      "Supply all schemes in one alternative through " + "TYPESHIP_CREDENTIALS" + " or --credentials @<JSON-file>: " + alternatives.map((alternative) => alternative.join(" + ")).join(" OR ") + ".",
     ] : ["Check the operation's security schemes in the API Spec and regenerate with a supported, compatible alternative."],
   });
 }
@@ -2330,6 +2380,27 @@ function resolveBaseUrl(flags: Map<string, string | boolean>, config = readConfi
     ?? DEFAULT_BASE_URL ?? undefined;
 }
 
+/** OAuth schemes the login session authenticates by name; empty when the
+ * session is the convenience bearer token (see oauthSessionSchemes). */
+const OAUTH_SESSION_SCHEMES = oauthSessionSchemes(NAMED_SCHEMES);
+
+/** Send a login session to the OAuth scheme, never to a separate http bearer
+ * scheme. Explicit credentials for the same scheme keep precedence. */
+function applyOAuthSession(options: ClientOptions & Record<string, unknown>, token: string | (() => Promise<string>), replace = false): void {
+  if (!OAUTH_SESSION_SCHEMES.length) {
+    if (replace || options.bearerToken === undefined) options.bearerToken = token;
+    return;
+  }
+  const credentials = (options.credentials ??= {}) as Record<string, unknown>;
+  for (const name of OAUTH_SESSION_SCHEMES) if (replace || !Object.hasOwn(credentials, name)) credentials[name] = token;
+}
+function withOAuthSession(options: ClientOptions & Record<string, unknown>, accessToken: string): ClientOptions & Record<string, unknown> {
+  const next: ClientOptions & Record<string, unknown> = { ...options, credentials: { ...(options.credentials as Record<string, unknown>) } as ClientOptions["credentials"] };
+  applyOAuthSession(next, accessToken, true);
+  if (!OAUTH_SESSION_SCHEMES.length) next.credentials = { ...(next.credentials as Record<string, unknown>), ...resolveNamedCredentials(NAMED_SCHEMES, [{ options: { bearerToken: accessToken } }]) } as ClientOptions["credentials"];
+  return next;
+}
+
 async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, candidate?: StoredCreds, forIdentity = false): Promise<TypeshipClient> {
   const flagNamed = flagCredentials(flags), envNamed = environmentCredentials();
   const explicitOptions = new Set(AUTH_SCALARS.filter((a) => typeof flags.get(a.flag) === "string" || process.env[a.env] !== undefined).map((a) => a.option));
@@ -2369,14 +2440,15 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
   options.credentials = resolveNamedCredentials(NAMED_SCHEMES, [
     { named: stored?.named, options: { ...stored?.scalars, ...(stored?.basic ? { basicAuth: stored.basic } : {}) } },
     { named: envNamed, options: envOptions }, { named: flagNamed, options: flagOptions },
-    ...(forIdentity && candidate ? [{ named: candidate.named, options: { ...candidate.scalars, ...(candidate.basic ? { basicAuth: candidate.basic } : {}), ...(candidate.oauth ? { bearerToken: candidate.oauth.accessToken } : {}) } }] : []),
+    ...(forIdentity && candidate ? [{ named: candidate.named, options: { ...candidate.scalars, ...(candidate.basic ? { basicAuth: candidate.basic } : {}), ...(candidate.oauth && !OAUTH_SESSION_SCHEMES.length ? { bearerToken: candidate.oauth.accessToken } : {}) } }] : []),
   ]);
-  if (stored?.oauth && (forIdentity || options.bearerToken === undefined)) {
+  if (stored?.oauth) {
     const sessionId = stored.oauth.sessionId;
-    options.bearerToken = forIdentity ? stored.oauth.accessToken : () => oauthSessionToken(credentialStore(), {
+    const token = forIdentity ? stored.oauth.accessToken : () => oauthSessionToken(credentialStore(), {
       ...sessionConfiguration(baseUrl, config),
-      ...(identityConfiguration() && WHOAMI ? { verifyIdentity: (accessToken: string) => verifyClientIdentity((values) => new TypeshipClient(values as unknown as ClientOptions), { ...options, bearerToken: accessToken, credentials: resolveNamedCredentials(NAMED_SCHEMES, [{ named: options.credentials as NamedCredentials }, { options: { bearerToken: accessToken } }]) }, WHOAMI!, IDENTITY_POLICY) } : {}),
+      ...(identityConfiguration() && WHOAMI ? { verifyIdentity: (accessToken: string) => verifyClientIdentity((values) => new TypeshipClient(values as unknown as ClientOptions), withOAuthSession(options, accessToken), WHOAMI!, IDENTITY_POLICY) } : {}),
     }, sessionId, OAUTH_TOKEN_PARAMS);
+    applyOAuthSession(options, token, forIdentity);
   }
   if (flags.get("debug") === true || process.env["TYPESHIP_DEBUG"] === "1") {
     options.debug = (event: DebugEvent) => process.stderr.write(paintErr("dim", formatDebugEvent(BIN, event)) + "\n");
@@ -2617,7 +2689,15 @@ async function main(): Promise<void> {
   // an action_required envelope with the exact command to run, so nothing
   // is deleted on a guess.
   if (op.safety === "destructive" && !assumeYes(parsed)) {
-    const rerun = BIN + " " + process.argv.slice(2).map((a) => (/\s/.test(a) ? JSON.stringify(a) : a)).join(" ") + " --force";
+    // Credential flags are replaced by placeholders: the rerun is shown to
+    // agents and logged, so it must never repeat a key.
+    const secretFlags = new Set(AUTH_SCALARS.map((a) => "--" + a.flag));
+    const rerun = BIN + " " + process.argv.slice(2).map((a, i, all) => {
+      const eq = a.indexOf("=");
+      if (a.startsWith("--") && eq > 0 && secretFlags.has(a.slice(0, eq))) return a.slice(0, eq) + "=<" + a.slice(2, eq) + ">";
+      if (i > 0 && secretFlags.has(all[i - 1]!)) return "<" + all[i - 1]!.slice(2) + ">";
+      return /\s/.test(a) ? JSON.stringify(a) : a;
+    }).join(" ") + " --force";
     if (nonInteractive(parsed) || !process.stdin.isTTY) {
       failWith({
         status: "action_required",
@@ -2724,6 +2804,8 @@ function errorMessage(error: unknown): string {
 main().catch((e) => {
   if (e instanceof ExitPending) return;
   try {
+    const auth = classifyAuthFailure(e, authFailureContext());
+    if (auth) failWith(auth);
     fail(1, errorMessage(e));
   } catch {
     // exit already scheduled

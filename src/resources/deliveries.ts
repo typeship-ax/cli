@@ -4,6 +4,7 @@
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import { paginate, PagePromise } from "../core/pagination.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -263,6 +264,7 @@ export type DeliveriesCreateError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -296,6 +298,7 @@ export type DeliveriesListError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -308,6 +311,7 @@ export type DeliveriesGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -334,6 +338,7 @@ export type DeliveriesUpdateError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -359,6 +364,7 @@ export type DeliveriesDeleteError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

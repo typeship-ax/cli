@@ -12,6 +12,11 @@ export interface RequestOptions {
   timeoutMs?: number;
   /** Retry attempts after the first try. Overrides the client default. */
   maxRetries?: number;
+  /** Receives this call's response metadata (status, headers, ETag,
+   * rate-limit state) once a response arrives, whether the call succeeded
+   * or failed. A 304 Not Modified resolves the call to `null`; read
+   * `response.etag` here. */
+  onResponse?: (response: ResponseMeta) => void;
 }
 
 export interface ResponseMeta {
@@ -24,6 +29,70 @@ export interface ResponseMeta {
   /** Request identifier from the JSON response body, or from headers for
    * raw and bodyless responses. */
   requestId?: string;
+  /** The `ETag` header, for a later conditional request (`If-None-Match`). */
+  etag?: string;
+  /** The `Last-Modified` header, for a later `If-Modified-Since`. */
+  lastModified?: string;
+  /** True for a 304 Not Modified: the resource matched the conditional
+   * request, and the call resolved to `null` instead of a body. */
+  notModified?: boolean;
+  /** Set when the API said the call was rate limited. */
+  rateLimit?: RateLimitInfo;
+}
+
+/** When a rate-limited call can be retried. Both fields are absent when the
+ * API did not say. */
+export interface RateLimitInfo {
+  /** The instant the limit resets (from `Retry-After` or `x-ratelimit-reset`). */
+  retryAt?: Date;
+  /** Milliseconds from when the response arrived until `retryAt`. */
+  retryAfterMs?: number;
+}
+
+/** Response headers that carry a request identifier, most specific first. */
+const REQUEST_ID_HEADERS = ["request-id", "x-request-id", "x-github-request-id", "twilio-request-id", "x-amzn-requestid", "x-slack-req-id", "cf-ray"];
+
+function requestIdFromHeaders(headers: Headers): string | undefined {
+  for (const name of REQUEST_ID_HEADERS) {
+    const value = headers.get(name);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+/**
+ * Whether a response is a rate limit, and when to retry. A 429 always is. A
+ * 403 is when it says the quota is spent (`x-ratelimit-remaining: 0`) or asks
+ * the caller to wait (`Retry-After`), which is how GitHub signals its primary
+ * and secondary limits. Undefined for every other response.
+ */
+export function rateLimitInfo(status: number, headers: Headers, now = Date.now()): RateLimitInfo | undefined {
+  const retryAfter = headers.get("retry-after");
+  const remaining = headers.get("x-ratelimit-remaining") ?? headers.get("ratelimit-remaining");
+  const limited = status === 429 || (status === 403 && (retryAfter !== null || (remaining !== null && remaining.trim() === "0")));
+  if (!limited) return undefined;
+  let waitMs: number | undefined;
+  if (retryAfter !== null && retryAfter.trim() !== "") {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds)) waitMs = Math.max(seconds, 0) * 1000;
+    else if (!Number.isNaN(Date.parse(retryAfter))) waitMs = Math.max(Date.parse(retryAfter) - now, 0);
+  }
+  const reset = headers.get("x-ratelimit-reset") ?? headers.get("ratelimit-reset");
+  if (waitMs === undefined && reset !== null && reset.trim() !== "" && Number.isFinite(Number(reset))) {
+    const value = Number(reset);
+    // An epoch timestamp (GitHub, Twitter) or seconds until the reset (the
+    // IETF RateLimit header fields).
+    waitMs = Math.max(value > 1e9 ? value * 1000 - now : value * 1000, 0);
+  }
+  if (waitMs === undefined) return {};
+  return { retryAt: new Date(now + waitMs), retryAfterMs: waitMs };
+}
+
+function rateLimitStep(info: RateLimitInfo): string {
+  if (!info.retryAt) return "Rate limited: wait before retrying.";
+  // Round up to the second so "wait until" is never early.
+  const at = new Date(Math.ceil(info.retryAt.getTime() / 1000) * 1000);
+  return "Rate limited: wait until " + at.toISOString().replace(/\.\d{3}Z$/, "Z") + ", then retry.";
 }
 
 /**
@@ -98,6 +167,9 @@ function errorCode(body: unknown, fallback: string): string {
     const first = Array.isArray(value.errors) ? value.errors[0] as { code?: unknown } | undefined : undefined;
     const code = value.code ?? first?.code;
     if (typeof code === "string" && code.trim()) return code;
+    if (typeof code === "number" && Number.isFinite(code)) return String(code);
+    // Slack-style `{"ok": false, "error": "invalid_auth"}`: the error is a code.
+    if (typeof value.error === "string" && /^[A-Za-z][\w.-]{0,63}$/.test(value.error)) return value.error;
   }
   return fallback;
 }
@@ -111,6 +183,7 @@ function errorDetail(body: unknown): string {
 }
 
 function nextStep(status: number): string {
+  if (status >= 200 && status < 300) return "It arrived in a successful HTTP response; the body says why.";
   if (status === 401) return "Check the credential and retry.";
   if (status === 403) return "Check the credential's permissions and retry.";
   if (status === 404) return "Check the requested identifier or path.";
@@ -127,11 +200,43 @@ export class ApiError<S extends number = number, B = unknown> extends SdkError {
   readonly body: B;
   readonly response: ResponseMeta;
 
+  /** Set when the API said this call was rate limited (a 429, or a 403
+   * whose headers say the quota is spent): when to retry. */
+  readonly rateLimit?: RateLimitInfo;
+
   constructor(message: string, status: S, body: B, response: ResponseMeta) {
-    super(message + errorDetail(body) + ". " + nextStep(status), errorCode(body, "http_" + status), status, body, response.requestId);
+    const limit = response.rateLimit ?? (response.headers ? rateLimitInfo(status, response.headers) : undefined);
+    super(
+      // An API message usually ends its own sentence; do not double it.
+      (message + errorDetail(body)).replace(/[.!?]+$/, "") + ". " + (limit ? rateLimitStep(limit) : nextStep(status)),
+      errorCode(body, limit ? "rate_limited" : "http_" + status),
+      status, body, response.requestId,
+    );
     this.status = status;
     this.body = body;
     this.response = response;
+    if (limit) this.rateLimit = limit;
+  }
+}
+
+/** The API rate limited the call: a 403 whose headers say the quota is
+ * spent, or a 429 the spec did not document. `rateLimit.retryAt` says when
+ * to try again. Every ApiError carries `rateLimit` when it applies. */
+export class RateLimitError extends ApiError<number, unknown> {
+  constructor(body: unknown, response: ResponseMeta) {
+    super("Rate limited (HTTP " + response.status + ")", response.status, body, response);
+  }
+}
+
+/** A 2xx response whose payload reported a failure: a declared envelope
+ * flag set to false (`{"ok": false}`, `{"success": false}`), or a GraphQL
+ * result that is one of the schema's error types. */
+export class PayloadError extends ApiError<number, unknown> {
+  /** The GraphQL error type the result resolved to, for GraphQL operations. */
+  readonly typename?: string;
+  constructor(body: unknown, response: ResponseMeta, typename?: string) {
+    super(typename ? "The operation returned " + typename : "The API reported a failure", response.status, body, response);
+    if (typename) this.typename = typename;
   }
 }
 
@@ -339,6 +444,9 @@ export interface CoreRequest {
   idempotencyKey?: string;
   /** Key into the schemas table for optional runtime validation. */
   schemaKey?: string;
+  /** The success body's envelope flag (`ok`, `success`): `false` there is a
+   * failure reported inside a 2xx response, raised as a PayloadError. */
+  failureFlag?: string;
   /** Operation-level retry policy (x-typeship-retries), merged over the
    * client-level policy; per-call options.maxRetries still wins. */
   retry?: RetryPolicy;
@@ -418,6 +526,10 @@ export interface CoreConfig {
   schemaDefs?: Record<string, unknown>;
   /** Root-level retry policy (x-typeship-retries at the document root). */
   retry?: RetryPolicy;
+  /** The longest server-requested wait (Retry-After, x-ratelimit-reset) a
+   * retry honors. A longer wait fails the call at once with the reset time
+   * instead of sleeping. Default 60000ms. */
+  maxRetryWaitMs?: number;
   /** Client-level values for x-typeship-globals parameters, by wire name. */
   globals?: Record<string, unknown>;
   /** Header names the spec's API-key schemes use. fetch drops the standard
@@ -532,6 +644,7 @@ export class HttpCore {
     }
 
     let lastError: unknown;
+    let credentialsRefreshed = false;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response;
       const attemptStarted = Date.now();
@@ -541,15 +654,16 @@ export class HttpCore {
         status: value.status,
         durationMs: Date.now() - attemptStarted,
         attempt: attempt + 1,
-        requestId:
-          requestIdFromBody(body) ??
-          value.headers.get("request-id") ??
-          value.headers.get("x-request-id") ??
-          undefined,
+        requestId: requestIdFromBody(body) ?? requestIdFromHeaders(value.headers),
       });
       try {
         response = await this.send(req, timeoutMs, attempt, autoIdempotencyKey);
       } catch (cause) {
+        if (cause instanceof CredentialCallbackFailure) {
+          const error = cause.error as E;
+          await this.config.onError?.(error, { method: req.method, path: req.path });
+          return { ok: false, error };
+        }
         lastError = cause;
         this.config.debug?.({
           method: req.method,
@@ -570,6 +684,15 @@ export class HttpCore {
         return { ok: false, error };
       }
 
+      // A conditional request matched: nothing changed, and nothing failed.
+      if (response.status === 304) {
+        void response.body?.cancel().catch(() => {});
+        emitResponseDebug(response);
+        const notModified = { ...meta(response), notModified: true };
+        req.options?.onResponse?.(notModified);
+        return { ok: true, data: null as T, response: notModified };
+      }
+
       if (response.ok) {
         let data: T;
         try {
@@ -577,6 +700,7 @@ export class HttpCore {
         } catch (cause) {
           const parseError = cause instanceof ResponseParseError ? cause : undefined;
           emitResponseDebug(response, parseError?.body);
+          req.options?.onResponse?.(parseError?.response ?? meta(response));
           const error = (parseError ?? new TransportError(
             "The response body read failed before completing",
             cause,
@@ -587,7 +711,16 @@ export class HttpCore {
         }
         emitResponseDebug(response, data);
         const responseMeta = meta(response, data);
+        req.options?.onResponse?.(responseMeta);
         let responseData: unknown = data;
+        // Checked before validation: a failure body rarely matches the
+        // success schema, and the failure is the news.
+        if (req.failureFlag && data && typeof data === "object" && !Array.isArray(data)
+            && (data as Record<string, unknown>)[req.failureFlag] === false) {
+          const payloadError = new PayloadError(data, responseMeta) as unknown as E;
+          await this.config.onError?.(payloadError, { method: req.method, path: req.path });
+          return { ok: false, error: payloadError, response: responseMeta };
+        }
         let shouldValidateResponse = responseData !== undefined;
         if (opSchemas?.res && this.config.validate!.responses && shouldValidateResponse) {
           const violations: Violation[] = [];
@@ -607,12 +740,17 @@ export class HttpCore {
       }
 
       // 429 is safe to retry regardless of idempotency; other retryable
-      // statuses only when the verb is idempotent.
+      // statuses, and a rate-limited 403, only when the verb is idempotent.
+      const limit = rateLimitInfo(response.status, response.headers);
       const retryableStatus =
-        retryableStatuses.has(response.status) &&
+        (retryableStatuses.has(response.status) || (limit !== undefined && response.status === 403)) &&
         (retryAllowed || response.status === 429);
-      if (attempt < maxRetries && retryableStatus) {
-        const delay = retryAfterMs(response) ?? backoff(attempt, policy);
+      // A server-requested wait beyond the ceiling fails now, with the reset
+      // time in the error, rather than holding the caller.
+      const requestedWait = limit?.retryAfterMs ?? retryAfterMs(response);
+      const withinCeiling = requestedWait === undefined || requestedWait <= (this.config.maxRetryWaitMs ?? 60_000);
+      if (attempt < maxRetries && retryableStatus && withinCeiling) {
+        const delay = requestedWait ?? backoff(attempt, policy);
         let retryBody: unknown;
         try {
           retryBody = await parseBody(response, req.method);
@@ -624,6 +762,16 @@ export class HttpCore {
         continue;
       }
 
+      // A rejected callback or cached token gets one fresh resolution; the
+      // resend does not spend the retry budget. Static credentials do not.
+      if (response.status === 401 && !credentialsRefreshed && this.refreshCredentials(req)) {
+        credentialsRefreshed = true;
+        void response.body?.cancel().catch(() => {});
+        emitResponseDebug(response);
+        attempt--;
+        continue;
+      }
+
       let body: unknown;
       try {
         body = await parseBody(response, req.method);
@@ -632,10 +780,15 @@ export class HttpCore {
       }
       emitResponseDebug(response, body);
       const responseMeta = meta(response, body);
-      const Ctor =
-        req.errors?.[String(response.status)] ??
-        req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
-        req.errors?.["default"];
+      req.options?.onResponse?.(responseMeta);
+      // A rate limit is its own error whatever the status: a 403 that means
+      // "wait" must not read as "your credential lacks access". A 429 the
+      // spec documents keeps its generated class (which carries rateLimit).
+      const Ctor = limit && !(response.status === 429 && req.errors?.["429"])
+        ? RateLimitError
+        : req.errors?.[String(response.status)] ??
+          req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
+          req.errors?.["default"];
       const error = (Ctor
         ? new Ctor(body, responseMeta)
         : new UnexpectedApiError(response.status, body, responseMeta)) as unknown as E;
@@ -647,6 +800,19 @@ export class HttpCore {
     const error = new TransportError("Request failed", lastError) as unknown as E;
     await this.config.onError?.(error, { method: req.method, path: req.path });
     return { ok: false, error };
+  }
+
+  /** Drop cached tokens behind the credential this request selected. True
+   * when a callback or cached token can resolve to a new value. */
+  private refreshCredentials(req: CoreRequest): boolean {
+    const selected = req.security && this.config.credentials ? selectSecurity(req.security, this.config.credentials) : {};
+    let refreshable = false;
+    for (const value of [...Object.values(selected.headers ?? {}), ...Object.values(selected.query ?? {})]) {
+      if (typeof value !== "function") continue;
+      refreshable = true;
+      (value as RefreshableAuth).invalidate?.();
+    }
+    return refreshable;
   }
 
   /** SDK-facing call: resolve to the payload or throw its typed error. */
@@ -785,9 +951,27 @@ export class HttpCore {
   }
 }
 
-async function resolveAuthValue(value: AuthValue): Promise<string> {
-  return typeof value === "function" ? await value() : value;
+/** A credential callback failed: surface the caller's own error unchanged
+ * instead of retrying it as a transport failure. */
+class CredentialCallbackFailure {
+  readonly error: unknown;
+  constructor(error: unknown) { this.error = error; }
 }
+
+async function resolveAuthValue(value: AuthValue): Promise<string> {
+  if (typeof value !== "function") return value;
+  try {
+    return await value();
+  } catch (error) {
+    // The SDK's own token request failures keep the transport retry path.
+    if (error instanceof TransportError) throw error;
+    throw new CredentialCallbackFailure(error);
+  }
+}
+
+/** A refreshable credential: a callback, or a cached client-credentials
+ * token that can be dropped before one resend after a 401. */
+type RefreshableAuth = (() => string | Promise<string>) & { invalidate?: () => void };
 
 
 /** Default rendering for debug events (the boolean debug:true sink). */
@@ -803,11 +987,20 @@ export function formatDebugEvent(name: string, event: DebugEvent): string {
 /** Wrap a bearer credential (static or callback) as an Authorization value. */
 export function bearerAuth(token: AuthValue): AuthValue {
   if (typeof token === "function") {
-    return async () => "Bearer " + (await token());
+    return Object.assign(async () => "Bearer " + (await token()), { invalidate: () => (token as RefreshableAuth).invalidate?.() });
   }
   return "Bearer " + token;
 }
 
+
+/**
+ * Join a query array into one delimited value (`ids=1,2`) for parameters
+ * whose spec says `explode: false`. Other values pass through unchanged.
+ */
+export function delimited(value: unknown, separator: string): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((item) => (item instanceof Date ? item.toISOString() : String(item))).join(separator);
+}
 
 /**
  * Bracket-style deep encoding shared by query strings and form bodies:
@@ -870,15 +1063,17 @@ function requestIdFromBody(body: unknown): string | undefined {
 }
 
 function meta(response: Response, body?: unknown): ResponseMeta {
+  const etag = response.headers.get("etag");
+  const lastModified = response.headers.get("last-modified");
+  const rateLimit = rateLimitInfo(response.status, response.headers);
   return {
     status: response.status,
     headers: response.headers,
     ...(body !== undefined ? { rawBody: body } : {}),
-    requestId:
-      requestIdFromBody(body) ??
-      response.headers.get("request-id") ??
-      response.headers.get("x-request-id") ??
-      undefined,
+    requestId: requestIdFromBody(body) ?? requestIdFromHeaders(response.headers),
+    ...(etag ? { etag } : {}),
+    ...(lastModified ? { lastModified } : {}),
+    ...(rateLimit ? { rateLimit } : {}),
   };
 }
 
@@ -906,13 +1101,14 @@ function composeSignals(signals: AbortSignal[]): AbortSignal {
   return controller.signal;
 }
 
+/** Retry-After on a retryable status that is not a rate limit (a 503). */
 function retryAfterMs(response: Response): number | undefined {
   const header = response.headers.get("retry-after");
   if (!header) return undefined;
   const seconds = Number(header);
-  if (Number.isFinite(seconds)) return Math.min(seconds * 1000, 60_000);
+  if (Number.isFinite(seconds)) return Math.max(seconds * 1000, 0);
   const date = Date.parse(header);
-  if (!Number.isNaN(date)) return Math.min(Math.max(date - Date.now(), 0), 60_000);
+  if (!Number.isNaN(date)) return Math.max(date - Date.now(), 0);
   return undefined;
 }
 
@@ -929,7 +1125,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function toBase64(input: string): string {
-  if (typeof btoa === "function") return btoa(input);
+  // Encode UTF-8 bytes: btoa alone rejects characters outside Latin-1.
+  if (typeof btoa === "function") return btoa(Array.from(new TextEncoder().encode(input), (byte) => String.fromCharCode(byte)).join(""));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (globalThis as any).Buffer.from(input, "utf-8").toString("base64");
 }

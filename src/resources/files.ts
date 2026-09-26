@@ -3,6 +3,7 @@
 
 import { HttpCore, type RequestOptions } from "../core/http.js";
 import {
+  RateLimitError,
   ResponseParseError,
   TransportError,
   UnexpectedApiError,
@@ -62,6 +63,7 @@ export type FilesGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

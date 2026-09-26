@@ -30,6 +30,9 @@ export type IssueCode =
   | "NETWORK_ERROR"         // no response: DNS, TLS, timeout, refused
   | "VALIDATION_FAILED"     // --validate found parameters or a body that do not match the schema
   | "TTY_REQUIRED"          // a prompt was needed and there is no terminal
+  | "LOGIN_FAILED"          // browser, device or approval login did not complete
+  | "LOGIN_REQUIRED"        // a saved login cannot be used as is; sign in again
+  | "CREDENTIAL_STORE_UNAVAILABLE" // the OS credential store or saved credential file cannot be used
   | "CONFIRMATION_REQUIRED" // a destructive command needs --force
   | "INVALID_USAGE"         // wrong flags or arguments
   | "UNKNOWN_COMMAND"
@@ -93,7 +96,7 @@ export function classifyApiError(
   error: unknown,
   context: { bin: string; hadCredential: boolean; docsUrl: string | null },
 ): EnvelopeInput {
-  const e = (error ?? {}) as { name?: string; message?: string; status?: number; body?: unknown; violations?: unknown; direction?: string; target?: string; response?: { requestId?: string } };
+  const e = (error ?? {}) as { name?: string; message?: string; status?: number; code?: unknown; body?: unknown; violations?: unknown; direction?: string; target?: string; rateLimit?: { retryAt?: Date }; response?: { requestId?: string } };
   // The message is the API's own words when it sent any, else the SDK's
   // (the spec's response description). The error class name rides in
   // detail, not in front of the message: "NotFoundError: No such account
@@ -129,6 +132,17 @@ export function classifyApiError(
   const same = apiMessage !== undefined && (apiMessage.toLowerCase() === base.toLowerCase() || base.toLowerCase().includes(apiMessage.toLowerCase()) || apiMessage.toLowerCase().includes(base.toLowerCase()));
   const message = apiMessage === undefined ? base : same ? apiMessage : apiMessage + " (" + base + ")";
   const upgradeUrl = extractUrl(e.body, ["upgrade_url", "upgradeUrl", "signup_url", "claim_url"]);
+  // A rate limit can arrive as a 403 (GitHub); the SDK marks it either way.
+  if (status === 429 || e.rateLimit !== undefined) {
+    return { status: "action_required", code: "RATE_LIMITED", message, detail: { ...detail, ...(e.rateLimit?.retryAt ? { retry_at: isoSeconds(e.rateLimit.retryAt) } : {}) }, nextSteps: [rateLimitNextStep(e.rateLimit?.retryAt, "run the same command again")] };
+  }
+  // A failure the API reported inside a 2xx body: classify by its code.
+  if (e.name === "PayloadError") {
+    const reported = payloadFailureCode(e.code);
+    if (reported === "AUTH_INVALID") return { code: "AUTH_INVALID", message, detail, nextSteps: ["The API rejected the credential (" + String(e.code) + "). Check it is current: '" + context.bin + " auth check'."] };
+    if (reported === "RATE_LIMITED") return { status: "action_required", code: "RATE_LIMITED", message, detail, nextSteps: ["Wait, then run the same command again."] };
+    return { code: "CALL_FAILED", message, detail, nextSteps: ["The API reported a failure in a successful response; detail.body says why."] };
+  }
   if (status === 401) {
     return context.hadCredential
       ? { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential was rejected. Check it is current: '" + context.bin + " auth check', then '" + context.bin + " login --help' to store a new one."] }
@@ -139,14 +153,44 @@ export function classifyApiError(
     return { status: "action_required", code: "PLAN_LIMIT", message, detail, nextSteps: [upgradeUrl ? "Lift the limit at " + upgradeUrl + ", then run the same command again." : "The account's plan stops here; upgrade it, then run the same command again.", "Do not retry the same call as is."] };
   }
   if (status === 404) return { code: "NOT_FOUND", message, detail, nextSteps: notFoundNextSteps(message) };
-  if (status === 429) {
-    const retryAfter = extractRetryAfter(e);
-    return { status: "action_required", code: "RATE_LIMITED", message, detail, nextSteps: [retryAfter ? "Wait " + retryAfter + " seconds, then run the same command again." : "Back off and retry once; the SDK already retried with the server's Retry-After."] };
-  }
   if (status === 422 && apiCode === "spec_error") return { code: "SPEC_INVALID", message, detail, nextSteps: ["The API rejected the spec it was given; the message says why.", context.docsUrl ? "Look the message up: '" + context.bin + " docs search \"" + (apiMessage ?? "").slice(0, 60).replace(/"/g, "'") + "\"'." : "Fix the spec and run again."] };
   if (status === 400 || status === 422 || status === 409 || status === 413) return { code: "INVALID_REQUEST", message, detail, nextSteps: ["Read detail.body for the field the API named; run the command with --help for its flags."] };
   if (status >= 500) return { code: "SERVER_ERROR", message, detail, nextSteps: ["Retry once with backoff. If it persists, report detail.request_id."] };
   return { code: "CALL_FAILED", message, detail };
+}
+
+/** Login, saved-session and credential-store failures, recognised by error
+ * name (so this module needs no login runtime) on the error or its cause.
+ * Undefined when the error is none of them. */
+export function classifyAuthFailure(
+  error: unknown,
+  context: { bin: string; envVars: string[]; storeVariable: string },
+): EnvelopeInput | undefined {
+  const login = "'" + context.bin + " login'";
+  const environment = context.envVars.length ? ["Or supply credentials through the environment: " + context.envVars.join(", ") + "."] : [];
+  for (let node = error as { name?: unknown; message?: unknown; code?: unknown; cause?: unknown } | undefined, depth = 0; node && typeof node === "object" && depth < 4; node = node.cause as typeof node, depth++) {
+    const message = typeof node.message === "string" && node.message ? node.message : "Login failed.";
+    switch (node.name) {
+      case "LoginPollingError":
+        if (node.code === "request_failed") return { code: "LOGIN_FAILED", message, nextSteps: ["Check the network and the login service, then run " + login + " again.", ...environment] };
+        if (node.code === "invalid_response") return { code: "LOGIN_FAILED", message, nextSteps: ["The login service's response did not match its contract. Retry " + login + " once; if it persists, report it to the API owner.", ...environment] };
+        return { code: "LOGIN_FAILED", message, nextSteps: ["Run " + login + " again and approve the new request.", ...environment] };
+      case "OAuthResponseError":
+        if (node.code === "request_failed" || node.code === "timed_out") return { code: "NETWORK_ERROR", message: "The OAuth provider could not be reached (" + String(node.code).replace("_", " ") + ").", nextSteps: ["Check the network and the provider, then run " + login + " again."] };
+        return { code: "LOGIN_FAILED", message: "The OAuth provider returned an unusable response (" + String(node.code).replace(/_/g, " ") + ").", nextSteps: ["Run " + login + " again. If it keeps failing, report it to the API owner.", ...environment] };
+      case "OAuthLoginError":
+        return { code: "LOGIN_FAILED", message, nextSteps: ["Run " + login + " again. If it keeps failing, the OAuth application settings may need attention from the API owner.", ...environment] };
+      case "OAuthSessionError":
+        return { status: "action_required", code: "LOGIN_REQUIRED", message, nextSteps: ["Run " + login + " to sign in again.", ...environment] };
+      case "CredentialStorageError":
+        return { status: "action_required", code: "CREDENTIAL_STORE_UNAVAILABLE", message, nextSteps: [
+          "Unlock or enable the OS credential store (macOS Keychain, Linux Secret Service or Windows DPAPI) and retry.",
+          ...environment,
+          "To use a plaintext file store instead, set " + context.storeVariable + "=file and run " + login + ".",
+        ] };
+    }
+  }
+  return undefined;
 }
 
 /** A file lookup needs path guidance, not the generic advice for a missing
@@ -174,12 +218,24 @@ function extractUrl(body: unknown, keys: string[]): string | undefined {
   return undefined;
 }
 
-function extractRetryAfter(e: { headers?: unknown; body?: unknown }): string | undefined {
-  const headers = e.headers as { get?: (name: string) => string | null } | undefined;
-  const fromHeader = headers?.get?.("retry-after");
-  if (fromHeader) return fromHeader;
-  const match = /retry after (\d+)s/i.exec(JSON.stringify(e.body ?? ""));
-  return match?.[1];
+function isoSeconds(at: Date): string {
+  return new Date(Math.ceil(at.getTime() / 1000) * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+/** "Wait until <time>" when the API said when the limit resets. */
+export function rateLimitNextStep(retryAt: Date | undefined, then: string): string {
+  return retryAt instanceof Date && !Number.isNaN(retryAt.getTime())
+    ? "Rate limited: wait until " + isoSeconds(retryAt) + ", then " + then + "."
+    : "Rate limited: back off, then " + then + "; the SDK already honored any Retry-After within its ceiling.";
+}
+
+/** Error codes APIs report inside a 2xx body (Slack's `error`), mapped to
+ * the stable codes when their meaning is unambiguous. */
+export function payloadFailureCode(code: unknown): "AUTH_INVALID" | "RATE_LIMITED" | undefined {
+  if (typeof code !== "string") return undefined;
+  if (/^(not_authed|invalid_auth|token_revoked|token_expired|account_inactive|unauthorized|unauthenticated|forbidden|access_denied|missing_scope)$/i.test(code)) return "AUTH_INVALID";
+  if (/^(ratelimited|rate_limited|rate_limit_exceeded|too_many_requests)$/i.test(code)) return "RATE_LIMITED";
+  return undefined;
 }
 
 // ---- agent mode -------------------------------------------------------------
@@ -243,6 +299,33 @@ export interface McpClient {
   write: (existing: string, name: string, entry: McpEntry) => string;
   /** True when the client cannot speak the current MCP protocol; skipped by --all. */
   incompatible?: string;
+  /**
+   * How the client expands an environment variable inside a header value.
+   * Entries carry `${VAR}`; each client gets its own spelling, and a client
+   * that expands nothing gets no Authorization header rather than a literal
+   * one it would send as-is. Defaults to "dollar".
+   */
+  headerEnv?: "dollar" | "env-colon" | "brace-env" | "none";
+}
+
+const ENV_REF = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+
+/** Rewrite `${VAR}` header references into the client's syntax, or drop the headers that hold one. */
+function entryForClient(client: McpClient, entry: McpEntry): { entry: McpEntry; note?: string } {
+  const style = client.headerEnv ?? "dollar";
+  if (!entry.headers || style === "dollar") return { entry };
+  const headers: Record<string, string> = {};
+  const dropped: string[] = [];
+  for (const [name, value] of Object.entries(entry.headers)) {
+    if (style === "none" && value.search(ENV_REF) !== -1) dropped.push(name);
+    else headers[name] = style === "env-colon" ? value.replace(ENV_REF, "${env:$1}") : style === "brace-env" ? value.replace(ENV_REF, "{env:$1}") : value;
+  }
+  const next: McpEntry = { ...entry };
+  delete next.headers;
+  if (Object.keys(headers).length) next.headers = headers;
+  return dropped.length
+    ? { entry: next, note: client.label + " does not expand environment variables in headers, so the entry omits " + dropped.join(", ") + "; the client signs in with MCP authorization when the server supports it." }
+    : { entry: next };
 }
 
 function readOr(file: string, fallback: string): string {
@@ -280,9 +363,14 @@ function tomlMerge(existing: string, name: string, entry: McpEntry): string {
   const lines: string[] = [header];
   if (entry.url) {
     lines.push("url = " + JSON.stringify(entry.url));
-    const auth = entry.headers?.Authorization ?? entry.headers?.authorization;
-    const envRef = auth ? /\$\{([A-Z0-9_]+)\}/.exec(auth)?.[1] : undefined;
-    if (envRef) lines.push("bearer_token_env_var = " + JSON.stringify(envRef));
+    const envHeaders: string[] = [];
+    for (const [header, value] of Object.entries(entry.headers ?? {})) {
+      const envRef = /\$\{([A-Z0-9_]+)\}/.exec(value)?.[1];
+      if (!envRef) continue;
+      if (header.toLowerCase() === "authorization" && /^Bearer /.test(value)) lines.push("bearer_token_env_var = " + JSON.stringify(envRef));
+      else envHeaders.push(JSON.stringify(header) + " = " + JSON.stringify(envRef));
+    }
+    if (envHeaders.length) lines.push("env_http_headers = { " + envHeaders.join(", ") + " }");
   } else {
     lines.push("command = " + JSON.stringify(entry.command ?? "node"));
     lines.push("args = " + JSON.stringify(entry.args ?? []));
@@ -316,6 +404,7 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "VS Code",
     file: (cwd) => join(cwd, ".vscode", "mcp.json"),
     detect: (cwd) => existsSync(join(cwd, ".vscode")) || existsSync(join(home(), ".vscode")),
+    headerEnv: "env-colon",
     write: (existing, name, entry) => jsonMerge(existing, ["servers"], name, standardEntry(entry)),
   },
   {
@@ -323,6 +412,7 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "Windsurf",
     file: () => join(home(), ".codeium", "windsurf", "mcp_config.json"),
     detect: () => existsSync(join(home(), ".codeium", "windsurf")),
+    headerEnv: "env-colon",
     write: (existing, name, entry) => jsonMerge(existing, ["mcpServers"], name, entry.url ? { serverUrl: entry.url, ...(entry.headers ? { headers: entry.headers } : {}) } : stdioEntry(entry)),
   },
   {
@@ -330,6 +420,7 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "Gemini CLI",
     file: () => join(home(), ".gemini", "settings.json"),
     detect: () => existsSync(join(home(), ".gemini")),
+    headerEnv: "none",
     write: (existing, name, entry) => jsonMerge(existing, ["mcpServers"], name, entry.url ? { httpUrl: entry.url, ...(entry.headers ? { headers: entry.headers } : {}) } : stdioEntry(entry)),
   },
   {
@@ -337,6 +428,7 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "OpenCode",
     file: () => join(xdg(), "opencode", "opencode.json"),
     detect: () => existsSync(join(xdg(), "opencode")),
+    headerEnv: "brace-env",
     write: (existing, name, entry) => jsonMerge(existing, ["mcp"], name, entry.url ? { type: "remote", url: entry.url, ...(entry.headers ? { headers: entry.headers } : {}) } : { type: "local", command: [entry.command ?? "node", ...(entry.args ?? [])] }),
   },
   {
@@ -344,6 +436,7 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "Zed",
     file: () => join(xdg(), "zed", "settings.json"),
     detect: () => existsSync(join(xdg(), "zed")),
+    headerEnv: "none",
     write: (existing, name, entry) => jsonMerge(existing, ["context_servers"], name, entry.url ? { source: "custom", url: entry.url, ...(entry.headers ? { headers: entry.headers } : {}) } : { source: "custom", command: entry.command ?? "node", args: entry.args ?? [] }),
   },
   {
@@ -362,9 +455,17 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "Cursor",
     file: (cwd) => join(cwd, ".cursor", "mcp.json"),
     detect: () => existsSync(join(home(), ".cursor")),
+    headerEnv: "env-colon",
     write: (existing, name, entry) => jsonMerge(existing, ["mcpServers"], name, standardEntry(entry)),
   },
 ];
+
+// Every client's write receives entries in its own env-reference syntax,
+// whether it is called through writeMcpConfig or directly.
+for (const client of MCP_CLIENTS) {
+  const write = client.write;
+  client.write = (existing, name, entry) => write(existing, name, entryForClient(client, entry).entry);
+}
 
 export function findMcpClient(id: string): McpClient | undefined {
   return MCP_CLIENTS.find((c) => c.id === id);
@@ -377,17 +478,19 @@ export interface McpWriteResult {
   note?: string;
 }
 
-/** Merge the entry into one client's config file. Never writes a literal secret: callers pass env references. */
+/** Merge the entry into one client's config file. Never writes a literal secret: callers pass `${VAR}` references, which each client receives in its own syntax. */
 export function writeMcpConfig(client: McpClient, cwd: string, name: string, entry: McpEntry): McpWriteResult {
   const file = client.file(cwd);
   if (!entry.url && client.id === "claude-desktop" && !entry.command) {
     return { client: client.id, file, written: false, note: "Claude Desktop reads only stdio servers from its config file; add a remote server as a connector in the app." };
   }
   const existing = readOr(file, "");
+  const adapted = entryForClient(client, entry);
   const next = client.write(existing, name, entry);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, next);
-  return { client: client.id, file, written: true, ...(client.incompatible ? { note: client.incompatible } : {}) };
+  const note = [client.incompatible, adapted.note].filter(Boolean).join(" ");
+  return { client: client.id, file, written: true, ...(note ? { note } : {}) };
 }
 
 /** Does a client's config already mention this server? For doctor. */

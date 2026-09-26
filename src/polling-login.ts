@@ -2,8 +2,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { oauthJsonRequest, oauthDeviceRequest, OAuthResponseError } from "./oauth-request.js";
 
 export class LoginPollingError extends Error {
-  constructor(readonly code: "cancelled" | "expired" | "denied" | "invalid_response" | "request_failed") {
-    super({ cancelled: "Login was cancelled.", expired: "Login expired. Run login again and approve the new request.", denied: "Login was denied. Run login again if you want to retry.", invalid_response: "The login service returned an invalid response. Check its configuration.", request_failed: "The login request failed. Check the service and start a new login." }[code]);
+  constructor(readonly code: "cancelled" | "expired" | "denied" | "consumed" | "invalid_response" | "request_failed") {
+    super({ cancelled: "Login was cancelled.", expired: "Login expired. Run login again and approve the new request.", denied: "Login was denied. Run login again if you want to retry.", consumed: "This approval was already used. Run login again.", invalid_response: "The login service returned an invalid response. Check its configuration.", request_failed: "The login request failed. Check the service and start a new login." }[code]);
     this.name = "LoginPollingError";
   }
 }
@@ -166,6 +166,7 @@ export async function customBrowserApproval(config: { authUrl: string; name: str
       if (poll.status === "pending") continue;
       if (poll.status === "denied") throw new LoginPollingError("denied");
       if (poll.status === "expired") throw new LoginPollingError("expired");
+      if (poll.status === "consumed") throw new LoginPollingError("consumed");
       if (poll.status !== "complete" || !text(poll.api_key) || poll.key_name !== undefined && !text(poll.key_name, 1024) || poll.org_id !== undefined && !text(poll.org_id, 1024)) throw new LoginPollingError("invalid_response");
       return { api_key: poll.api_key, key_name: typeof poll.key_name === "string" ? poll.key_name : config.name, ...(typeof poll.org_id === "string" ? { org_id: poll.org_id } : {}), revocationUrl: url + "/revoke" };
     }

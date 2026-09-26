@@ -48,6 +48,11 @@ export interface ClientOptions {
   timeoutMs?: number;
   /** Retries after the first attempt (retryable failures only). Default: 2. */
   maxRetries?: number;
+  /**
+   * The longest wait a server may request (Retry-After, x-ratelimit-reset) that a retry honors; a
+   * longer one fails the call with the reset time. Default: 60000.
+   */
+  maxRetryWaitMs?: number;
   /** Custom fetch implementation (proxies, testing, instrumentation). */
   fetch?: typeof fetch;
   /** Headers sent with every request. */
@@ -111,8 +116,10 @@ export class TypeshipClient {
   readonly packages: PackagesResource;
   readonly organization: OrganizationResource;
   readonly apiKeys: ApiKeysResource;
+  private readonly _options: ClientOptions;
 
   constructor(options: ClientOptions = {}) {
+    this._options = options;
     // Identifies this package to the API (ignored by browsers, which
     // control their own User-Agent); override via defaultHeaders.
     const headers: Record<string, AuthValue> = { "User-Agent": USER_AGENT, ...options.defaultHeaders };
@@ -157,6 +164,7 @@ export class TypeshipClient {
       fetch: options.fetch ?? fetch,
       timeoutMs: options.timeoutMs ?? 30_000,
       maxRetries: options.maxRetries ?? 2,
+      maxRetryWaitMs: options.maxRetryWaitMs,
       onRequest: options.onRequest,
       onResponse: options.onResponse,
       onError: options.onError,
@@ -177,6 +185,17 @@ export class TypeshipClient {
     this.packages = new PackagesResource(core);
     this.organization = new OrganizationResource(core);
     this.apiKeys = new ApiKeysResource(core);
+  }
+
+  /**
+   * A client with this client's configuration and only these credentials,
+   * for a server acting on behalf of many users. Nothing is inherited from
+   * this client's credentials. The copy shares the configured fetch.
+   */
+  withCredentials(credentials: Pick<ClientOptions, "bearerToken" | "credentials">): TypeshipClient {
+    const options: Record<string, unknown> = { ...this._options };
+    for (const key of ["bearerToken","credentials"]) delete options[key];
+    return new TypeshipClient({ ...options, ...credentials } as ClientOptions);
   }
 }
 

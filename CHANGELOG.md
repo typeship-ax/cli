@@ -37,6 +37,8 @@
   - `error-schema-changed`: error 500.errors\[\].code enum value removed: "plan\_limit\_reached"
   - **breaking** `error-schema-changed`: error 500.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid", "feature\_not\_available", "input\_duplicate", "input\_format\_invalid", "input\_missing", "input\_too\_long", "input\_too\_short", "input\_type\_invalid", "input\_unknown", "quota\_exceeded"
 - `projects.create()`
+  - `body-field-type-changed`: request body.config.auth.credential\_parameters added: Record&lt;string, Record&lt;string, boolean&gt;&gt; \| null \(optional\)
+  - `body-field-type-changed`: request body.config.auth.credential\_variables added: Record&lt;string, string \| \{   username: string;   password: string; \}&gt; \| null \(optional\)
   - **breaking** `return-type-changed`: response type changed: Project -&gt; ProjectResponse
   - `return-type-changed`: response intersection added: Project
   - `return-type-changed`: response intersection added: ResponseMetadata
@@ -109,6 +111,8 @@
   - `error-schema-changed`: error 502.errors\[\].code enum value removed: "plan\_limit\_reached"
   - **breaking** `error-schema-changed`: error 502.errors\[\].code enum values added: "checks\_failed", "delivery\_exists", "draft\_title\_invalid", "feature\_not\_available", "input\_duplicate", "input\_format\_invalid", "input\_missing", "input\_too\_long", "input\_too\_short", "input\_type\_invalid", "input\_unknown", "quota\_exceeded"
 - `projects.update()`
+  - `body-field-type-changed`: request body.config.auth.credential\_parameters added: Record&lt;string, Record&lt;string, boolean&gt;&gt; \| null \(optional\)
+  - `body-field-type-changed`: request body.config.auth.credential\_variables added: Record&lt;string, string \| \{   username: string;   password: string; \}&gt; \| null \(optional\)
   - **breaking** `return-type-changed`: response type changed: Project -&gt; ProjectResponse
   - `return-type-changed`: response intersection added: Project
   - `return-type-changed`: response intersection added: ResponseMetadata

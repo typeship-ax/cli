@@ -2397,6 +2397,25 @@ export interface AuthenticationConfig {
   approval_url?: string | null;
   /** Authentication selections keyed by generated API environment name. */
   environments?: Record<string, AuthenticationEnvironment> | null;
+  /**
+   * Environment variables the generated CLI, MCP server, and SDK environment fallbacks read, keyed
+   * by security scheme name. A string names the token or key variable; a Basic scheme takes {
+   * username, password }. Wins over the scheme's x-typeship-env extension. Without either, names
+   * derive from the package and scheme.
+   */
+  credential_variables?: Record<string, string | {
+    username: string;
+    password: string;
+  }>
+    | null;
+  /**
+   * Whether a parameter carries the operation's credential, keyed by operationId, "METHOD /path",
+   * or "*" for every operation, then by the parameter's wire name. true leaves the parameter out of
+   * generated signatures, CLI flags, and MCP tool input, because the configured credential already
+   * reaches the API; false keeps it. Wins over the parameter's x-typeship-credential extension and
+   * the generator's inference.
+   */
+  credential_parameters?: Record<string, Record<string, boolean>> | null;
 }
 
 export interface TargetAuthenticationEnvironment {
@@ -3827,6 +3846,25 @@ export interface AuthenticationConfigResponse {
   approval_url?: string | null;
   /** Authentication selections keyed by generated API environment name. */
   environments?: Record<string, AuthenticationEnvironmentResponse> | null;
+  /**
+   * Environment variables the generated CLI, MCP server, and SDK environment fallbacks read, keyed
+   * by security scheme name. A string names the token or key variable; a Basic scheme takes {
+   * username, password }. Wins over the scheme's x-typeship-env extension. Without either, names
+   * derive from the package and scheme.
+   */
+  credential_variables?: Record<string, string | {
+    username: string;
+    password: string;
+  }>
+    | null;
+  /**
+   * Whether a parameter carries the operation's credential, keyed by operationId, "METHOD /path",
+   * or "*" for every operation, then by the parameter's wire name. true leaves the parameter out of
+   * generated signatures, CLI flags, and MCP tool input, because the configured credential already
+   * reaches the API; false keeps it. Wins over the parameter's x-typeship-credential extension and
+   * the generator's inference.
+   */
+  credential_parameters?: Record<string, Record<string, boolean>> | null;
 }
 
 export interface TargetAuthenticationEnvironmentResponse {

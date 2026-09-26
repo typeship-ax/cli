@@ -34,7 +34,7 @@ test("specRevisions.get GET /spec-revisions/{spec_revision_id}", async () => {
 });
 
 test("specRevisions.listFiles GET /spec-revisions/{spec_revision_id}/files", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"file_4k8m2v7q1p9d5h6c\",\"object\":\"file\",\"path\":\"example\",\"size_bytes\":1,\"sha256\":\"example\",\"encoding\":\"utf8\",\"mode\":\"100644\",\"created_at\":\"2024-01-01T00:00:00Z\",\"role\":\"entrypoint\"}]}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"file_4k8m2v7q1p9d5h6c\",\"object\":\"file\",\"path\":\"example\",\"size_bytes\":1,\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"encoding\":\"utf8\",\"mode\":\"100644\",\"created_at\":\"2024-01-01T00:00:00Z\",\"role\":\"entrypoint\"}]}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.specRevisions.listFiles("test-spec_revision_id", undefined);

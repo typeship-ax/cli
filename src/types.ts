@@ -1709,14 +1709,14 @@ export type PublicationResponse = Publication & ResponseMetadata;
 export type PublicationResponseRead = PublicationRead & ResponseMetadata;
 
 /**
- * none: the open Draft has no pending change; generate the Target to start one. working: Typeship
+ * idle: the open Draft has no pending change; generate the Target to start one. working: Typeship
  * is generating, carrying repository edits forward, applying decisions, or checking the Draft;
  * retrieve it again. action_required: use the typed reason to find the customer's next action.
  * ready: required checks passed on head_sha; merge the pull request. merged: the pull request
  * merged and the Draft is final; retrieve the Target for the draft_id of its next Draft.
  */
 export const DraftStatus = {
-  NONE: "none",
+  IDLE: "idle",
   WORKING: "working",
   ACTION_REQUIRED: "action_required",
   READY: "ready",
@@ -1726,8 +1726,8 @@ export type DraftStatus = (typeof DraftStatus)[keyof typeof DraftStatus];
 
 /**
  * conflict: resolve the listed files. checks_failed: correct failed package checks. review_failed:
- * correct the Draft title, version, or other readiness finding. checks_unavailable: restore a
- * required check. history_rewritten: review the affected files and approve recovery.
+ * correct the Draft title or version. checks_unavailable: restore a required check.
+ * history_rewritten: review the affected files and approve recovery.
  */
 export const DraftActionReason = {
   CONFLICT: "conflict",
@@ -1755,65 +1755,52 @@ export interface DraftHistoryRecovery {
   preserved_branch: string | null;
 }
 
-/**
- * Readiness decision for the Draft's head_sha. Null readiness on the Draft means no Draft has been
- * generated.
- */
-export interface DraftReadiness {
+/** Comparison of the Draft's head_sha with the latest release. */
+export interface DraftCompatibility {
+  /** API surface comparison. unknown means analysis is unavailable. */
+  api: "compatible" | "breaking" | "unknown";
   /**
-   * success means required checks passed; failure means the Draft needs correction or review; error
-   * means assessment could not finish; pending means checks have not finished.
+   * Package and supported SDK source comparison. unknown means analysis is incomplete or
+   * unavailable.
    */
-  status: "success" | "failure" | "error" | "pending";
-  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
-  description: string;
-  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
-  compatibility_api: "compatible" | "breaking" | "unknown";
+  package: "compatible" | "breaking" | "unknown";
+}
+
+/** Response shape for DraftCompatibility. */
+export interface DraftCompatibilityRead {
+  /** API surface comparison. unknown means analysis is unavailable. */
+  api: ("compatible" | "breaking" | "unknown") | (string & {});
   /**
-   * Package and supported SDK source comparison against the latest release. unknown means analysis
-   * is incomplete or unavailable.
+   * Package and supported SDK source comparison. unknown means analysis is incomplete or
+   * unavailable.
    */
-  compatibility_package: "compatible" | "breaking" | "unknown";
-  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
-  version_correct: boolean | null;
+  package: ("compatible" | "breaking" | "unknown") | (string & {});
+}
+
+/** How version_next relates to the assessed change. */
+export interface DraftVersion {
   /**
    * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
    * has been determined.
    */
   bump_required: "major" | "minor" | "patch" | null;
+  /** Whether version_next satisfies the assessed change. Null when no verdict is available. */
+  correct: boolean | null;
   /** Latest release version used for the comparison. Null before the first release. */
-  version_previous: string | null;
-  /** Draft title error that must be corrected before release. Null when none is recorded. */
-  title_error: string | null;
+  previous: string | null;
 }
 
-/** Response shape for DraftReadiness. */
-export interface DraftReadinessRead {
-  /**
-   * success means required checks passed; failure means the Draft needs correction or review; error
-   * means assessment could not finish; pending means checks have not finished.
-   */
-  status: ("success" | "failure" | "error" | "pending") | (string & {});
-  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
-  description: string;
-  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
-  compatibility_api: ("compatible" | "breaking" | "unknown") | (string & {});
-  /**
-   * Package and supported SDK source comparison against the latest release. unknown means analysis
-   * is incomplete or unavailable.
-   */
-  compatibility_package: ("compatible" | "breaking" | "unknown") | (string & {});
-  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
-  version_correct: boolean | null;
+/** Response shape for DraftVersion. */
+export interface DraftVersionRead {
   /**
    * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
    * has been determined.
    */
   bump_required: ("major" | "minor" | "patch" | null) | (string & {}) | null;
+  /** Whether version_next satisfies the assessed change. Null when no verdict is available. */
+  correct: boolean | null;
   /** Latest release version used for the comparison. Null before the first release. */
-  version_previous: string | null;
-  /** Draft title error that must be corrected before release. Null when none is recorded. */
-  title_error: string | null;
+  previous: string | null;
 }
 
 /**
@@ -1833,17 +1820,24 @@ export interface Draft {
   version_next: string | null;
   /** Where version_next was selected; null once the Draft merged. */
   version_source: "automatic" | "console" | "api" | "github" | null;
-  readiness: DraftReadiness | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  compatibility: DraftCompatibility | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  version: DraftVersion | null;
+  /**
+   * What blocks the Draft, one entry per finding, each with a code and suggested_action. Empty
+   * unless status is action_required.
+   */
+  errors: ErrorDetail[];
   changes: {
     /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
-   * resolving or discarding.
+   * Draft commit that compatibility, version, checks, and conflicts describe. Send it as
+   * expected_head_sha when resolving or discarding.
    */
   head_sha: string | null;
   /** The Draft pull request in the destination repository, or null before one is opened. */
@@ -1892,17 +1886,24 @@ export interface DraftRead {
   version_next: string | null;
   /** Where version_next was selected; null once the Draft merged. */
   version_source: ("automatic" | "console" | "api" | "github" | null) | (string & {}) | null;
-  readiness: DraftReadinessRead | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  compatibility: DraftCompatibilityRead | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  version: DraftVersionRead | null;
+  /**
+   * What blocks the Draft, one entry per finding, each with a code and suggested_action. Empty
+   * unless status is action_required.
+   */
+  errors: ErrorDetailRead[];
   changes: {
     /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
-   * resolving or discarding.
+   * Draft commit that compatibility, version, checks, and conflicts describe. Send it as
+   * expected_head_sha when resolving or discarding.
    */
   head_sha: string | null;
   /** The Draft pull request in the destination repository, or null before one is opened. */
@@ -3531,6 +3532,8 @@ export const ErrorCode = {
   DELIVERY_EXISTS: "delivery_exists",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
   CUSTOMIZATION_CONFLICT: "customization_conflict",
+  CHECKS_FAILED: "checks_failed",
+  DRAFT_TITLE_INVALID: "draft_title_invalid",
   HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
   CHECKS_UNAVAILABLE: "checks_unavailable",
   DEPENDENCY_MISSING: "dependency_missing",

@@ -12,27 +12,6 @@ For complete input and output schemas, use [`api.json`](./api.json), the machine
 
 ## projects
 
-### `typeship projects list [flags]`
-
-List Projects
-
-`GET /projects`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-
-```sh
-typeship projects list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs projects list --json`.
-
 ### `typeship projects create [flags]`
 
 Create a Project
@@ -65,6 +44,27 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs projects create --json`.
 
+### `typeship projects list [flags]`
+
+List Projects
+
+`GET /projects`
+
+Safety: **read** · Authentication: **required**
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+
+```sh
+typeship projects list
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs projects list --json`.
+
 ### `typeship projects get <project_id> [flags]`
 
 Get a Project
@@ -86,30 +86,6 @@ typeship projects get prj_4f8k2m7x9q1v6b3n
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs projects get --json`.
-
-### `typeship projects delete <project_id> [flags]`
-
-Delete a Project
-
-`DELETE /projects/{project_id}`
-
-Safety: **destructive** · Authentication: **required**
-
-A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.
-See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
-
-```sh
-typeship projects delete prj_4f8k2m7x9q1v6b3n --force
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs projects delete --json`.
 
 ### `typeship projects update <project_id> [flags]`
 
@@ -144,6 +120,30 @@ typeship projects update prj_4f8k2m7x9q1v6b3n --auto-generate false
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs projects update --json`.
+
+### `typeship projects delete <project_id> [flags]`
+
+Delete a Project
+
+`DELETE /projects/{project_id}`
+
+Safety: **destructive** · Authentication: **required**
+
+A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<project_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+```sh
+typeship projects delete prj_4f8k2m7x9q1v6b3n --force
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs projects delete --json`.
 
 ### `typeship projects generate <project_id> [flags]`
 
@@ -328,28 +328,6 @@ Read the full command contract with `typeship docs spec-revisions list-files --j
 
 ## targets
 
-### `typeship targets list [flags]`
-
-List Targets
-
-`GET /targets`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--project-id` | query | `string` | no | Only Targets in this Project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
-
-```sh
-typeship targets list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs targets list --json`.
-
 ### `typeship targets create [flags]`
 
 Create a Target
@@ -382,6 +360,28 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs targets create --json`.
 
+### `typeship targets list [flags]`
+
+List Targets
+
+`GET /targets`
+
+Safety: **read** · Authentication: **required**
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+| `--project-id` | query | `string` | no | Only Targets in this Project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
+
+```sh
+typeship targets list
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs targets list --json`.
+
 ### `typeship targets get <target_id> [flags]`
 
 Get a Target
@@ -401,31 +401,6 @@ typeship targets get tgt_5m8q2v7k1p9d4h6c
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs targets get --json`.
-
-### `typeship targets delete <target_id> [flags]`
-
-Delete a Target
-
-`DELETE /targets/{target_id}`
-
-Safety: **destructive** · Authentication: **required**
-
-Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.
-
-See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<target_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
-
-```sh
-typeship targets delete tgt_5m8q2v7k1p9d4h6c --force
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs targets delete --json`.
 
 ### `typeship targets update <target_id> [flags]`
 
@@ -464,6 +439,31 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs targets update --json`.
 
+### `typeship targets delete <target_id> [flags]`
+
+Delete a Target
+
+`DELETE /targets/{target_id}`
+
+Safety: **destructive** · Authentication: **required**
+
+Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.
+
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<target_id>` | path | `string` | yes | Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+```sh
+typeship targets delete tgt_5m8q2v7k1p9d4h6c --force
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs targets delete --json`.
+
 ### `typeship targets adopt <target_id> [flags]`
 
 Adopt a package release
@@ -493,28 +493,6 @@ Read the full command contract with `typeship docs targets adopt --json`.
 
 ## deliveries
 
-### `typeship deliveries list [flags]`
-
-List Deliveries
-
-`GET /deliveries`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--target-id` | query | `string` | no | Only Deliveries of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
-
-```sh
-typeship deliveries list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs deliveries list --json`.
-
 ### `typeship deliveries create [flags]`
 
 Create a Delivery
@@ -543,6 +521,28 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs deliveries create --json`.
 
+### `typeship deliveries list [flags]`
+
+List Deliveries
+
+`GET /deliveries`
+
+Safety: **read** · Authentication: **required**
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
+| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
+| `--target-id` | query | `string` | no | Only Deliveries of this Target. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list. |
+
+```sh
+typeship deliveries list
+```
+
+Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
+
+Read the full command contract with `typeship docs deliveries list --json`.
+
 ### `typeship deliveries get <delivery_id> [flags]`
 
 Get a Delivery
@@ -564,32 +564,6 @@ typeship deliveries get dlv_4q8m2v7k1p9d5h6c
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs deliveries get --json`.
-
-### `typeship deliveries delete <delivery_id> [flags]`
-
-Delete a Delivery
-
-`DELETE /deliveries/{delivery_id}`
-
-Safety: **destructive** · Authentication: **required**
-
-Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
-
-A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
-See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<delivery_id>` | path | `string` | yes | — |
-| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
-
-```sh
-typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs deliveries delete --json`.
 
 ### `typeship deliveries update <delivery_id> [flags]`
 
@@ -622,6 +596,32 @@ typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"githu
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs deliveries update --json`.
+
+### `typeship deliveries delete <delivery_id> [flags]`
+
+Delete a Delivery
+
+`DELETE /deliveries/{delivery_id}`
+
+Safety: **destructive** · Authentication: **required**
+
+Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
+
+A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+```sh
+typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries delete --json`.
 
 ## generations
 

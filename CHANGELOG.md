@@ -8,8 +8,8 @@
 
 ### Added
 - `deliveries.create()`: POST `/deliveries`
-- `deliveries.delete()`: DELETE `/deliveries/{delivery_id}`
 - `deliveries.update()`: PATCH `/deliveries/{delivery_id}`
+- `deliveries.delete()`: DELETE `/deliveries/{delivery_id}`
 - `releases.retry()`: POST `/releases/{release_id}/retry`
 
 ### Removed (breaking)

@@ -7,13 +7,12 @@ import type { ErrorModel, ErrorModelRead } from "./types.js";
 export { ApiError, SdkError, ResponseParseError, TransportError, UnexpectedApiError, ValidationError, type Violation } from "./core/http.js";
 
 /**
- * A list query parameter is unknown, repeated, empty, or invalid, or the cursor is not for this
- * list.
+ * Invalid name, Spec source, or field value.
  * Raised for HTTP 400 responses.
  */
 export class BadRequestError extends ApiError<400, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("A list query parameter is unknown, repeated, empty, or invalid, or the cursor is not for this list.", 400, body, response);
+    super("Invalid name, Spec source, or field value.", 400, body, response);
   }
 }
 
@@ -28,43 +27,22 @@ export class UnauthorizedError extends ApiError<401, ErrorModelRead> {
 }
 
 /**
- * The credentials are valid but cannot act on the requested organization.
- * Raised for HTTP 403 responses.
- */
-export class ForbiddenError extends ApiError<403, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The credentials are valid but cannot act on the requested organization.", 403, body, response);
-  }
-}
-
-/**
- * Too many requests, or an identical write is still in progress. Wait for Retry-After before
- * retrying.
- * Raised for HTTP 429 responses.
- */
-export class RateLimitedError extends ApiError<429, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("Too many requests, or an identical write is still in progress. Wait for Retry-After before retrying.", 429, body, response);
-  }
-}
-
-/**
- * An unexpected error prevented the request from completing.
- * Raised for HTTP 500 responses.
- */
-export class InternalServerError extends ApiError<500, ErrorModelRead> {
-  constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("An unexpected error prevented the request from completing.", 500, body, response);
-  }
-}
-
-/**
  * The plan does not include another project or the requested target configuration.
  * Raised for HTTP 402 responses.
  */
 export class PaymentRequiredError extends ApiError<402, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("The plan does not include another project or the requested target configuration.", 402, body, response);
+  }
+}
+
+/**
+ * The credentials are valid but cannot act on the requested organization.
+ * Raised for HTTP 403 responses.
+ */
+export class ForbiddenError extends ApiError<403, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("The credentials are valid but cannot act on the requested organization.", 403, body, response);
   }
 }
 
@@ -85,6 +63,27 @@ export class ConflictError extends ApiError<409, ErrorModelRead> {
 export class UnprocessableEntityError extends ApiError<422, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
     super("The configured source could not be read and analyzed, so the project was not created.", 422, body, response);
+  }
+}
+
+/**
+ * Too many requests, or an identical write is still in progress. Wait for Retry-After before
+ * retrying.
+ * Raised for HTTP 429 responses.
+ */
+export class RateLimitedError extends ApiError<429, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("Too many requests, or an identical write is still in progress. Wait for Retry-After before retrying.", 429, body, response);
+  }
+}
+
+/**
+ * Project setup failed unexpectedly; the key reservation is released.
+ * Raised for HTTP 500 responses.
+ */
+export class InternalServerError extends ApiError<500, ErrorModelRead> {
+  constructor(body: ErrorModelRead, response: ResponseMeta) {
+    super("Project setup failed unexpectedly; the key reservation is released.", 500, body, response);
   }
 }
 

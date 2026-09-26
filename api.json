@@ -10,11 +10,11 @@
     "members": [
       [
         "projects",
-        "list"
+        "create"
       ],
       [
         "projects",
-        "create"
+        "list"
       ],
       [
         "projects",
@@ -22,11 +22,11 @@
       ],
       [
         "projects",
-        "delete"
+        "update"
       ],
       [
         "projects",
-        "update"
+        "delete"
       ],
       [
         "projects",
@@ -58,11 +58,11 @@
       ],
       [
         "targets",
-        "list"
+        "create"
       ],
       [
         "targets",
-        "create"
+        "list"
       ],
       [
         "targets",
@@ -70,11 +70,11 @@
       ],
       [
         "targets",
-        "delete"
+        "update"
       ],
       [
         "targets",
-        "update"
+        "delete"
       ],
       [
         "targets",
@@ -82,11 +82,11 @@
       ],
       [
         "deliveries",
-        "list"
+        "create"
       ],
       [
         "deliveries",
-        "create"
+        "list"
       ],
       [
         "deliveries",
@@ -94,11 +94,11 @@
       ],
       [
         "deliveries",
-        "delete"
+        "update"
       ],
       [
         "deliveries",
-        "update"
+        "delete"
       ],
       [
         "generations",
@@ -185,13 +185,13 @@
       {
         "command": [
           "projects",
-          "list"
+          "create"
         ]
       },
       {
         "command": [
           "projects",
-          "create"
+          "list"
         ]
       },
       {
@@ -203,13 +203,13 @@
       {
         "command": [
           "projects",
-          "delete"
+          "update"
         ]
       },
       {
         "command": [
           "projects",
-          "update"
+          "delete"
         ]
       },
       {
@@ -257,13 +257,13 @@
       {
         "command": [
           "targets",
-          "list"
+          "create"
         ]
       },
       {
         "command": [
           "targets",
-          "create"
+          "list"
         ]
       },
       {
@@ -275,13 +275,13 @@
       {
         "command": [
           "targets",
-          "delete"
+          "update"
         ]
       },
       {
         "command": [
           "targets",
-          "update"
+          "delete"
         ]
       },
       {
@@ -293,13 +293,13 @@
       {
         "command": [
           "deliveries",
-          "list"
+          "create"
         ]
       },
       {
         "command": [
           "deliveries",
-          "create"
+          "list"
         ]
       },
       {
@@ -311,13 +311,13 @@
       {
         "command": [
           "deliveries",
-          "delete"
+          "update"
         ]
       },
       {
         "command": [
           "deliveries",
-          "update"
+          "delete"
         ]
       },
       {
@@ -439,17 +439,6 @@
     "operationSpecs": [
       {
         "resource": "projects",
-        "method": "list",
-        "command": [
-          "projects",
-          "list"
-        ],
-        "tool": "projects_list",
-        "httpMethod": "GET",
-        "path": "/projects"
-      },
-      {
-        "resource": "projects",
         "method": "create",
         "command": [
           "projects",
@@ -457,6 +446,17 @@
         ],
         "tool": "projects_create",
         "httpMethod": "POST",
+        "path": "/projects"
+      },
+      {
+        "resource": "projects",
+        "method": "list",
+        "command": [
+          "projects",
+          "list"
+        ],
+        "tool": "projects_list",
+        "httpMethod": "GET",
         "path": "/projects"
       },
       {
@@ -472,17 +472,6 @@
       },
       {
         "resource": "projects",
-        "method": "delete",
-        "command": [
-          "projects",
-          "delete"
-        ],
-        "tool": "projects_delete",
-        "httpMethod": "DELETE",
-        "path": "/projects/{project_id}"
-      },
-      {
-        "resource": "projects",
         "method": "update",
         "command": [
           "projects",
@@ -490,6 +479,17 @@
         ],
         "tool": "projects_update",
         "httpMethod": "PATCH",
+        "path": "/projects/{project_id}"
+      },
+      {
+        "resource": "projects",
+        "method": "delete",
+        "command": [
+          "projects",
+          "delete"
+        ],
+        "tool": "projects_delete",
+        "httpMethod": "DELETE",
         "path": "/projects/{project_id}"
       },
       {
@@ -571,17 +571,6 @@
       },
       {
         "resource": "targets",
-        "method": "list",
-        "command": [
-          "targets",
-          "list"
-        ],
-        "tool": "targets_list",
-        "httpMethod": "GET",
-        "path": "/targets"
-      },
-      {
-        "resource": "targets",
         "method": "create",
         "command": [
           "targets",
@@ -589,6 +578,17 @@
         ],
         "tool": "targets_create",
         "httpMethod": "POST",
+        "path": "/targets"
+      },
+      {
+        "resource": "targets",
+        "method": "list",
+        "command": [
+          "targets",
+          "list"
+        ],
+        "tool": "targets_list",
+        "httpMethod": "GET",
         "path": "/targets"
       },
       {
@@ -604,17 +604,6 @@
       },
       {
         "resource": "targets",
-        "method": "delete",
-        "command": [
-          "targets",
-          "delete"
-        ],
-        "tool": "targets_delete",
-        "httpMethod": "DELETE",
-        "path": "/targets/{target_id}"
-      },
-      {
-        "resource": "targets",
         "method": "update",
         "command": [
           "targets",
@@ -622,6 +611,17 @@
         ],
         "tool": "targets_update",
         "httpMethod": "PATCH",
+        "path": "/targets/{target_id}"
+      },
+      {
+        "resource": "targets",
+        "method": "delete",
+        "command": [
+          "targets",
+          "delete"
+        ],
+        "tool": "targets_delete",
+        "httpMethod": "DELETE",
         "path": "/targets/{target_id}"
       },
       {
@@ -637,17 +637,6 @@
       },
       {
         "resource": "deliveries",
-        "method": "list",
-        "command": [
-          "deliveries",
-          "list"
-        ],
-        "tool": "deliveries_list",
-        "httpMethod": "GET",
-        "path": "/deliveries"
-      },
-      {
-        "resource": "deliveries",
         "method": "create",
         "command": [
           "deliveries",
@@ -655,6 +644,17 @@
         ],
         "tool": "deliveries_create",
         "httpMethod": "POST",
+        "path": "/deliveries"
+      },
+      {
+        "resource": "deliveries",
+        "method": "list",
+        "command": [
+          "deliveries",
+          "list"
+        ],
+        "tool": "deliveries_list",
+        "httpMethod": "GET",
         "path": "/deliveries"
       },
       {
@@ -670,17 +670,6 @@
       },
       {
         "resource": "deliveries",
-        "method": "delete",
-        "command": [
-          "deliveries",
-          "delete"
-        ],
-        "tool": "deliveries_delete",
-        "httpMethod": "DELETE",
-        "path": "/deliveries/{delivery_id}"
-      },
-      {
-        "resource": "deliveries",
         "method": "update",
         "command": [
           "deliveries",
@@ -688,6 +677,17 @@
         ],
         "tool": "deliveries_update",
         "httpMethod": "PATCH",
+        "path": "/deliveries/{delivery_id}"
+      },
+      {
+        "resource": "deliveries",
+        "method": "delete",
+        "command": [
+          "deliveries",
+          "delete"
+        ],
+        "tool": "deliveries_delete",
+        "httpMethod": "DELETE",
         "path": "/deliveries/{delivery_id}"
       },
       {
@@ -902,199 +902,6 @@
     ]
   },
   "operations": [
-    {
-      "operation": "projects.list",
-      "signature": "typeship projects list [flags]",
-      "command": [
-        "typeship",
-        "projects",
-        "list"
-      ],
-      "parameters": [
-        {
-          "name": "limit",
-          "flag": "--limit",
-          "in": "query",
-          "type": "number",
-          "required": false
-        },
-        {
-          "name": "cursor",
-          "flag": "--cursor",
-          "in": "query",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship projects list",
-      "method": "GET",
-      "path": "/projects",
-      "summary": "List Projects",
-      "safety": "read",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": true,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "default": 20,
-            "minimum": 1,
-            "maximum": 100,
-            "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
-          },
-          "cursor": {
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
-          }
-        }
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "description": "Project-owned identity, Spec reference, generation controls, and shared configuration. Targets and Deliveries are available only through their canonical Target endpoints.",
-              "properties": {
-                "id": {
-                  "description": "Unique identifier for a project.",
-                  "examples": [
-                    "prj_4f8k2m7x9q1v6b3n"
-                  ],
-                  "pattern": "^prj_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "project",
-                  "type": "string"
-                },
-                "name": {
-                  "maxLength": 80,
-                  "type": "string"
-                },
-                "spec_id": {
-                  "description": "Unique identifier for a project's logical API Spec.",
-                  "examples": [
-                    "spec_2p8m4q7k1v9d6h3c"
-                  ],
-                  "pattern": "^spec_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "auto_generate": {
-                  "description": "Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects. Set false to generate only when requested.",
-                  "type": "boolean"
-                },
-                "config": {
-                  "description": "Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL settings remain Spec-owned.",
-                  "anyOf": [
-                    {
-                      "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on the Project's Spec and are rejected in both stored config scopes.",
-                      "properties": {
-                        "globals": {
-                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
-                          "maxItems": 20,
-                          "type": "array"
-                        },
-                        "retries": {
-                          "description": "Retry behavior. Top-level fields adjust every operation; operations maps operationId or \"METHOD /path\" keys to per-operation overrides.",
-                          "type": "object"
-                        },
-                        "pagination": {
-                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
-                          "type": "object"
-                        },
-                        "auth": {
-                          "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
-                          "type": "object"
-                        },
-                        "cli": {
-                          "description": "How the generated CLI behaves. Part of Config.",
-                          "type": "object"
-                        },
-                        "mcp": {
-                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
-                          "type": "object"
-                        },
-                        "readme": {
-                          "description": "Generated README behavior. Part of Config.",
-                          "type": "object"
-                        },
-                        "package": {
-                          "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
-                          "type": "object"
-                        },
-                        "docs_url": {
-                          "format": "uri",
-                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs URL.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "docs_index_url": {
-                          "format": "uri",
-                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "description": "When the project configuration last changed.",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            }
-          },
-          "hasMore": {
-            "type": "boolean",
-            "description": "Whether another page exists"
-          },
-          "nextPage": {
-            "type": "object",
-            "description": "Arguments that fetch the next page; pass them to this tool",
-            "additionalProperties": true
-          },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
-          }
-        }
-      },
-      "example_arguments": {}
-    },
     {
       "operation": "projects.create",
       "signature": "typeship projects create [flags]",
@@ -2146,6 +1953,199 @@
       }
     },
     {
+      "operation": "projects.list",
+      "signature": "typeship projects list [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects list",
+      "method": "GET",
+      "path": "/projects",
+      "summary": "List Projects",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "type": "integer",
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
+          },
+          "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string",
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "description": "Project-owned identity, Spec reference, generation controls, and shared configuration. Targets and Deliveries are available only through their canonical Target endpoints.",
+              "properties": {
+                "id": {
+                  "description": "Unique identifier for a project.",
+                  "examples": [
+                    "prj_4f8k2m7x9q1v6b3n"
+                  ],
+                  "pattern": "^prj_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "object": {
+                  "const": "project",
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                "spec_id": {
+                  "description": "Unique identifier for a project's logical API Spec.",
+                  "examples": [
+                    "spec_2p8m4q7k1v9d6h3c"
+                  ],
+                  "pattern": "^spec_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "auto_generate": {
+                  "description": "Regenerate when the Spec or saved configuration changes. Enabled by default for new Projects. Set false to generate only when requested.",
+                  "type": "boolean"
+                },
+                "config": {
+                  "description": "Shared defaults inherited by every Target. A Target's config overrides these defaults; GraphQL settings remain Spec-owned.",
+                  "anyOf": [
+                    {
+                      "description": "Shared generated-client and tooling behavior for a stored Project. Every Target inherits these defaults. Target.config is merged over them for one Target; top-level values replace defaults while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on the Project's Spec and are rejected in both stored config scopes.",
+                      "properties": {
+                        "globals": {
+                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
+                          "maxItems": 20,
+                          "type": "array"
+                        },
+                        "retries": {
+                          "description": "Retry behavior. Top-level fields adjust every operation; operations maps operationId or \"METHOD /path\" keys to per-operation overrides.",
+                          "type": "object"
+                        },
+                        "pagination": {
+                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
+                          "type": "object"
+                        },
+                        "auth": {
+                          "description": "Public authentication defaults for generated clients and tools. Stored Projects own the OAuth server, application catalog, and identity policy; one-shot generation accepts the same shape for one run. Runtime credentials and client secrets are never accepted.",
+                          "type": "object"
+                        },
+                        "cli": {
+                          "description": "How the generated CLI behaves. Part of Config.",
+                          "type": "object"
+                        },
+                        "mcp": {
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
+                          "type": "object"
+                        },
+                        "readme": {
+                          "description": "Generated README behavior. Part of Config.",
+                          "type": "object"
+                        },
+                        "package": {
+                          "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
+                          "type": "object"
+                        },
+                        "docs_url": {
+                          "format": "uri",
+                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs URL.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "docs_index_url": {
+                          "format": "uri",
+                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "updated_at": {
+                  "format": "date-time",
+                  "description": "When the project configuration last changed.",
+                  "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether another page exists"
+          },
+          "nextPage": {
+            "type": "object",
+            "description": "Arguments that fetch the next page; pass them to this tool",
+            "additionalProperties": true
+          },
+          "truncated": {
+            "type": "object",
+            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
+            "additionalProperties": true
+          }
+        }
+      },
+      "example_arguments": {}
+    },
+    {
       "operation": "projects.get",
       "signature": "typeship projects get <project_id> [flags]",
       "command": [
@@ -2292,98 +2292,6 @@
             "format": "date-time",
             "description": "When the project configuration last changed.",
             "type": "string"
-          },
-          "request_id": {
-            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-            "examples": [
-              "req_3k8m1v6q9p2d7h4c"
-            ],
-            "pattern": "^req_[a-z0-9]{16}$",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "example_arguments": {
-        "project_id": "prj_4f8k2m7x9q1v6b3n"
-      }
-    },
-    {
-      "operation": "projects.delete",
-      "signature": "typeship projects delete <project_id> [flags]",
-      "command": [
-        "typeship",
-        "projects",
-        "delete"
-      ],
-      "parameters": [
-        {
-          "name": "project_id",
-          "positional": true,
-          "in": "path",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "If-Match",
-          "flag": "--if-match",
-          "in": "header",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship projects delete prj_4f8k2m7x9q1v6b3n --force",
-      "method": "DELETE",
-      "path": "/projects/{project_id}",
-      "summary": "Delete a Project",
-      "description": "A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
-      "safety": "destructive",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": false,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "project_id": {
-            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
-            "examples": [
-              "example-name",
-              "prj_4f8k2m7x9q1v6b3n"
-            ],
-            "type": "string"
-          },
-          "If-Match": {
-            "minLength": 1,
-            "maxLength": 1024,
-            "type": "string",
-            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
-          }
-        },
-        "required": [
-          "project_id"
-        ]
-      },
-      "output_schema": {
-        "properties": {
-          "id": {
-            "description": "Unique identifier for a project.",
-            "examples": [
-              "prj_4f8k2m7x9q1v6b3n"
-            ],
-            "pattern": "^prj_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "object": {
-            "const": "project",
-            "type": "string"
-          },
-          "deleted": {
-            "const": true,
-            "type": "boolean"
           },
           "request_id": {
             "description": "Server-generated identifier used to correlate this response with Typeship logs.",
@@ -2957,6 +2865,98 @@
       "example_arguments": {
         "project_id": "prj_4f8k2m7x9q1v6b3n",
         "auto_generate": false
+      }
+    },
+    {
+      "operation": "projects.delete",
+      "signature": "typeship projects delete <project_id> [flags]",
+      "command": [
+        "typeship",
+        "projects",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "project_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "If-Match",
+          "flag": "--if-match",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship projects delete prj_4f8k2m7x9q1v6b3n --force",
+      "method": "DELETE",
+      "path": "/projects/{project_id}",
+      "summary": "Delete a Project",
+      "description": "A `502 repository_unavailable` means the Project was not deleted because its release pull requests could not be retired. Retry deletion to finish retiring the remaining reviews. Repeating a completed deletion returns `404`.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "destructive",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
+            "examples": [
+              "example-name",
+              "prj_4f8k2m7x9q1v6b3n"
+            ],
+            "type": "string"
+          },
+          "If-Match": {
+            "minLength": 1,
+            "maxLength": 1024,
+            "type": "string",
+            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "description": "Unique identifier for a project.",
+            "examples": [
+              "prj_4f8k2m7x9q1v6b3n"
+            ],
+            "pattern": "^prj_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "project",
+            "type": "string"
+          },
+          "deleted": {
+            "const": true,
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "project_id": "prj_4f8k2m7x9q1v6b3n"
       }
     },
     {
@@ -5409,338 +5409,6 @@
       }
     },
     {
-      "operation": "targets.list",
-      "signature": "typeship targets list [flags]",
-      "command": [
-        "typeship",
-        "targets",
-        "list"
-      ],
-      "parameters": [
-        {
-          "name": "limit",
-          "flag": "--limit",
-          "in": "query",
-          "type": "number",
-          "required": false
-        },
-        {
-          "name": "cursor",
-          "flag": "--cursor",
-          "in": "query",
-          "type": "string",
-          "required": false
-        },
-        {
-          "name": "project_id",
-          "flag": "--project-id",
-          "in": "query",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship targets list",
-      "method": "GET",
-      "path": "/targets",
-      "summary": "List Targets",
-      "safety": "read",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": true,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "default": 20,
-            "minimum": 1,
-            "maximum": 100,
-            "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
-          },
-          "cursor": {
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
-          },
-          "project_id": {
-            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
-            "examples": [
-              "example-name",
-              "prj_4f8k2m7x9q1v6b3n"
-            ],
-            "type": "string"
-          }
-        }
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "description": "All Targets follow reviewed SemVer.",
-              "properties": {
-                "id": {
-                  "description": "Stable identifier for one configured generated product.",
-                  "examples": [
-                    "tgt_5m8q2v7k1p9d4h6c"
-                  ],
-                  "pattern": "^tgt_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "target",
-                  "type": "string"
-                },
-                "project_id": {
-                  "description": "Unique identifier for a project.",
-                  "examples": [
-                    "prj_4f8k2m7x9q1v6b3n"
-                  ],
-                  "pattern": "^prj_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "spec_id": {
-                  "description": "Unique identifier for a project's logical API Spec.",
-                  "examples": [
-                    "spec_2p8m4q7k1v9d6h3c"
-                  ],
-                  "pattern": "^spec_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "type": {
-                  "enum": [
-                    "cli",
-                    "go_cli",
-                    "mcp",
-                    "typescript_sdk",
-                    "python_sdk",
-                    "go_sdk"
-                  ],
-                  "description": "Generator implementation selected by a Target.",
-                  "type": "string"
-                },
-                "dependency": {
-                  "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
-                  "anyOf": [
-                    {
-                      "description": "One Target generated from a sibling Target.",
-                      "properties": {
-                        "type": {
-                          "const": "go_sdk_module",
-                          "type": "string"
-                        },
-                        "target_id": {
-                          "description": "Stable identifier for one configured generated product.",
-                          "examples": [
-                            "tgt_5m8q2v7k1p9d4h6c"
-                          ],
-                          "pattern": "^tgt_[a-z0-9]{16}$",
-                          "type": "string"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "status": {
-                  "enum": [
-                    "active",
-                    "disabled"
-                  ],
-                  "type": "string"
-                },
-                "release_channel": {
-                  "enum": [
-                    "stable",
-                    "prerelease"
-                  ],
-                  "type": "string"
-                },
-                "version_current": {
-                  "description": "Read-only version of the Target's latest release, or null before its first release.",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "draft_id": {
-                  "description": "Unique identifier for a Draft.",
-                  "examples": [
-                    "drf_3q7m1v8k2p5d9h4c"
-                  ],
-                  "pattern": "^drf_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "checks": {
-                  "description": "Required checks run against the code in the Draft.",
-                  "properties": {
-                    "generated": {
-                      "default": [
-                        "build",
-                        "package",
-                        "public_entrypoint"
-                      ],
-                      "uniqueItems": true,
-                      "items": {
-                        "enum": [
-                          "build",
-                          "package",
-                          "public_entrypoint"
-                        ],
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "repository_required": {
-                      "maxItems": 50,
-                      "uniqueItems": true,
-                      "items": {
-                        "minLength": 1,
-                        "maxLength": 120,
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "customer": {
-                      "maxItems": 20,
-                      "items": {
-                        "type": "object"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                },
-                "config": {
-                  "description": "Target-specific overrides merged over Project.config.",
-                  "anyOf": [
-                    {
-                      "description": "Target-specific generation and delivery overrides.",
-                      "properties": {
-                        "globals": {
-                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
-                          "maxItems": 20,
-                          "type": "array"
-                        },
-                        "retries": {
-                          "description": "Retry behavior.",
-                          "type": "object"
-                        },
-                        "pagination": {
-                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
-                          "type": "object"
-                        },
-                        "auth": {
-                          "description": "Selects a Project OAuth application for one Target.",
-                          "type": "object"
-                        },
-                        "cli": {
-                          "description": "How the generated CLI behaves.",
-                          "type": "object"
-                        },
-                        "mcp": {
-                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
-                          "type": "object"
-                        },
-                        "readme": {
-                          "description": "Generated README behavior.",
-                          "type": "object"
-                        },
-                        "package": {
-                          "description": "Published-package metadata the API spec does not own.",
-                          "type": "object"
-                        },
-                        "docs_url": {
-                          "format": "uri",
-                          "description": "The API's documentation site.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "docs_index_url": {
-                          "format": "uri",
-                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "deliveries": {
-                  "description": "At most one repository and one hosted MCP Delivery.",
-                  "maxItems": 2,
-                  "items": {
-                    "anyOf": [
-                      {
-                        "type": "object"
-                      },
-                      {
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "type": "array"
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "request_id": {
-                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-                  "examples": [
-                    "req_3k8m1v6q9p2d7h4c"
-                  ],
-                  "pattern": "^req_[a-z0-9]{16}$",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            }
-          },
-          "hasMore": {
-            "type": "boolean",
-            "description": "Whether another page exists"
-          },
-          "nextPage": {
-            "type": "object",
-            "description": "Arguments that fetch the next page; pass them to this tool",
-            "additionalProperties": true
-          },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to ge…",
-            "additionalProperties": true
-          }
-        }
-      },
-      "example_arguments": {}
-    },
-    {
       "operation": "targets.create",
       "signature": "typeship targets create [flags]",
       "command": [
@@ -6616,6 +6284,338 @@
       }
     },
     {
+      "operation": "targets.list",
+      "signature": "typeship targets list [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "project_id",
+          "flag": "--project-id",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets list",
+      "method": "GET",
+      "path": "/targets",
+      "summary": "List Targets",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "type": "integer",
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
+          },
+          "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string",
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
+          },
+          "project_id": {
+            "description": "Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list.",
+            "examples": [
+              "example-name",
+              "prj_4f8k2m7x9q1v6b3n"
+            ],
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "description": "All Targets follow reviewed SemVer.",
+              "properties": {
+                "id": {
+                  "description": "Stable identifier for one configured generated product.",
+                  "examples": [
+                    "tgt_5m8q2v7k1p9d4h6c"
+                  ],
+                  "pattern": "^tgt_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "object": {
+                  "const": "target",
+                  "type": "string"
+                },
+                "project_id": {
+                  "description": "Unique identifier for a project.",
+                  "examples": [
+                    "prj_4f8k2m7x9q1v6b3n"
+                  ],
+                  "pattern": "^prj_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "spec_id": {
+                  "description": "Unique identifier for a project's logical API Spec.",
+                  "examples": [
+                    "spec_2p8m4q7k1v9d6h3c"
+                  ],
+                  "pattern": "^spec_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "cli",
+                    "go_cli",
+                    "mcp",
+                    "typescript_sdk",
+                    "python_sdk",
+                    "go_sdk"
+                  ],
+                  "description": "Generator implementation selected by a Target.",
+                  "type": "string"
+                },
+                "dependency": {
+                  "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
+                  "anyOf": [
+                    {
+                      "description": "One Target generated from a sibling Target.",
+                      "properties": {
+                        "type": {
+                          "const": "go_sdk_module",
+                          "type": "string"
+                        },
+                        "target_id": {
+                          "description": "Stable identifier for one configured generated product.",
+                          "examples": [
+                            "tgt_5m8q2v7k1p9d4h6c"
+                          ],
+                          "pattern": "^tgt_[a-z0-9]{16}$",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "active",
+                    "disabled"
+                  ],
+                  "type": "string"
+                },
+                "release_channel": {
+                  "enum": [
+                    "stable",
+                    "prerelease"
+                  ],
+                  "type": "string"
+                },
+                "version_current": {
+                  "description": "Read-only version of the Target's latest release, or null before its first release.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "draft_id": {
+                  "description": "Unique identifier for a Draft.",
+                  "examples": [
+                    "drf_3q7m1v8k2p5d9h4c"
+                  ],
+                  "pattern": "^drf_[a-z0-9]{16}$",
+                  "type": "string"
+                },
+                "checks": {
+                  "description": "Required checks run against the code in the Draft.",
+                  "properties": {
+                    "generated": {
+                      "default": [
+                        "build",
+                        "package",
+                        "public_entrypoint"
+                      ],
+                      "uniqueItems": true,
+                      "items": {
+                        "enum": [
+                          "build",
+                          "package",
+                          "public_entrypoint"
+                        ],
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "repository_required": {
+                      "maxItems": 50,
+                      "uniqueItems": true,
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "customer": {
+                      "maxItems": 20,
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                },
+                "config": {
+                  "description": "Target-specific overrides merged over Project.config.",
+                  "anyOf": [
+                    {
+                      "description": "Target-specific generation and delivery overrides.",
+                      "properties": {
+                        "globals": {
+                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
+                          "maxItems": 20,
+                          "type": "array"
+                        },
+                        "retries": {
+                          "description": "Retry behavior.",
+                          "type": "object"
+                        },
+                        "pagination": {
+                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
+                          "type": "object"
+                        },
+                        "auth": {
+                          "description": "Selects a Project OAuth application for one Target.",
+                          "type": "object"
+                        },
+                        "cli": {
+                          "description": "How the generated CLI behaves.",
+                          "type": "object"
+                        },
+                        "mcp": {
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                          "type": "object"
+                        },
+                        "readme": {
+                          "description": "Generated README behavior.",
+                          "type": "object"
+                        },
+                        "package": {
+                          "description": "Published-package metadata the API spec does not own.",
+                          "type": "object"
+                        },
+                        "docs_url": {
+                          "format": "uri",
+                          "description": "The API's documentation site.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "docs_index_url": {
+                          "format": "uri",
+                          "description": "Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deliveries": {
+                  "description": "At most one repository and one hosted MCP Delivery.",
+                  "maxItems": 2,
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "object"
+                      },
+                      {
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                "created_at": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "updated_at": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "request_id": {
+                  "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+                  "examples": [
+                    "req_3k8m1v6q9p2d7h4c"
+                  ],
+                  "pattern": "^req_[a-z0-9]{16}$",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether another page exists"
+          },
+          "nextPage": {
+            "type": "object",
+            "description": "Arguments that fetch the next page; pass them to this tool",
+            "additionalProperties": true
+          },
+          "truncated": {
+            "type": "object",
+            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to ge…",
+            "additionalProperties": true
+          }
+        }
+      },
+      "example_arguments": {}
+    },
+    {
       "operation": "targets.get",
       "signature": "typeship targets get <target_id> [flags]",
       "command": [
@@ -6885,98 +6885,6 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
-          },
-          "request_id": {
-            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-            "examples": [
-              "req_3k8m1v6q9p2d7h4c"
-            ],
-            "pattern": "^req_[a-z0-9]{16}$",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "example_arguments": {
-        "target_id": "tgt_5m8q2v7k1p9d4h6c"
-      }
-    },
-    {
-      "operation": "targets.delete",
-      "signature": "typeship targets delete <target_id> [flags]",
-      "command": [
-        "typeship",
-        "targets",
-        "delete"
-      ],
-      "parameters": [
-        {
-          "name": "target_id",
-          "positional": true,
-          "in": "path",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "If-Match",
-          "flag": "--if-match",
-          "in": "header",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship targets delete tgt_5m8q2v7k1p9d4h6c --force",
-      "method": "DELETE",
-      "path": "/targets/{target_id}",
-      "summary": "Delete a Target",
-      "description": "Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
-      "safety": "destructive",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": false,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "target_id": {
-            "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
-            "examples": [
-              "example-name",
-              "tgt_5m8q2v7k1p9d4h6c"
-            ],
-            "type": "string"
-          },
-          "If-Match": {
-            "minLength": 1,
-            "maxLength": 1024,
-            "type": "string",
-            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
-          }
-        },
-        "required": [
-          "target_id"
-        ]
-      },
-      "output_schema": {
-        "properties": {
-          "id": {
-            "description": "Stable identifier for one configured generated product.",
-            "examples": [
-              "tgt_5m8q2v7k1p9d4h6c"
-            ],
-            "pattern": "^tgt_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "object": {
-            "const": "target",
-            "type": "string"
-          },
-          "deleted": {
-            "const": true,
-            "type": "boolean"
           },
           "request_id": {
             "description": "Server-generated identifier used to correlate this response with Typeship logs.",
@@ -7717,6 +7625,98 @@
       }
     },
     {
+      "operation": "targets.delete",
+      "signature": "typeship targets delete <target_id> [flags]",
+      "command": [
+        "typeship",
+        "targets",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "target_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "If-Match",
+          "flag": "--if-match",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship targets delete tgt_5m8q2v7k1p9d4h6c --force",
+      "method": "DELETE",
+      "path": "/targets/{target_id}",
+      "summary": "Delete a Target",
+      "description": "Deletes a Target with no Generation history, release history, or active Draft. A `409 resource_has_dependencies` means one of those resources still depends on it. Retrieve the Target, disable it instead, or resolve the dependency before retrying.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "destructive",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
+            "examples": [
+              "example-name",
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "type": "string"
+          },
+          "If-Match": {
+            "minLength": 1,
+            "maxLength": 1024,
+            "type": "string",
+            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
+          }
+        },
+        "required": [
+          "target_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "target",
+            "type": "string"
+          },
+          "deleted": {
+            "const": true,
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "target_id": "tgt_5m8q2v7k1p9d4h6c"
+      }
+    },
+    {
       "operation": "targets.adopt",
       "signature": "typeship targets adopt <target_id> [flags]",
       "command": [
@@ -8142,271 +8142,6 @@
       }
     },
     {
-      "operation": "deliveries.list",
-      "signature": "typeship deliveries list [flags]",
-      "command": [
-        "typeship",
-        "deliveries",
-        "list"
-      ],
-      "parameters": [
-        {
-          "name": "limit",
-          "flag": "--limit",
-          "in": "query",
-          "type": "number",
-          "required": false
-        },
-        {
-          "name": "cursor",
-          "flag": "--cursor",
-          "in": "query",
-          "type": "string",
-          "required": false
-        },
-        {
-          "name": "target_id",
-          "flag": "--target-id",
-          "in": "query",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship deliveries list",
-      "method": "GET",
-      "path": "/deliveries",
-      "summary": "List Deliveries",
-      "safety": "read",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": true,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "default": 20,
-            "minimum": 1,
-            "maximum": 100,
-            "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
-          },
-          "cursor": {
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
-          },
-          "target_id": {
-            "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
-            "examples": [
-              "example-name",
-              "tgt_5m8q2v7k1p9d4h6c"
-            ],
-            "type": "string"
-          }
-        }
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "properties": {
-                    "id": {
-                      "examples": [
-                        "dlv_4q8m2v7k1p9d5h6c"
-                      ],
-                      "pattern": "^dlv_[a-z0-9]{16}$",
-                      "type": "string"
-                    },
-                    "object": {
-                      "const": "delivery",
-                      "type": "string"
-                    },
-                    "target_id": {
-                      "description": "Stable identifier for one configured generated product.",
-                      "examples": [
-                        "tgt_5m8q2v7k1p9d4h6c"
-                      ],
-                      "pattern": "^tgt_[a-z0-9]{16}$",
-                      "type": "string"
-                    },
-                    "type": {
-                      "const": "repository",
-                      "type": "string"
-                    },
-                    "status": {
-                      "enum": [
-                        "active",
-                        "action_required",
-                        "disabled"
-                      ],
-                      "description": "active: the repository accepts generated changes. action_required: inspect issues for the correction. disabled: the Target is disabled and receives no changes.",
-                      "type": "string"
-                    },
-                    "repository": {
-                      "properties": {
-                        "provider": {
-                          "enum": [
-                            "github"
-                          ],
-                          "description": "GitHub is the only launch provider; the field is stable for future adapters.",
-                          "type": "string"
-                        },
-                        "identifier": {
-                          "description": "Provider-native repository identity, opaque outside its adapter.",
-                          "examples": [
-                            "parcel-example/api"
-                          ],
-                          "maxLength": 512,
-                          "type": "string"
-                        },
-                        "directory": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "package_name": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "module_path": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "publish_on_merge": {
-                          "type": "boolean"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "issues": {
-                      "items": {
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "required_checks": {
-                      "description": "Repository check names Typeship expects before accepting a Draft.",
-                      "items": {
-                        "type": "string"
-                      },
-                      "type": "array"
-                    },
-                    "last_event": {
-                      "description": "Last observed repository event relevant to this Delivery, if available. A failed event adds an actionable issue.",
-                      "anyOf": [
-                        {
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "created_at": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                {
-                  "properties": {
-                    "id": {
-                      "examples": [
-                        "dlv_4q8m2v7k1p9d5h6c"
-                      ],
-                      "pattern": "^dlv_[a-z0-9]{16}$",
-                      "type": "string"
-                    },
-                    "object": {
-                      "const": "delivery",
-                      "type": "string"
-                    },
-                    "target_id": {
-                      "description": "Stable identifier for one configured generated product.",
-                      "examples": [
-                        "tgt_5m8q2v7k1p9d4h6c"
-                      ],
-                      "pattern": "^tgt_[a-z0-9]{16}$",
-                      "type": "string"
-                    },
-                    "type": {
-                      "const": "hosted_mcp",
-                      "type": "string"
-                    },
-                    "status": {
-                      "enum": [
-                        "active",
-                        "disabled"
-                      ],
-                      "description": "active: the endpoint serves the Target's latest accepted package. disabled: the Target is disabled and the endpoint is paused.",
-                      "type": "string"
-                    },
-                    "hosted_mcp": {
-                      "properties": {
-                        "url": {
-                          "format": "uri",
-                          "description": "Hosted MCP endpoint for this Target, or null while it is being provisioned.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "created_at": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              ]
-            }
-          },
-          "hasMore": {
-            "type": "boolean",
-            "description": "Whether another page exists"
-          },
-          "nextPage": {
-            "type": "object",
-            "description": "Arguments that fetch the next page; pass them to this tool",
-            "additionalProperties": true
-          },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
-          }
-        }
-      },
-      "example_arguments": {}
-    },
-    {
       "operation": "deliveries.create",
       "signature": "typeship deliveries create [flags]",
       "command": [
@@ -8745,6 +8480,271 @@
       }
     },
     {
+      "operation": "deliveries.list",
+      "signature": "typeship deliveries list [flags]",
+      "command": [
+        "typeship",
+        "deliveries",
+        "list"
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "flag": "--limit",
+          "in": "query",
+          "type": "number",
+          "required": false
+        },
+        {
+          "name": "cursor",
+          "flag": "--cursor",
+          "in": "query",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "target_id",
+          "flag": "--target-id",
+          "in": "query",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship deliveries list",
+      "method": "GET",
+      "path": "/deliveries",
+      "summary": "List Deliveries",
+      "safety": "read",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": true,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "default": 20,
+            "minimum": 1,
+            "maximum": 100,
+            "type": "integer",
+            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
+          },
+          "cursor": {
+            "minLength": 1,
+            "maxLength": 2048,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string",
+            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product. Accepts an ID or an exact name (resolved via targets_list). IDs come from targets_list.",
+            "examples": [
+              "example-name",
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "type": "string"
+          }
+        }
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "id": {
+                      "examples": [
+                        "dlv_4q8m2v7k1p9d5h6c"
+                      ],
+                      "pattern": "^dlv_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    "object": {
+                      "const": "delivery",
+                      "type": "string"
+                    },
+                    "target_id": {
+                      "description": "Stable identifier for one configured generated product.",
+                      "examples": [
+                        "tgt_5m8q2v7k1p9d4h6c"
+                      ],
+                      "pattern": "^tgt_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "repository",
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "active",
+                        "action_required",
+                        "disabled"
+                      ],
+                      "description": "active: the repository accepts generated changes. action_required: inspect issues for the correction. disabled: the Target is disabled and receives no changes.",
+                      "type": "string"
+                    },
+                    "repository": {
+                      "properties": {
+                        "provider": {
+                          "enum": [
+                            "github"
+                          ],
+                          "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                          "type": "string"
+                        },
+                        "identifier": {
+                          "description": "Provider-native repository identity, opaque outside its adapter.",
+                          "examples": [
+                            "parcel-example/api"
+                          ],
+                          "maxLength": 512,
+                          "type": "string"
+                        },
+                        "directory": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "package_name": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "module_path": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "publish_on_merge": {
+                          "type": "boolean"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "issues": {
+                      "items": {
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "required_checks": {
+                      "description": "Repository check names Typeship expects before accepting a Draft.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "last_event": {
+                      "description": "Last observed repository event relevant to this Delivery, if available. A failed event adds an actionable issue.",
+                      "anyOf": [
+                        {
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "id": {
+                      "examples": [
+                        "dlv_4q8m2v7k1p9d5h6c"
+                      ],
+                      "pattern": "^dlv_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    "object": {
+                      "const": "delivery",
+                      "type": "string"
+                    },
+                    "target_id": {
+                      "description": "Stable identifier for one configured generated product.",
+                      "examples": [
+                        "tgt_5m8q2v7k1p9d4h6c"
+                      ],
+                      "pattern": "^tgt_[a-z0-9]{16}$",
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "hosted_mcp",
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "active",
+                        "disabled"
+                      ],
+                      "description": "active: the endpoint serves the Target's latest accepted package. disabled: the Target is disabled and the endpoint is paused.",
+                      "type": "string"
+                    },
+                    "hosted_mcp": {
+                      "properties": {
+                        "url": {
+                          "format": "uri",
+                          "description": "Hosted MCP endpoint for this Target, or null while it is being provisioned.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "created_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              ]
+            }
+          },
+          "hasMore": {
+            "type": "boolean",
+            "description": "Whether another page exists"
+          },
+          "nextPage": {
+            "type": "object",
+            "description": "Arguments that fetch the next page; pass them to this tool",
+            "additionalProperties": true
+          },
+          "truncated": {
+            "type": "object",
+            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
+            "additionalProperties": true
+          }
+        }
+      },
+      "example_arguments": {}
+    },
+    {
       "operation": "deliveries.get",
       "signature": "typeship deliveries get <delivery_id> [flags]",
       "command": [
@@ -8948,96 +8948,6 @@
           "updated_at": {
             "format": "date-time",
             "type": "string"
-          },
-          "request_id": {
-            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-            "examples": [
-              "req_3k8m1v6q9p2d7h4c"
-            ],
-            "pattern": "^req_[a-z0-9]{16}$",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "example_arguments": {
-        "delivery_id": "dlv_4q8m2v7k1p9d5h6c"
-      }
-    },
-    {
-      "operation": "deliveries.delete",
-      "signature": "typeship deliveries delete <delivery_id> [flags]",
-      "command": [
-        "typeship",
-        "deliveries",
-        "delete"
-      ],
-      "parameters": [
-        {
-          "name": "delivery_id",
-          "positional": true,
-          "in": "path",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "If-Match",
-          "flag": "--if-match",
-          "in": "header",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force",
-      "method": "DELETE",
-      "path": "/deliveries/{delivery_id}",
-      "summary": "Delete a Delivery",
-      "description": "Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
-      "safety": "destructive",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": false,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "delivery_id": {
-            "examples": [
-              "dlv_4q8m2v7k1p9d5h6c"
-            ],
-            "pattern": "^dlv_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "If-Match": {
-            "minLength": 1,
-            "maxLength": 1024,
-            "type": "string",
-            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
-          }
-        },
-        "required": [
-          "delivery_id"
-        ]
-      },
-      "output_schema": {
-        "properties": {
-          "id": {
-            "examples": [
-              "dlv_4q8m2v7k1p9d5h6c"
-            ],
-            "pattern": "^dlv_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "object": {
-            "const": "delivery",
-            "type": "string"
-          },
-          "deleted": {
-            "const": true,
-            "type": "boolean"
           },
           "request_id": {
             "description": "Server-generated identifier used to correlate this response with Typeship logs.",
@@ -9355,6 +9265,96 @@
           "package_name": "parcel-client",
           "publish_on_merge": true
         }
+      }
+    },
+    {
+      "operation": "deliveries.delete",
+      "signature": "typeship deliveries delete <delivery_id> [flags]",
+      "command": [
+        "typeship",
+        "deliveries",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "delivery_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "If-Match",
+          "flag": "--if-match",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force",
+      "method": "DELETE",
+      "path": "/deliveries/{delivery_id}",
+      "summary": "Delete a Delivery",
+      "description": "Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "destructive",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "If-Match": {
+            "minLength": 1,
+            "maxLength": 1024,
+            "type": "string",
+            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
+          }
+        },
+        "required": [
+          "delivery_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "delivery",
+            "type": "string"
+          },
+          "deleted": {
+            "const": true,
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "delivery_id": "dlv_4q8m2v7k1p9d5h6c"
       }
     },
     {

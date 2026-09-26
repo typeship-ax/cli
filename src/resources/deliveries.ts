@@ -37,46 +37,6 @@ import type {
 export class DeliveriesResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List Deliveries
-   *
-   * Auto-paginates: `for await (const item of …)` walks every page.
-   * `GET /deliveries`
-   */
-  list(
-    params?: DeliveriesListParams,
-    options?: RequestOptions,
-  ): PagePromise<DeliveryRead, DeliveriesListError> {
-    return paginate<DeliveryRead, DeliveriesListError>(this._core, {
-      method: "GET",
-      path: "/deliveries",
-      security: [{"apiKey":[]}],
-      query: {
-        limit: params?.limit,
-        cursor: params?.cursor,
-        target_id: params?.targetId,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "deliveries.list",
-      options,
-    }, {
-      style: "cursor",
-      itemsField: "data",
-      cursorParam: "cursor",
-      nextCursorField: "next_cursor",
-      hasMoreField: "has_more",
-      limitParam: "limit",
-    });
-  }
-
-  /**
    * Create a Delivery
    *
    * Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each
@@ -124,6 +84,46 @@ export class DeliveriesResource {
   }
 
   /**
+   * List Deliveries
+   *
+   * Auto-paginates: `for await (const item of …)` walks every page.
+   * `GET /deliveries`
+   */
+  list(
+    params?: DeliveriesListParams,
+    options?: RequestOptions,
+  ): PagePromise<DeliveryRead, DeliveriesListError> {
+    return paginate<DeliveryRead, DeliveriesListError>(this._core, {
+      method: "GET",
+      path: "/deliveries",
+      security: [{"apiKey":[]}],
+      query: {
+        limit: params?.limit,
+        cursor: params?.cursor,
+        target_id: params?.targetId,
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "deliveries.list",
+      options,
+    }, {
+      style: "cursor",
+      itemsField: "data",
+      cursorParam: "cursor",
+      nextCursorField: "next_cursor",
+      hasMoreField: "has_more",
+      limitParam: "limit",
+    });
+  }
+
+  /**
    * Get a Delivery
    *
    * Returns the configured repository or hosted MCP Delivery for a Target. A Delivery in another
@@ -144,49 +144,6 @@ export class DeliveriesResource {
       },
       idempotent: true,
       schemaKey: "deliveries.get",
-      options,
-    });
-  }
-
-  /**
-   * Delete a Delivery
-   *
-   * Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open
-   * release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type
-   * later allocates a new ID and, for hosted MCP, a new URL.
-   *
-   * A `409 target_busy` means the Target is publishing; wait for it to finish. A `502
-   * follow_up_failed` means the Delivery was removed, but retiring an obsolete review or
-   * regenerating the Target failed.
-   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
-   * and If-Match.
-   * `DELETE /deliveries/{delivery_id}`
-   */
-  async delete(
-    deliveryId: DeliveryId,
-    params?: DeliveriesDeleteParams,
-    options?: RequestOptions,
-  ): Promise<DeletedDeliveryRead> {
-    return this._core.requestData<DeletedDeliveryRead, DeliveriesDeleteError>({
-      method: "DELETE",
-      path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
-      security: [{"apiKey":[]}],
-      headers: {
-        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
-      idempotent: true,
-      schemaKey: "deliveries.delete",
       options,
     });
   }
@@ -240,7 +197,76 @@ export class DeliveriesResource {
       options,
     });
   }
+
+  /**
+   * Delete a Delivery
+   *
+   * Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open
+   * release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type
+   * later allocates a new ID and, for hosted MCP, a new URL.
+   *
+   * A `409 target_busy` means the Target is publishing; wait for it to finish. A `502
+   * follow_up_failed` means the Delivery was removed, but retiring an obsolete review or
+   * regenerating the Target failed.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
+   * `DELETE /deliveries/{delivery_id}`
+   */
+  async delete(
+    deliveryId: DeliveryId,
+    params?: DeliveriesDeleteParams,
+    options?: RequestOptions,
+  ): Promise<DeletedDeliveryRead> {
+    return this._core.requestData<DeletedDeliveryRead, DeliveriesDeleteError>({
+      method: "DELETE",
+      path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "412": PreconditionFailedError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
+      },
+      idempotent: true,
+      schemaKey: "deliveries.delete",
+      options,
+    });
+  }
 }
+
+export interface DeliveriesCreateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
+   * and operation; generation without an organization uses a hashed network identity. Retrying the
+   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
+   * the key with changed intent returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Typed errors `create` can throw. */
+export type DeliveriesCreateError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
 
 export interface DeliveriesListParams {
   /**
@@ -275,32 +301,6 @@ export type DeliveriesListError =
   | TransportError
   | ValidationError;
 
-export interface DeliveriesCreateParams {
-  /**
-   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
-   * and operation; generation without an organization uses a hashed network identity. Retrying the
-   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
-   * the key with changed intent returns 409. After expiry the key starts a new write.
-   */
-  idempotencyKey?: string;
-}
-
-/** Typed errors `create` can throw. */
-export type DeliveriesCreateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
 /** Typed errors `get` can throw. */
 export type DeliveriesGetError =
   | UnauthorizedError
@@ -308,31 +308,6 @@ export type DeliveriesGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-export interface DeliveriesDeleteParams {
-  /**
-   * ETag from a preceding response. The write applies only if the resource still has that version;
-   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
-   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
-   */
-  ifMatch?: string;
-}
-
-/** Typed errors `delete` can throw. */
-export type DeliveriesDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -356,6 +331,31 @@ export type DeliveriesUpdateError =
   | ConflictError
   | PreconditionFailedError
   | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface DeliveriesDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
+/** Typed errors `delete` can throw. */
+export type DeliveriesDeleteError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | PreconditionFailedError
   | RateLimitedError
   | InternalServerError
   | BadGatewayError

@@ -37,16 +37,16 @@ test("unknown command exits 2 with a suggestion", async () => {
   assert.match(result.stderr, /Unknown command/);
 });
 
-test("typeship generate run round-trips through the mock", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"files\":[{\"path\":\"example\",\"content\":\"example\",\"mode\":\"100644\"}],\"download\":{\"url\":\"https://example.com\",\"expires_at\":\"2024-01-01T00:00:00Z\",\"sha256\":\"example\",\"size_bytes\":1,\"file_count\":1},\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"claim\":null,\"request_id\":\"req_abcdef0123456789\"}" });
+test("typeship projects create round-trips through the mock", async () => {
+  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"name\":\"example\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"auto_generate\":true,\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_server\":{\"issuer\":\"https://example.com\",\"discovery_url\":\"https://example.com\",\"authorization_url\":\"https://example.com\",\"token_url\":\"https://example.com\",\"device_authorization_url\":\"https://example.com\",\"scopes\":[\"S123\"],\"audience\":\"example\",\"resource\":\"https://example.com\"},\"oauth_applications\":{},\"oauth_application\":\"example\",\"identity_verification\":{\"subject_field\":\"/id\",\"account_field\":\"/account_id\",\"organization_field\":\"/organization_id\"},\"approval_url\":\"https://example.com\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_abcdef0123456789\"}" });
   try {
-    const result = await run([...["generate","run","--spec","{}","--target","{}"], "--debug"], { "TYPESHIP_BASE_URL": mock.url, "TYPESHIP_CREDENTIALS": "{\"apiKey\":\"test-token\"}" });
+    const result = await run([...["projects","create","--name","example","--spec","{}","--targets","[{}]"], "--debug"], { "TYPESHIP_BASE_URL": mock.url, "TYPESHIP_CREDENTIALS": "{\"apiKey\":\"test-token\"}" });
     assert.equal(result.status, 0, result.stderr);
     JSON.parse(result.stdout); // stdout is pure JSON
     assert.match(result.stderr, /req_abcdef0123456789/);
     const request = mock.requests[0];
     assert.equal(request.method, "POST");
-    assert.equal(request.path.split("?")[0], "/generate");
+    assert.equal(request.path.split("?")[0], "/projects");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
     mock.close();

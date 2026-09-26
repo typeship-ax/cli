@@ -19,7 +19,7 @@ import type { FileId, FileResponse, FileResponseRead } from "../types.js";
 export class FilesResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * Get a file
+   * Get a File
    *
    * Returns one bounded chunk of an immutable file: at most 24 KiB, as UTF-8 text or, for binary
    * bytes, base64. When next_cursor is not null, repeat the request with cursor and concatenate the

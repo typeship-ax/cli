@@ -45,7 +45,7 @@ export class SpecsResource {
   }
 
   /**
-   * Update and resolve a Spec
+   * Update a Spec
    *
    * Resolves the source files before saving the update and records a new Spec Revision when the
    * source changes.
@@ -94,7 +94,7 @@ export class SpecsResource {
   }
 
   /**
-   * Refresh a Spec from its configured source
+   * Refresh a Spec
    *
    * Fetches the configured source now and creates a new Spec Revision only when its content
    * changes. Diagnostics then reads that revision. If automatic generation is enabled, refresh

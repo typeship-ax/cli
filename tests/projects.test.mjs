@@ -5,20 +5,6 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
-test("projects.list GET /projects", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"name\":\"example\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"auto_generate\":true,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}]}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.projects.list(undefined);
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/projects");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
 test("projects.create POST /projects", async () => {
   const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"name\":\"example\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"auto_generate\":true,\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_server\":{\"issuer\":\"https://example.com\",\"discovery_url\":\"https://example.com\",\"authorization_url\":\"https://example.com\",\"token_url\":\"https://example.com\",\"device_authorization_url\":\"https://example.com\",\"scopes\":[\"S123\"],\"audience\":\"example\",\"resource\":\"https://example.com\"},\"oauth_applications\":{},\"oauth_application\":\"example\",\"identity_verification\":{\"subject_field\":\"/id\",\"account_field\":\"/account_id\",\"organization_field\":\"/organization_id\"},\"approval_url\":\"https://example.com\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
@@ -26,6 +12,20 @@ test("projects.create POST /projects", async () => {
     const result = await client.projects.create({"name":"example","spec":{"source":{"type":"url","url":{"url":"https://example.com","headers":{}}},"patches":[],"graphql":{"endpoint":"https://example.com","environments":[{"name":"example","url":"https://example.com"}],"auth":"bearer","api_key_header":"example","title":"example","scalars":{}},"diagnostic_policy":{"fail_on":"never","only_new":true,"suppressions":[]}},"targets":[{"name":"example","type":"cli","status":"active","release_channel":"stable","checks":{"generated":["build","package","public_entrypoint"],"repository_required":["example"],"customer":[{"name":"example","command":"example"}]},"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_application":"example","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example","relay":true},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"},"deliveries":[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/api","directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}}]}],"auto_generate":true,"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "POST");
+    assert.equal(request.path.split("?")[0], "/projects");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("projects.list GET /projects", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"name\":\"example\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"auto_generate\":true,\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_server\":{\"issuer\":\"https://example.com\",\"discovery_url\":\"https://example.com\",\"authorization_url\":\"https://example.com\",\"token_url\":\"https://example.com\",\"device_authorization_url\":\"https://example.com\",\"scopes\":[\"S123\"],\"audience\":\"example\",\"resource\":\"https://example.com\"},\"oauth_applications\":{},\"oauth_application\":\"example\",\"identity_verification\":{\"subject_field\":\"/id\",\"account_field\":\"/account_id\",\"organization_field\":\"/organization_id\"},\"approval_url\":\"https://example.com\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}]}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.projects.list(undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/projects");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
@@ -47,20 +47,6 @@ test("projects.get GET /projects/{project_id}", async () => {
   }
 });
 
-test("projects.delete DELETE /projects/{project_id}", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"deleted\":true,\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.projects.delete("test-project_id", undefined);
-    const request = mock.requests[0];
-    assert.equal(request.method, "DELETE");
-    assert.equal(request.path.split("?")[0], "/projects/test-project_id");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
 test("projects.update PATCH /projects/{project_id}", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"name\":\"example\",\"spec_id\":\"spec_2p8m4q7k1v9d6h3c\",\"auto_generate\":true,\"config\":{\"globals\":[\"example\"],\"retries\":{\"max_retries\":1,\"statuses\":[1],\"initial_delay_ms\":1,\"max_delay_ms\":1,\"retry_non_idempotent\":true,\"disabled\":true,\"operations\":{}},\"pagination\":{},\"auth\":{\"oauth_server\":{\"issuer\":\"https://example.com\",\"discovery_url\":\"https://example.com\",\"authorization_url\":\"https://example.com\",\"token_url\":\"https://example.com\",\"device_authorization_url\":\"https://example.com\",\"scopes\":[\"S123\"],\"audience\":\"example\",\"resource\":\"https://example.com\"},\"oauth_applications\":{},\"oauth_application\":\"example\",\"identity_verification\":{\"subject_field\":\"/id\",\"account_field\":\"/account_id\",\"organization_field\":\"/organization_id\"},\"approval_url\":\"https://example.com\",\"environments\":{}},\"cli\":{\"command_name\":\"example\",\"update_notice\":true,\"changelog_url\":\"example\",\"support_url\":\"example\",\"mcp_url\":\"example\",\"skills_repo\":\"example\"},\"mcp\":{\"registry_name\":\"example\",\"access\":{\"issuer\":\"https://example.com\",\"resource\":\"https://example.com\",\"jwks_url\":\"https://example.com\",\"scopes\":[\"example\"]},\"tool_mode\":\"auto\",\"instructions\":\"example\",\"tool_descriptions\":{},\"reference_resolvers\":{}},\"readme\":{\"quickstart_operation\":\"example\"},\"package\":{\"homepage\":\"example\",\"license\":\"example\",\"license_text\":\"example\",\"copyright\":\"example\",\"go_package_name\":\"example\"},\"docs_url\":\"https://example.com\",\"docs_index_url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
@@ -68,6 +54,20 @@ test("projects.update PATCH /projects/{project_id}", async () => {
     const result = await client.projects.update("test-project_id", {"name":"example","auto_generate":true,"config":{"globals":["example"],"retries":{"max_retries":1,"statuses":[1],"initial_delay_ms":1,"max_delay_ms":1,"retry_non_idempotent":true,"disabled":true,"operations":{}},"pagination":{},"auth":{"oauth_server":{"issuer":"https://example.com","discovery_url":"https://example.com","authorization_url":"https://example.com","token_url":"https://example.com","device_authorization_url":"https://example.com","scopes":["S123"],"audience":"example","resource":"https://example.com"},"oauth_applications":{},"oauth_application":"example","identity_verification":{"subject_field":"/id","account_field":"/account_id","organization_field":"/organization_id"},"approval_url":"https://example.com","environments":{}},"cli":{"command_name":"example","update_notice":true,"changelog_url":"example","support_url":"example","mcp_url":"example","skills_repo":"example"},"mcp":{"registry_name":"example","access":{"issuer":"https://example.com","resource":"https://example.com","jwks_url":"https://example.com","scopes":["example"]},"tool_mode":"auto","instructions":"example","tool_descriptions":{},"reference_resolvers":{}},"readme":{"quickstart_operation":"example"},"package":{"homepage":"example","license":"example","license_text":"example","copyright":"example","go_package_name":"example"},"docs_url":"https://example.com","docs_index_url":"https://example.com"}}, undefined);
     const request = mock.requests[0];
     assert.equal(request.method, "PATCH");
+    assert.equal(request.path.split("?")[0], "/projects/test-project_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("projects.delete DELETE /projects/{project_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"prj_4f8k2m7x9q1v6b3n\",\"object\":\"project\",\"deleted\":true,\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.projects.delete("test-project_id", undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "DELETE");
     assert.equal(request.path.split("?")[0], "/projects/test-project_id");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {

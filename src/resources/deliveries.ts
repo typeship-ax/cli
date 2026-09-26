@@ -8,26 +8,81 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
+  BadGatewayError,
   BadRequestError,
+  ConflictError,
   ForbiddenError,
   InternalServerError,
   NotFoundError,
+  PreconditionFailedError,
   RateLimitedError,
   UnauthorizedError,
+  UnprocessableEntityError,
 } from "../errors.js";
 import type {
+  DeletedDelivery,
+  DeletedDeliveryRead,
   Delivery,
+  DeliveryCreateRequest,
   DeliveryId,
   DeliveryList,
   DeliveryListRead,
   DeliveryRead,
   DeliveryResponse,
   DeliveryResponseRead,
+  DeliveryUpdateRequest,
   TargetId,
 } from "../types.js";
 
 export class DeliveriesResource {
   constructor(private readonly _core: HttpCore) {}
+  /**
+   * Create a Delivery
+   *
+   * Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each
+   * type; a `409 delivery_exists` means it already has one, so update that Delivery instead.
+   * With Project auto_generate enabled, adding a Delivery queues the Target's Generation. A queued
+   * or running Target reuses that Generation.
+   *
+   * A `409 delivery_conflict` means another Target owns the requested repository directory. A `409
+   * target_busy` means the Target is publishing; wait for it to finish.
+   * A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or
+   * regenerating the Target failed. Get the Delivery and follow the error's retryable and
+   * suggested_action fields.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
+   * `POST /deliveries`
+   */
+  async create(
+    body: DeliveryCreateRequest,
+    params?: DeliveriesCreateParams,
+    options?: RequestOptions,
+  ): Promise<DeliveryResponseRead> {
+    return this._core.requestData<DeliveryResponseRead, DeliveriesCreateError>({
+      method: "POST",
+      path: "/deliveries",
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
+      },
+      idempotencyKey: "Idempotency-Key",
+      schemaKey: "deliveries.create",
+      options,
+    });
+  }
+
   /**
    * List Deliveries
    *
@@ -92,7 +147,126 @@ export class DeliveriesResource {
       options,
     });
   }
+
+  /**
+   * Update a Delivery
+   *
+   * Replaces a repository Delivery's settings. Omitted optional settings reset to their defaults.
+   * Hosted MCP Deliveries have no settings to update.
+   * With Project auto_generate enabled, changing a Delivery queues the Target's Generation. A
+   * queued or running Target reuses that Generation.
+   * Omitting If-Match applies the update to the current Delivery; with If-Match, a stale ETag
+   * returns 412 precondition_failed without saving.
+   *
+   * A `409 delivery_conflict` means another Target owns the requested repository directory. A `409
+   * target_busy` means the Target is publishing; wait for it to finish.
+   * A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or
+   * regenerating the Target failed. Get the Delivery and follow the error's retryable and
+   * suggested_action fields.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
+   * `PATCH /deliveries/{delivery_id}`
+   */
+  async update(
+    deliveryId: DeliveryId,
+    body: DeliveryUpdateRequest,
+    params?: DeliveriesUpdateParams,
+    options?: RequestOptions,
+  ): Promise<DeliveryResponseRead> {
+    return this._core.requestData<DeliveryResponseRead, DeliveriesUpdateError>({
+      method: "PATCH",
+      path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "412": PreconditionFailedError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
+      },
+      schemaKey: "deliveries.update",
+      options,
+    });
+  }
+
+  /**
+   * Delete a Delivery
+   *
+   * Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open
+   * Draft pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type
+   * later allocates a new ID and, for hosted MCP, a new URL.
+   *
+   * A `409 target_busy` means the Target is publishing; wait for it to finish. A `502
+   * follow_up_failed` means the Delivery was removed, but retiring an obsolete review or
+   * regenerating the Target failed.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
+   * `DELETE /deliveries/{delivery_id}`
+   */
+  async delete(
+    deliveryId: DeliveryId,
+    params?: DeliveriesDeleteParams,
+    options?: RequestOptions,
+  ): Promise<DeletedDeliveryRead> {
+    return this._core.requestData<DeletedDeliveryRead, DeliveriesDeleteError>({
+      method: "DELETE",
+      path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "412": PreconditionFailedError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
+      },
+      idempotent: true,
+      schemaKey: "deliveries.delete",
+      options,
+    });
+  }
 }
+
+export interface DeliveriesCreateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
+   * and operation; generation without an organization uses a hashed network identity. Retrying the
+   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
+   * the key with changed intent returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Typed errors `create` can throw. */
+export type DeliveriesCreateError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
 
 export interface DeliveriesListParams {
   /**
@@ -134,6 +308,57 @@ export type DeliveriesGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface DeliveriesUpdateParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
+/** Typed errors `update` can throw. */
+export type DeliveriesUpdateError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | PreconditionFailedError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface DeliveriesDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
+/** Typed errors `delete` can throw. */
+export type DeliveriesDeleteError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | PreconditionFailedError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

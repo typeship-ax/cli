@@ -12,23 +12,22 @@ import {
 } from "./core/http.js";
 import { DEFS, SCHEMAS } from "./schemas.js";
 
-import { GenerateResource } from "./resources/generate.js";
 import { ProjectsResource } from "./resources/projects.js";
 import { SpecsResource } from "./resources/specs.js";
 import { SpecRevisionsResource } from "./resources/spec-revisions.js";
 import { TargetsResource } from "./resources/targets.js";
+import { DeliveriesResource } from "./resources/deliveries.js";
+import { GenerationsResource } from "./resources/generations.js";
 import { DraftsResource } from "./resources/drafts.js";
 import { ReleasesResource } from "./resources/releases.js";
-import { DeliveriesResource } from "./resources/deliveries.js";
-import { PublicationsResource } from "./resources/publications.js";
-import { GenerationsResource } from "./resources/generations.js";
 import { FilesResource } from "./resources/files.js";
+import { PackagesResource } from "./resources/packages.js";
 import { OrganizationResource } from "./resources/organization.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.22.0";
-const USER_AGENT = "@typeship-ax/cli/0.22.0";
+export const VERSION = "0.23.0";
+const USER_AGENT = "@typeship-ax/cli/0.23.0";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -83,7 +82,7 @@ export interface ClientOptions {
 }
 
 /**
- * typeship — v0.22.0
+ * typeship — v0.23.0
  *
  * Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
  * selected CLI, MCP, and SDK Target current.
@@ -100,17 +99,16 @@ export interface ClientOptions {
  * petstore Spec is a runnable sample.
  */
 export class TypeshipClient {
-  readonly generate: GenerateResource;
   readonly projects: ProjectsResource;
   readonly specs: SpecsResource;
   readonly specRevisions: SpecRevisionsResource;
   readonly targets: TargetsResource;
+  readonly deliveries: DeliveriesResource;
+  readonly generations: GenerationsResource;
   readonly drafts: DraftsResource;
   readonly releases: ReleasesResource;
-  readonly deliveries: DeliveriesResource;
-  readonly publications: PublicationsResource;
-  readonly generations: GenerationsResource;
   readonly files: FilesResource;
+  readonly packages: PackagesResource;
   readonly organization: OrganizationResource;
   readonly apiKeys: ApiKeysResource;
 
@@ -167,17 +165,16 @@ export class TypeshipClient {
       schemas: validate ? SCHEMAS : undefined,
       schemaDefs: validate ? DEFS : undefined,
     });
-    this.generate = new GenerateResource(core);
     this.projects = new ProjectsResource(core);
     this.specs = new SpecsResource(core);
     this.specRevisions = new SpecRevisionsResource(core);
     this.targets = new TargetsResource(core);
+    this.deliveries = new DeliveriesResource(core);
+    this.generations = new GenerationsResource(core);
     this.drafts = new DraftsResource(core);
     this.releases = new ReleasesResource(core);
-    this.deliveries = new DeliveriesResource(core);
-    this.publications = new PublicationsResource(core);
-    this.generations = new GenerationsResource(core);
     this.files = new FilesResource(core);
+    this.packages = new PackagesResource(core);
     this.organization = new OrganizationResource(core);
     this.apiKeys = new ApiKeysResource(core);
   }
@@ -195,16 +192,15 @@ export {
 } from "./core/http.js";
 export { Page, PagePromise } from "./core/pagination.js";
 
-export * from "./resources/generate.js";
 export * from "./resources/projects.js";
 export * from "./resources/specs.js";
 export * from "./resources/spec-revisions.js";
 export * from "./resources/targets.js";
+export * from "./resources/deliveries.js";
+export * from "./resources/generations.js";
 export * from "./resources/drafts.js";
 export * from "./resources/releases.js";
-export * from "./resources/deliveries.js";
-export * from "./resources/publications.js";
-export * from "./resources/generations.js";
 export * from "./resources/files.js";
+export * from "./resources/packages.js";
 export * from "./resources/organization.js";
 export * from "./resources/api-keys.js";

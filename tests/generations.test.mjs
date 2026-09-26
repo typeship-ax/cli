@@ -5,20 +5,6 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
-test("generations.list GET /generations", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"status\":\"queued\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"cli\",\"name\":\"example\",\"version\":\"example\",\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"file_count\":1,\"errors\":[{\"type\":\"request\",\"code\":\"input_invalid\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}]}" });
-  try {
-    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
-    const result = await client.generations.list(undefined);
-    const request = mock.requests[0];
-    assert.equal(request.method, "GET");
-    assert.equal(request.path.split("?")[0], "/generations");
-    assert.equal(request.headers["authorization"], "Bearer test-token");
-  } finally {
-    mock.close();
-  }
-});
-
 test("generations.get GET /generations/{generation_id}", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"status\":\"queued\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"cli\",\"name\":\"example\",\"version\":\"example\",\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"file_count\":1,\"errors\":[{\"type\":\"request\",\"code\":\"input_invalid\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
@@ -27,6 +13,20 @@ test("generations.get GET /generations/{generation_id}", async () => {
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
     assert.equal(request.path.split("?")[0], "/generations/test-generation_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("generations.list GET /generations", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"gen_7h2p5d9c3m8w1k6q\",\"object\":\"generation\",\"project_id\":\"prj_4f8k2m7x9q1v6b3n\",\"spec_revision_id\":\"srev_6m1q8v4k2p9d7h3c\",\"status\":\"queued\",\"trigger\":\"manual\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"cli\",\"name\":\"example\",\"version\":\"example\",\"warnings\":[{\"code\":\"example\",\"message\":\"example\",\"operation\":\"example\"}],\"coverage\":{\"generated\":1,\"omitted\":1,\"total\":1,\"omitted_operations\":[\"example\"],\"reason\":\"anonymous\",\"signup_url\":\"https://example.com\",\"upgrade_url\":\"https://example.com\"},\"file_count\":1,\"errors\":[{\"type\":\"request\",\"code\":\"input_invalid\",\"phase\":\"spec\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"field\":\"example\",\"in\":\"body\",\"message\":\"example\",\"retryable\":true,\"suggested_action\":\"example\",\"docs_url\":\"https://example.com\"}],\"runtime_ms\":1,\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}]}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.generations.list(undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/generations");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {
     mock.close();

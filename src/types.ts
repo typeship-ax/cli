@@ -34,8 +34,6 @@ export type DraftId = string;
 
 export type ReleaseId = string;
 
-export type PublicationId = string;
-
 /**
  * Generator implementation selected by a Target. This is configuration, not identity; several
  * Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a
@@ -352,6 +350,8 @@ export interface SpecRevisionFileListRead {
 }
 
 export interface GenerationResult {
+  /** One generated package. It has no ID: download it with download.url before download.expires_at. */
+  object: "package";
   files: GeneratedFile[];
   download?: GenerationDownload;
   warnings: GenerationWarning[];
@@ -372,6 +372,8 @@ export interface GenerationResult {
 
 /** Response shape for GenerationResult. */
 export interface GenerationResultRead {
+  /** One generated package. It has no ID: download it with download.url before download.expires_at. */
+  object: "package" | (string & {});
   files: GeneratedFileRead[];
   download?: GenerationDownload;
   warnings: GenerationWarning[];
@@ -451,17 +453,6 @@ export type RepositoryProvider = (typeof RepositoryProvider)[keyof typeof Reposi
 
 /** Provider-native repository identity, opaque outside its adapter. */
 export type RepositoryIdentifier = string;
-
-export interface RepositoryReference {
-  provider: RepositoryProvider;
-  identifier: RepositoryIdentifier;
-}
-
-/** Response shape for RepositoryReference. */
-export interface RepositoryReferenceRead {
-  provider: RepositoryProvider | (string & {});
-  identifier: RepositoryIdentifier;
-}
 
 export interface RepositorySpecSourceSettings {
   provider: RepositoryProvider;
@@ -606,8 +597,26 @@ export interface SpecPatchRead {
   reason?: string | null;
 }
 
-/** One exact place where a Diagnostic rule found evidence. */
+/**
+ * One exact place where a Diagnostic rule found evidence, with its own state under the Spec's
+ * Diagnostic policy.
+ */
 export interface DiagnosticLocation {
+  /**
+   * Whether this location fails the Spec's Diagnostic policy. Fix these locations to pass the
+   * policy.
+   */
+  blocking: boolean;
+  /**
+   * Whether this location is new since baseline_spec_revision_id in the Diagnostic summary. Always
+   * true when there is no baseline.
+   */
+  introduced: boolean;
+  /**
+   * Whether a reviewed exception in the Spec's Diagnostic policy covers this location, by its path
+   * or for the whole rule. Suppressed locations never block.
+   */
+  suppressed: boolean;
   /** Source file path from the Spec Revision when the finding maps to a captured file. */
   file_path?: string;
   /** The captured source file, present with file_path. Read it with getFile. */
@@ -659,13 +668,14 @@ export interface Diagnostic {
   id: string;
   object: "diagnostic";
   /**
-   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
-   * only_new is set, occurrences present in the baseline never block.
+   * Whether any location fails the Spec's Diagnostic policy. Each location's blocking field names
+   * which ones. Suppressed locations and, when only_new is set, locations present in the baseline
+   * never block.
    */
   blocking: boolean;
   /**
-   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
-   * true when there is no baseline.
+   * Whether any location is new since baseline_spec_revision_id in the Diagnostic summary. Each
+   * location's introduced field names which ones. Always true when there is no baseline.
    */
   introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
@@ -680,7 +690,10 @@ export interface Diagnostic {
   surfaces: Array<"api" | "sdk" | "cli" | "mcp">;
   /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** All affected coordinates, kept under one grouped diagnostic. */
+  /**
+   * The affected coordinates, kept under one grouped Diagnostic. With a filter, only the matching
+   * locations.
+   */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFix;
   /**
@@ -696,13 +709,14 @@ export interface DiagnosticRead {
   id: string;
   object: "diagnostic" | (string & {});
   /**
-   * Whether this Diagnostic fails the Spec's Diagnostic policy. Suppressed occurrences and, when
-   * only_new is set, occurrences present in the baseline never block.
+   * Whether any location fails the Spec's Diagnostic policy. Each location's blocking field names
+   * which ones. Suppressed locations and, when only_new is set, locations present in the baseline
+   * never block.
    */
   blocking: boolean;
   /**
-   * Whether any occurrence is new since baseline_spec_revision_id in the Diagnostic summary. Always
-   * true when there is no baseline.
+   * Whether any location is new since baseline_spec_revision_id in the Diagnostic summary. Each
+   * location's introduced field names which ones. Always true when there is no baseline.
    */
   introduced: boolean;
   /** Whether the rule reports invalid behavior, material risk, or an improvement. */
@@ -717,7 +731,10 @@ export interface DiagnosticRead {
   surfaces: Array<("api" | "sdk" | "cli" | "mcp") | (string & {})>;
   /** Whether remediation requires intent that the Spec cannot prove. */
   owner_decision_required: boolean;
-  /** All affected coordinates, kept under one grouped diagnostic. */
+  /**
+   * The affected coordinates, kept under one grouped Diagnostic. With a filter, only the matching
+   * locations.
+   */
   locations: DiagnosticLocation[];
   fix?: DiagnosticFixRead;
   /**
@@ -897,6 +914,69 @@ export type DeliveryInput = RepositoryDeliveryInput | HostedMcpDeliveryInput;
 export type DeliveryInputRead = RepositoryDeliveryInputRead
   | HostedMcpDeliveryInputRead
   | Record<string, unknown> & { type?: string };
+
+export interface RepositoryDeliveryCreateRequest {
+  target_id: TargetId;
+  type: "repository";
+  repository: RepositoryDeliverySettingsInput;
+}
+
+/** Response shape for RepositoryDeliveryCreateRequest. */
+export interface RepositoryDeliveryCreateRequestRead {
+  target_id: TargetId;
+  type: "repository" | (string & {});
+  repository: RepositoryDeliverySettingsInputRead;
+}
+
+export interface HostedMcpDeliveryCreateRequest {
+  target_id: TargetId;
+  type: "hosted_mcp";
+}
+
+/** Response shape for HostedMcpDeliveryCreateRequest. */
+export interface HostedMcpDeliveryCreateRequestRead {
+  target_id: TargetId;
+  type: "hosted_mcp" | (string & {});
+}
+
+export type DeliveryCreateRequest = RepositoryDeliveryCreateRequest | HostedMcpDeliveryCreateRequest;
+
+/** Response shape for DeliveryCreateRequest. */
+export type DeliveryCreateRequestRead = RepositoryDeliveryCreateRequestRead
+  | HostedMcpDeliveryCreateRequestRead
+  | Record<string, unknown> & { type?: string };
+
+export interface DeliveryUpdateRequest {
+  /**
+   * Replaces the complete repository settings, so omitted optional settings reset to their
+   * defaults. Only repository Deliveries have settings to update.
+   */
+  repository: RepositoryDeliverySettingsInput;
+}
+
+/** Response shape for DeliveryUpdateRequest. */
+export interface DeliveryUpdateRequestRead {
+  /**
+   * Replaces the complete repository settings, so omitted optional settings reset to their
+   * defaults. Only repository Deliveries have settings to update.
+   */
+  repository: RepositoryDeliverySettingsInputRead;
+}
+
+export interface DeletedDelivery {
+  id: DeliveryId;
+  object: "delivery";
+  deleted: true;
+  request_id: RequestId;
+}
+
+/** Response shape for DeletedDelivery. */
+export interface DeletedDeliveryRead {
+  id: DeliveryId;
+  object: "delivery" | (string & {});
+  deleted: true;
+  request_id: RequestId;
+}
 
 export interface RepositoryDeliverySettings {
   provider: RepositoryProvider;
@@ -1149,7 +1229,6 @@ export interface TargetChecksRead {
 export interface TargetCreateRequest {
   project_id: ProjectId;
   name: string;
-  spec_id: SpecId;
   type: GeneratorKind;
   /** Default: "active" */
   status?: "active" | "disabled";
@@ -1168,7 +1247,6 @@ export interface TargetCreateRequest {
 export interface TargetCreateRequestRead {
   project_id: ProjectId;
   name: string;
-  spec_id: SpecId;
   type: GeneratorKind | (string & {});
   /** Default: "active" */
   status?: ("active" | "disabled") | (string & {});
@@ -1226,14 +1304,6 @@ export interface TargetUpdateRequest {
    * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfig | null;
-  /**
-   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
-   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
-   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
-   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
-   * for hosted_mcp, a new URL.
-   */
-  deliveries?: DeliveryInput[];
 }
 
 /** Response shape for TargetUpdateRequest. */
@@ -1247,14 +1317,6 @@ export interface TargetUpdateRequestRead {
    * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfigRead | null;
-  /**
-   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
-   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
-   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
-   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
-   * for hosted_mcp, a new URL.
-   */
-  deliveries?: DeliveryInputRead[];
 }
 
 /**
@@ -1384,23 +1446,6 @@ export interface DeliveryListRead {
   request_id: RequestId;
 }
 
-export interface PublicationList {
-  object: ListObject;
-  data: Publication[];
-  has_more: boolean;
-  next_cursor: string | null;
-  request_id: RequestId;
-}
-
-/** Response shape for PublicationList. */
-export interface PublicationListRead {
-  object: ListObject;
-  data: PublicationRead[];
-  has_more: boolean;
-  next_cursor: string | null;
-  request_id: RequestId;
-}
-
 export interface DraftList {
   object: ListObject;
   data: Draft[];
@@ -1453,7 +1498,8 @@ export interface Release {
   origin: "typeship" | "imported";
   /** Immutable package version released from this Target. */
   version: string;
-  channel: "stable" | "prerelease";
+  /** The Target's release_channel when this version was released. */
+  release_channel: "stable" | "prerelease";
   repository: RepositoryReferenceResponse | null;
   spec_revision_id: SpecRevisionId | null;
   /**
@@ -1484,9 +1530,19 @@ export interface Release {
     imported_at: string | null;
   }
     | null;
+  /**
+   * One entry per destination Typeship has attempted to publish. Empty when publishing is off for
+   * the Target's repository Delivery.
+   */
   publications: Publication[];
   /** Format: date-time */
   created_at: string;
+  /**
+   * When a Publication of this release last changed. The version, commit, and checks never change
+   * after the release is created.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -1500,7 +1556,8 @@ export interface ReleaseRead {
   origin: ("typeship" | "imported") | (string & {});
   /** Immutable package version released from this Target. */
   version: string;
-  channel: ("stable" | "prerelease") | (string & {});
+  /** The Target's release_channel when this version was released. */
+  release_channel: ("stable" | "prerelease") | (string & {});
   repository: RepositoryReferenceResponseRead | null;
   spec_revision_id: SpecRevisionId | null;
   /**
@@ -1531,9 +1588,19 @@ export interface ReleaseRead {
     imported_at: string | null;
   }
     | null;
+  /**
+   * One entry per destination Typeship has attempted to publish. Empty when publishing is off for
+   * the Target's repository Delivery.
+   */
   publications: PublicationRead[];
   /** Format: date-time */
   created_at: string;
+  /**
+   * When a Publication of this release last changed. The version, commit, and checks never change
+   * after the release is created.
+   * Format: date-time
+   */
+  updated_at: string;
   request_id?: RequestId;
 }
 
@@ -1559,12 +1626,20 @@ export interface ReleaseListRead {
   request_id: RequestId;
 }
 
+/** One destination's publishing progress for its Release. It has no ID; read it on the Release. */
 export interface Publication {
-  id: PublicationId;
-  object: "publication";
-  release_id: ReleaseId;
-  destination: "github" | "npm" | "pypi" | "go" | "mcp";
-  status: "pending" | "publishing" | "published" | "failed" | "disabled";
+  /**
+   * Where the release is published. github is the repository's GitHub Release; the others are
+   * package registries.
+   */
+  type: "github" | "npm" | "pypi" | "go" | "mcp";
+  /**
+   * queued: the repository workflow has not started this destination; get the Publication or its
+   * Release again. running: the workflow is publishing; get it again. completed: the package is
+   * published at registry_url. failed: read errors, correct the cause, then retry the Release.
+   * Lifecycle events are publication.running, publication.completed, and publication.failed.
+   */
+  status: "queued" | "running" | "completed" | "failed";
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1587,11 +1662,18 @@ export interface Publication {
 
 /** Response shape for Publication. */
 export interface PublicationRead {
-  id: PublicationId;
-  object: "publication" | (string & {});
-  release_id: ReleaseId;
-  destination: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
-  status: ("pending" | "publishing" | "published" | "failed" | "disabled") | (string & {});
+  /**
+   * Where the release is published. github is the repository's GitHub Release; the others are
+   * package registries.
+   */
+  type: ("github" | "npm" | "pypi" | "go" | "mcp") | (string & {});
+  /**
+   * queued: the repository workflow has not started this destination; get the Publication or its
+   * Release again. running: the workflow is publishing; get it again. completed: the package is
+   * published at registry_url. failed: read errors, correct the cause, then retry the Release.
+   * Lifecycle events are publication.running, publication.completed, and publication.failed.
+   */
+  status: ("queued" | "running" | "completed" | "failed") | (string & {});
   attempt: number;
   /** Format: uri */
   run_url: string | null;
@@ -1612,20 +1694,15 @@ export interface PublicationRead {
   updated_at: string;
 }
 
-export type PublicationResponse = Publication & ResponseMetadata;
-
-/** Response shape for PublicationResponse. */
-export type PublicationResponseRead = PublicationRead & ResponseMetadata;
-
 /**
- * none: the open Draft has no pending change; generate the Target to start one. working: Typeship
+ * idle: the open Draft has no pending change; generate the Target to start one. working: Typeship
  * is generating, carrying repository edits forward, applying decisions, or checking the Draft;
  * retrieve it again. action_required: use the typed reason to find the customer's next action.
  * ready: required checks passed on head_sha; merge the pull request. merged: the pull request
  * merged and the Draft is final; retrieve the Target for the draft_id of its next Draft.
  */
 export const DraftStatus = {
-  NONE: "none",
+  IDLE: "idle",
   WORKING: "working",
   ACTION_REQUIRED: "action_required",
   READY: "ready",
@@ -1635,8 +1712,8 @@ export type DraftStatus = (typeof DraftStatus)[keyof typeof DraftStatus];
 
 /**
  * conflict: resolve the listed files. checks_failed: correct failed package checks. review_failed:
- * correct the Draft title, version, or other readiness finding. checks_unavailable: restore a
- * required check. history_rewritten: review the affected files and approve recovery.
+ * correct the Draft title or version. checks_unavailable: restore a required check.
+ * history_rewritten: review the affected files and approve recovery.
  */
 export const DraftActionReason = {
   CONFLICT: "conflict",
@@ -1664,65 +1741,52 @@ export interface DraftHistoryRecovery {
   preserved_branch: string | null;
 }
 
-/**
- * Readiness decision for the Draft's head_sha. Null readiness on the Draft means no Draft has been
- * generated.
- */
-export interface DraftReadiness {
+/** Comparison of the Draft's head_sha with the latest release. */
+export interface DraftCompatibility {
+  /** API surface comparison. unknown means analysis is unavailable. */
+  api: "compatible" | "breaking" | "unknown";
   /**
-   * success means required checks passed; failure means the Draft needs correction or review; error
-   * means assessment could not finish; pending means checks have not finished.
+   * Package and supported SDK source comparison. unknown means analysis is incomplete or
+   * unavailable.
    */
-  status: "success" | "failure" | "error" | "pending";
-  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
-  description: string;
-  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
-  compatibility_api: "compatible" | "breaking" | "unknown";
+  package: "compatible" | "breaking" | "unknown";
+}
+
+/** Response shape for DraftCompatibility. */
+export interface DraftCompatibilityRead {
+  /** API surface comparison. unknown means analysis is unavailable. */
+  api: ("compatible" | "breaking" | "unknown") | (string & {});
   /**
-   * Package and supported SDK source comparison against the latest release. unknown means analysis
-   * is incomplete or unavailable.
+   * Package and supported SDK source comparison. unknown means analysis is incomplete or
+   * unavailable.
    */
-  compatibility_package: "compatible" | "breaking" | "unknown";
-  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
-  version_correct: boolean | null;
+  package: ("compatible" | "breaking" | "unknown") | (string & {});
+}
+
+/** How version_next relates to the assessed change. */
+export interface DraftVersion {
   /**
    * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
    * has been determined.
    */
   bump_required: "major" | "minor" | "patch" | null;
+  /** Whether version_next satisfies the assessed change. Null when no verdict is available. */
+  correct: boolean | null;
   /** Latest release version used for the comparison. Null before the first release. */
-  version_previous: string | null;
-  /** Draft title error that must be corrected before release. Null when none is recorded. */
-  title_error: string | null;
+  previous: string | null;
 }
 
-/** Response shape for DraftReadiness. */
-export interface DraftReadinessRead {
-  /**
-   * success means required checks passed; failure means the Draft needs correction or review; error
-   * means assessment could not finish; pending means checks have not finished.
-   */
-  status: ("success" | "failure" | "error" | "pending") | (string & {});
-  /** Human-readable explanation of the current decision. Do not parse it for control flow. */
-  description: string;
-  /** API surface comparison against the latest release. unknown means analysis is unavailable. */
-  compatibility_api: ("compatible" | "breaking" | "unknown") | (string & {});
-  /**
-   * Package and supported SDK source comparison against the latest release. unknown means analysis
-   * is incomplete or unavailable.
-   */
-  compatibility_package: ("compatible" | "breaking" | "unknown") | (string & {});
-  /** Whether the version satisfies the assessed change. Null when no verdict is available. */
-  version_correct: boolean | null;
+/** Response shape for DraftVersion. */
+export interface DraftVersionRead {
   /**
    * Minimum assessed version bump. Approval never waives an insufficient bump. Null when no bump
    * has been determined.
    */
   bump_required: ("major" | "minor" | "patch" | null) | (string & {}) | null;
+  /** Whether version_next satisfies the assessed change. Null when no verdict is available. */
+  correct: boolean | null;
   /** Latest release version used for the comparison. Null before the first release. */
-  version_previous: string | null;
-  /** Draft title error that must be corrected before release. Null when none is recorded. */
-  title_error: string | null;
+  previous: string | null;
 }
 
 /**
@@ -1742,17 +1806,24 @@ export interface Draft {
   version_next: string | null;
   /** Where version_next was selected; null once the Draft merged. */
   version_source: "automatic" | "console" | "api" | "github" | null;
-  readiness: DraftReadiness | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  compatibility: DraftCompatibility | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  version: DraftVersion | null;
+  /**
+   * What blocks the Draft, one entry per finding, each with a code and suggested_action. Empty
+   * unless status is action_required.
+   */
+  errors: ErrorDetail[];
   changes: {
     /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
-   * resolving or discarding.
+   * Draft commit that compatibility, version, checks, and conflicts describe. Send it as
+   * expected_head_sha when resolving or discarding.
    */
   head_sha: string | null;
   /** The Draft pull request in the destination repository, or null before one is opened. */
@@ -1801,17 +1872,24 @@ export interface DraftRead {
   version_next: string | null;
   /** Where version_next was selected; null once the Draft merged. */
   version_source: ("automatic" | "console" | "api" | "github" | null) | (string & {}) | null;
-  readiness: DraftReadinessRead | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  compatibility: DraftCompatibilityRead | null;
+  /** Null until the Draft has a generated change, and on a merged Draft. */
+  version: DraftVersionRead | null;
+  /**
+   * What blocks the Draft, one entry per finding, each with a code and suggested_action. Empty
+   * unless status is action_required.
+   */
+  errors: ErrorDetailRead[];
   changes: {
     /** Cumulative changelog against the latest release. */
     changelog?: string | null;
     breaking_count?: number | null;
-    version_previous?: string | null;
   }
     | null;
   /**
-   * Draft commit that readiness, checks, and conflicts describe. Send it as expected_head_sha when
-   * resolving or discarding.
+   * Draft commit that compatibility, version, checks, and conflicts describe. Send it as
+   * expected_head_sha when resolving or discarding.
    */
   head_sha: string | null;
   /** The Draft pull request in the destination repository, or null before one is opened. */
@@ -2034,7 +2112,7 @@ export interface Project {
    * Format: date-time
    */
   updated_at: string;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
 /** Request shape for Project. */
@@ -2051,7 +2129,7 @@ export interface ProjectWrite {
    * settings remain Spec-owned.
    */
   config: ProjectConfigResponse | null;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
 /** Response shape for Project. */
@@ -2077,37 +2155,16 @@ export interface ProjectRead {
    * Format: date-time
    */
   updated_at: string;
-  request_id: RequestId;
+  request_id?: RequestId;
 }
 
-/**
- * Lean Project identity returned by collection endpoints. Retrieve the Project for shared
- * configuration and list its Targets for the complete canonical child collection.
- */
-export interface ProjectSummary {
-  id: ProjectId;
-  object: "project";
-  name: string;
-  spec_id: SpecId;
-  auto_generate: boolean;
-  /** Format: date-time */
-  created_at: string;
-  /** Format: date-time */
-  updated_at: string;
-}
+export type ProjectResponse = Project & ResponseMetadata;
 
-/** Response shape for ProjectSummary. */
-export interface ProjectSummaryRead {
-  id: ProjectId;
-  object: "project" | (string & {});
-  name: string;
-  spec_id: SpecId;
-  auto_generate: boolean;
-  /** Format: date-time */
-  created_at: string;
-  /** Format: date-time */
-  updated_at: string;
-}
+/** Request shape for ProjectResponse. */
+export type ProjectResponseWrite = ProjectWrite & ResponseMetadata;
+
+/** Response shape for ProjectResponse. */
+export type ProjectResponseRead = ProjectRead & ResponseMetadata;
 
 export interface CreateProjectRequest {
   name: string;
@@ -2918,19 +2975,6 @@ export interface PaginationRuleRead {
   limit_param?: string;
 }
 
-export interface FileStub {
-  path: string;
-  bytes: number;
-  mode: "100644" | "100755";
-}
-
-/** Response shape for FileStub. */
-export interface FileStubRead {
-  path: string;
-  bytes: number;
-  mode: ("100644" | "100755") | (string & {});
-}
-
 /**
  * A Generation moves from queued to running, then completes when its files are saved or fails.
  * Delivery and Draft status are separate.
@@ -3042,15 +3086,6 @@ export interface GenerationRead {
   updated_at: string;
 }
 
-/** Generation metadata returned by collection endpoints. */
-export type GenerationSummary = Generation;
-
-/** Request shape for GenerationSummary. */
-export type GenerationSummaryWrite = GenerationWrite;
-
-/** Response shape for GenerationSummary. */
-export type GenerationSummaryRead = GenerationRead;
-
 export type GenerationResponse = Generation & ResponseMetadata;
 
 /** Request shape for GenerationResponse. */
@@ -3059,42 +3094,24 @@ export type GenerationResponseWrite = GenerationWrite & ResponseMetadata;
 /** Response shape for GenerationResponse. */
 export type GenerationResponseRead = GenerationRead & ResponseMetadata;
 
-/** A selected target that did not generate in a multi-target run. */
-export interface GenerationFailure {
-  target_id: TargetId;
-  type: GeneratorKind;
-  status: "failed";
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainError[];
-}
-
-/** Response shape for GenerationFailure. */
-export interface GenerationFailureRead {
-  target_id: TargetId;
-  type: GeneratorKind | (string & {});
-  status: "failed" | (string & {});
-  /** Recorded failures. Empty when this resource has no recorded failure. */
-  errors: DomainErrorRead[];
-}
-
 /**
  * One Generation per selected Target. Retrieve each Generation for current status and generated
  * files.
  */
 export interface GenerationBatch {
-  data: GenerationSummary[];
+  data: Generation[];
   request_id: RequestId;
 }
 
 /** Request shape for GenerationBatch. */
 export interface GenerationBatchWrite {
-  data: GenerationSummaryWrite[];
+  data: GenerationWrite[];
   request_id: RequestId;
 }
 
 /** Response shape for GenerationBatch. */
 export interface GenerationBatchRead {
-  data: GenerationSummaryRead[];
+  data: GenerationRead[];
   request_id: RequestId;
 }
 
@@ -3104,7 +3121,11 @@ export interface ApiKey {
   name: string;
   /** Last four characters of the secret; the secret itself is never stored. */
   last4: string;
-  revoked: boolean;
+  /**
+   * active: the key authenticates requests. revoked: it no longer does and cannot be restored;
+   * create a new key in the Console or with typeship login.
+   */
+  status: "active" | "revoked";
   /** Format: date-time */
   last_used_at: string | null;
   /** Format: date-time */
@@ -3124,7 +3145,11 @@ export interface ApiKeyRead {
   name: string;
   /** Last four characters of the secret; the secret itself is never stored. */
   last4: string;
-  revoked: boolean;
+  /**
+   * active: the key authenticates requests. revoked: it no longer does and cannot be restored;
+   * create a new key in the Console or with typeship login.
+   */
+  status: ("active" | "revoked") | (string & {});
   /** Format: date-time */
   last_used_at: string | null;
   /** Format: date-time */
@@ -3257,7 +3282,18 @@ export type SpecRevisionResponseRead = SpecRevisionRead & ResponseMetadata;
 
 export interface ProjectList {
   object: ListObject;
-  data: ProjectSummary[];
+  data: Project[];
+  /** Whether another page is available after this one. */
+  has_more: boolean;
+  /** Pass this value as cursor to retrieve the next page; null on the last page. */
+  next_cursor: string | null;
+  request_id: RequestId;
+}
+
+/** Request shape for ProjectList. */
+export interface ProjectListWrite {
+  object: ListObject;
+  data: ProjectWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3268,7 +3304,7 @@ export interface ProjectList {
 /** Response shape for ProjectList. */
 export interface ProjectListRead {
   object: ListObject;
-  data: ProjectSummaryRead[];
+  data: ProjectRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3278,7 +3314,7 @@ export interface ProjectListRead {
 
 export interface GenerationList {
   object: ListObject;
-  data: GenerationSummary[];
+  data: Generation[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3289,7 +3325,7 @@ export interface GenerationList {
 /** Request shape for GenerationList. */
 export interface GenerationListWrite {
   object: ListObject;
-  data: GenerationSummaryWrite[];
+  data: GenerationWrite[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3300,7 +3336,7 @@ export interface GenerationListWrite {
 /** Response shape for GenerationList. */
 export interface GenerationListRead {
   object: ListObject;
-  data: GenerationSummaryRead[];
+  data: GenerationRead[];
   /** Whether another page is available after this one. */
   has_more: boolean;
   /** Pass this value as cursor to retrieve the next page; null on the last page. */
@@ -3400,6 +3436,13 @@ export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 /** Stable programmatic identifier. Do not branch on message. */
 export const ErrorCode = {
   INPUT_INVALID: "input_invalid",
+  INPUT_MISSING: "input_missing",
+  INPUT_TYPE_INVALID: "input_type_invalid",
+  INPUT_FORMAT_INVALID: "input_format_invalid",
+  INPUT_TOO_LONG: "input_too_long",
+  INPUT_TOO_SHORT: "input_too_short",
+  INPUT_DUPLICATE: "input_duplicate",
+  INPUT_UNKNOWN: "input_unknown",
   QUERY_PARAM_INVALID: "query_param_invalid",
   CURSOR_INVALID: "cursor_invalid",
   METHOD_NOT_ALLOWED: "method_not_allowed",
@@ -3414,7 +3457,8 @@ export const ErrorCode = {
   INSUFFICIENT_SCOPE: "insufficient_scope",
   ROLE_INSUFFICIENT: "role_insufficient",
   RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",
-  PLAN_LIMIT_REACHED: "plan_limit_reached",
+  FEATURE_NOT_AVAILABLE: "feature_not_available",
+  QUOTA_EXCEEDED: "quota_exceeded",
   SPEC_INVALID: "spec_invalid",
   SPEC_TOO_LARGE: "spec_too_large",
   SPEC_UNREACHABLE: "spec_unreachable",
@@ -3437,8 +3481,11 @@ export const ErrorCode = {
   PUBLICATION_RECOVERY_UNAVAILABLE: "publication_recovery_unavailable",
   PUBLICATION_FAILED: "publication_failed",
   DELIVERY_CONFLICT: "delivery_conflict",
+  DELIVERY_EXISTS: "delivery_exists",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
   CUSTOMIZATION_CONFLICT: "customization_conflict",
+  CHECKS_FAILED: "checks_failed",
+  DRAFT_TITLE_INVALID: "draft_title_invalid",
   HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
   CHECKS_UNAVAILABLE: "checks_unavailable",
   DEPENDENCY_MISSING: "dependency_missing",
@@ -4017,79 +4064,6 @@ export interface PackageBehaviorResponse {
 }
 
 /**
- * Everything Typeship needs beyond the Spec, in one object: generation customization (globals,
- * retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url).
- * Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot
- * generation also accepts GraphQL settings here; stored projects keep those settings on their Spec.
- */
-export interface ConfigResponse {
-  /**
-   * Wire names of query/header parameters that become settable once on the generated client and
-   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
-   * are reported as generation warnings.
-   */
-  globals?: string[];
-  retries?: RetryTuningResponse;
-  /**
-   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
-   * reported as generation warnings.
-   */
-  pagination?: Record<string, PaginationRuleResponse | boolean>;
-  graphql?: GraphqlSettingsResponse;
-  auth?: AuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
-  mcp?: McpBehaviorResponse;
-  readme?: ReadmeBehaviorResponse;
-  package?: PackageBehaviorResponse;
-  /**
-   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
-   * URL.
-   * Format: uri
-   */
-  docs_url?: string | null;
-  /**
-   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
-   * Format: uri
-   */
-  docs_index_url?: string | null;
-}
-
-/** Response shape for ConfigResponse. */
-export interface ConfigResponseRead {
-  /**
-   * Wire names of query/header parameters that become settable once on the generated client and
-   * auto-apply to every operation that accepts them; per-call values win. Names that match nothing
-   * are reported as generation warnings.
-   */
-  globals?: string[];
-  retries?: RetryTuningResponse;
-  /**
-   * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
-   * reported as generation warnings.
-   */
-  pagination?: Record<string, PaginationRuleResponseRead | boolean>;
-  graphql?: GraphqlSettingsResponseRead;
-  auth?: AuthenticationConfigResponse;
-  cli?: CliBehaviorResponse;
-  mcp?: McpBehaviorResponseRead;
-  readme?: ReadmeBehaviorResponse;
-  package?: PackageBehaviorResponse;
-  /**
-   * The API's documentation site. Read through its llms.txt by the generated CLI's docs command,
-   * the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs
-   * URL.
-   * Format: uri
-   */
-  docs_url?: string | null;
-  /**
-   * Exact llms.txt URL when the documentation site does not publish it at docs_url + /llms.txt.
-   * Format: uri
-   */
-  docs_index_url?: string | null;
-}
-
-/**
  * Shared generated-client and tooling behavior for a stored Project. Every Target inherits these
  * defaults. Target.config is merged over them for one Target; top-level values replace defaults
  * while cli, mcp, auth, readme, and package merge by field. GraphQL-only source settings live on
@@ -4376,19 +4350,6 @@ export const GitFileMode = {
   V_120000: "120000",
 } as const;
 export type GitFileMode = (typeof GitFileMode)[keyof typeof GitFileMode];
-
-/**
- * One side of a Draft file comparison: base is the last merged version, yours is your repository
- * edit, and generated is the new version Typeship proposes for this conflict stage. The conflict
- * source identifies whether that version comes from a Generation, the default branch, or a saved
- * Draft. Missing sides represent deleted or absent files.
- */
-export const DraftFileSide = {
-  BASE: "base",
-  YOURS: "yours",
-  GENERATED: "generated",
-} as const;
-export type DraftFileSide = (typeof DraftFileSide)[keyof typeof DraftFileSide];
 
 /**
  * File IDs for each side of a conflict or history comparison. null means the file is absent on that

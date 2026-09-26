@@ -33,24 +33,63 @@ import type {
   ProjectList,
   ProjectListRead,
   ProjectRead,
-  ProjectSummary,
-  ProjectSummaryRead,
+  ProjectResponse,
+  ProjectResponseRead,
   UpdateProjectRequest,
 } from "../types.js";
 
 export class ProjectsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List projects
+   * Create a Project
+   *
+   * Creates a Project from a URL or GitHub Spec.
+   * Automatic generation is enabled by default for a saved Project.
+   *
+   * Free includes one saved Project, all selected Targets, and the first 25 operations per Target,
+   * with regeneration, history, delivery pull requests, and previews. Pro supports additional
+   * Projects and all operations. One-shot generation does not use a Project slot.
+   *
+   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
+   * `POST /projects`
+   */
+  async create(
+    body: CreateProjectRequest,
+    params?: ProjectsCreateParams,
+    options?: RequestOptions,
+  ): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsCreateError>({
+      method: "POST",
+      path: "/projects",
+      security: [{"apiKey":[]}],
+      headers: {
+        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
+      },
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "402": PaymentRequiredError,
+        "403": ForbiddenError,
+        "409": ConflictError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotencyKey: "Idempotency-Key",
+      schemaKey: "projects.create",
+      options,
+    });
+  }
+
+  /**
+   * List Projects
    *
    * Auto-paginates: `for await (const item of …)` walks every page.
    * `GET /projects`
    */
-  list(
-    params?: ProjectsListParams,
-    options?: RequestOptions,
-  ): PagePromise<ProjectSummaryRead, ProjectsListError> {
-    return paginate<ProjectSummaryRead, ProjectsListError>(this._core, {
+  list(params?: ProjectsListParams, options?: RequestOptions): PagePromise<ProjectRead, ProjectsListError> {
+    return paginate<ProjectRead, ProjectsListError>(this._core, {
       method: "GET",
       path: "/projects",
       security: [{"apiKey":[]}],
@@ -79,56 +118,14 @@ export class ProjectsResource {
   }
 
   /**
-   * Create a project
-   *
-   * Creates a Project from a URL or GitHub Spec.
-   * Automatic generation is enabled by default for a saved Project.
-   *
-   * Free includes one saved Project, all selected Targets, and the first 25 operations per Target,
-   * with regeneration, history, delivery pull requests, and previews. Pro supports additional
-   * Projects and all operations. One-shot generation does not use a Project slot.
-   *
-   * A `Idempotency-Key` UUID is generated per call (stable across retries) unless you pass one.
-   * `POST /projects`
-   */
-  async create(
-    body: CreateProjectRequest,
-    params?: ProjectsCreateParams,
-    options?: RequestOptions,
-  ): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsCreateError>({
-      method: "POST",
-      path: "/projects",
-      security: [{"apiKey":[]}],
-      headers: {
-        "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
-      },
-      body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotencyKey: "Idempotency-Key",
-      schemaKey: "projects.create",
-      options,
-    });
-  }
-
-  /**
-   * Get a project
+   * Get a Project
    *
    * Returns the Project's settings and Spec ID. List its Targets separately to retrieve Target
    * configuration and Deliveries.
    * `GET /projects/{project_id}`
    */
-  async get(projectId: ProjectId, options?: RequestOptions): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsGetError>({
+  async get(projectId: ProjectId, options?: RequestOptions): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsGetError>({
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
@@ -146,9 +143,60 @@ export class ProjectsResource {
   }
 
   /**
-   * Delete a project
+   * Update a Project
    *
-   * A `502 repository_unavailable` means the Project was not deleted because its release pull
+   * Omitted fields keep their current values. A supplied config replaces the entire stored object;
+   * null or an empty object clears it.
+   * With auto_generate enabled, changing shared config queues a Generation for each Target whose
+   * effective config changes. A queued or running Target reuses that Generation.
+   * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
+   * returns 412 precondition_failed without saving.
+   *
+   * A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to
+   * finish, reconcile your update, and retry.
+   * A `502 follow_up_failed` means the Project was saved, but an obsolete Draft pull request could
+   * not be retired. Retrieve the Project and retry the same update to finish retiring reviews if
+   * that update is still desired.
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
+   * `PATCH /projects/{project_id}`
+   */
+  async update(
+    projectId: ProjectId,
+    body: UpdateProjectRequest,
+    params?: ProjectsUpdateParams,
+    options?: RequestOptions,
+  ): Promise<ProjectResponseRead> {
+    return this._core.requestData<ProjectResponseRead, ProjectsUpdateError>({
+      method: "PATCH",
+      path: `/projects/${encodeURIComponent(String(projectId))}`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
+      body,
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "402": PaymentRequiredError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "412": PreconditionFailedError,
+        "422": UnprocessableEntityError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+        "502": BadGatewayError,
+      },
+      schemaKey: "projects.update",
+      options,
+    });
+  }
+
+  /**
+   * Delete a Project
+   *
+   * A `502 repository_unavailable` means the Project was not deleted because its Draft pull
    * requests could not be retired. Retry deletion to finish retiring the remaining reviews.
    * Repeating a completed deletion returns `404`.
    * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
@@ -184,58 +232,7 @@ export class ProjectsResource {
   }
 
   /**
-   * Update a project
-   *
-   * Omitted fields keep their current values. A supplied config replaces the entire stored object;
-   * null or an empty object clears it.
-   * With auto_generate enabled, changing shared config queues a Generation for each Target whose
-   * effective config changes. A queued or running Target reuses that Generation.
-   * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
-   * returns 412 precondition_failed without saving.
-   *
-   * A `409 target_busy` means a Target is publishing. Retrieve the Project, wait for publishing to
-   * finish, reconcile your update, and retry.
-   * A `502 follow_up_failed` means the Project was saved, but an obsolete release pull request
-   * could not be retired. Retrieve the Project and retry the same update to finish retiring reviews
-   * if that update is still desired.
-   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
-   * and If-Match.
-   * `PATCH /projects/{project_id}`
-   */
-  async update(
-    projectId: ProjectId,
-    body: UpdateProjectRequest,
-    params?: ProjectsUpdateParams,
-    options?: RequestOptions,
-  ): Promise<ProjectRead> {
-    return this._core.requestData<ProjectRead, ProjectsUpdateError>({
-      method: "PATCH",
-      path: `/projects/${encodeURIComponent(String(projectId))}`,
-      security: [{"apiKey":[]}],
-      headers: {
-        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
-      },
-      body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
-      schemaKey: "projects.update",
-      options,
-    });
-  }
-
-  /**
-   * Start generation for active Targets
+   * Generate a Project's Targets
    *
    * Queues one Generation per active Target and returns their IDs. Retrieve each Generation until
    * its status moves from `queued` to `running` and then `completed` or `failed`. `completed` means
@@ -285,6 +282,31 @@ export class ProjectsResource {
   }
 }
 
+export interface ProjectsCreateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
+   * and operation; generation without an organization uses a hashed network identity. Retrying the
+   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
+   * the key with changed intent returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Typed errors `create` can throw. */
+export type ProjectsCreateError =
+  | BadRequestError
+  | UnauthorizedError
+  | PaymentRequiredError
+  | ForbiddenError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
 export interface ProjectsListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
@@ -315,31 +337,6 @@ export type ProjectsListError =
   | TransportError
   | ValidationError;
 
-export interface ProjectsCreateParams {
-  /**
-   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
-   * and operation; generation without an organization uses a hashed network identity. Retrying the
-   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
-   * the key with changed intent returns 409. After expiry the key starts a new write.
-   */
-  idempotencyKey?: string;
-}
-
-/** Typed errors `create` can throw. */
-export type ProjectsCreateError =
-  | BadRequestError
-  | UnauthorizedError
-  | PaymentRequiredError
-  | ForbiddenError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
 /** Typed errors `get` can throw. */
 export type ProjectsGetError =
   | UnauthorizedError
@@ -347,30 +344,6 @@ export type ProjectsGetError =
   | NotFoundError
   | RateLimitedError
   | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-export interface ProjectsDeleteParams {
-  /**
-   * ETag from a preceding response. The write applies only if the resource still has that version;
-   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
-   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
-   */
-  ifMatch?: string;
-}
-
-/** Typed errors `delete` can throw. */
-export type ProjectsDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError
@@ -395,6 +368,30 @@ export type ProjectsUpdateError =
   | ConflictError
   | PreconditionFailedError
   | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface ProjectsDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
+/** Typed errors `delete` can throw. */
+export type ProjectsDeleteError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | PreconditionFailedError
   | RateLimitedError
   | InternalServerError
   | BadGatewayError

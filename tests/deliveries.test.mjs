@@ -5,6 +5,20 @@ import assert from "node:assert/strict";
 import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
+test("deliveries.create POST /deliveries", async () => {
+  const mock = await startMock({ status: 201, contentType: "application/json", body: "{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"hosted_mcp\":{\"url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.deliveries.create({"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/api","directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}}, undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "POST");
+    assert.equal(request.path.split("?")[0], "/deliveries");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
 test("deliveries.list GET /deliveries", async () => {
   const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"data\":[{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\"}]}" });
   try {
@@ -26,6 +40,34 @@ test("deliveries.get GET /deliveries/{delivery_id}", async () => {
     const result = await client.deliveries.get("test-delivery_id");
     const request = mock.requests[0];
     assert.equal(request.method, "GET");
+    assert.equal(request.path.split("?")[0], "/deliveries/test-delivery_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("deliveries.update PATCH /deliveries/{delivery_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"status\":\"active\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/api\",\"directory\":\"example\",\"package_name\":\"example\",\"module_path\":\"example\",\"publish_on_merge\":true},\"issues\":[{\"code\":\"app_not_installed\",\"message\":\"example\"}],\"required_checks\":[\"example\"],\"last_event\":{\"event\":\"example\",\"status\":\"queued\",\"created_at\":\"2024-01-01T00:00:00Z\"},\"hosted_mcp\":{\"url\":\"https://example.com\"},\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.deliveries.update("test-delivery_id", {"repository":{"provider":"github","identifier":"parcel-example/api","directory":"example","package_name":"example","module_path":"example","publish_on_merge":false}}, undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "PATCH");
+    assert.equal(request.path.split("?")[0], "/deliveries/test-delivery_id");
+    assert.equal(request.headers["authorization"], "Bearer test-token");
+  } finally {
+    mock.close();
+  }
+});
+
+test("deliveries.delete DELETE /deliveries/{delivery_id}", async () => {
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"dlv_4q8m2v7k1p9d5h6c\",\"object\":\"delivery\",\"deleted\":true,\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  try {
+    const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
+    const result = await client.deliveries.delete("test-delivery_id", undefined);
+    const request = mock.requests[0];
+    assert.equal(request.method, "DELETE");
     assert.equal(request.path.split("?")[0], "/deliveries/test-delivery_id");
     assert.equal(request.headers["authorization"], "Bearer test-token");
   } finally {

@@ -41,44 +41,7 @@ import type {
 export class TargetsResource {
   constructor(private readonly _core: HttpCore) {}
   /**
-   * List Targets
-   *
-   * Auto-paginates: `for await (const item of …)` walks every page.
-   * `GET /targets`
-   */
-  list(params?: TargetsListParams, options?: RequestOptions): PagePromise<TargetRead, TargetsListError> {
-    return paginate<TargetRead, TargetsListError>(this._core, {
-      method: "GET",
-      path: "/targets",
-      security: [{"apiKey":[]}],
-      query: {
-        limit: params?.limit,
-        cursor: params?.cursor,
-        project_id: params?.projectId,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "targets.list",
-      options,
-    }, {
-      style: "cursor",
-      itemsField: "data",
-      cursorParam: "cursor",
-      nextCursorField: "next_cursor",
-      hasMoreField: "has_more",
-      limitParam: "limit",
-    });
-  }
-
-  /**
-   * Create an independently configured Target
+   * Create a Target
    *
    * Creates a Target with its own configuration, Deliveries, and release history. Multiple Targets
    * can use the same generator.
@@ -117,6 +80,43 @@ export class TargetsResource {
   }
 
   /**
+   * List Targets
+   *
+   * Auto-paginates: `for await (const item of …)` walks every page.
+   * `GET /targets`
+   */
+  list(params?: TargetsListParams, options?: RequestOptions): PagePromise<TargetRead, TargetsListError> {
+    return paginate<TargetRead, TargetsListError>(this._core, {
+      method: "GET",
+      path: "/targets",
+      security: [{"apiKey":[]}],
+      query: {
+        limit: params?.limit,
+        cursor: params?.cursor,
+        project_id: params?.projectId,
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.list",
+      options,
+    }, {
+      style: "cursor",
+      itemsField: "data",
+      cursorParam: "cursor",
+      nextCursorField: "next_cursor",
+      hasMoreField: "has_more",
+      limitParam: "limit",
+    });
+  }
+
+  /**
    * Get a Target
    * `GET /targets/{target_id}`
    */
@@ -139,51 +139,12 @@ export class TargetsResource {
   }
 
   /**
-   * Delete an unused Target
+   * Update a Target
    *
-   * Deletes a Target with no Generation history, release history, or active Draft. A `409
-   * resource_has_dependencies` means one of those resources still depends on it. Retrieve the
-   * Target, disable it instead, or resolve the dependency before retrying.
-   *
-   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
-   * and If-Match.
-   * `DELETE /targets/{target_id}`
-   */
-  async delete(
-    targetId: TargetId,
-    params?: TargetsDeleteParams,
-    options?: RequestOptions,
-  ): Promise<DeletedTargetRead> {
-    return this._core.requestData<DeletedTargetRead, TargetsDeleteError>({
-      method: "DELETE",
-      path: `/targets/${encodeURIComponent(String(targetId))}`,
-      security: [{"apiKey":[]}],
-      headers: {
-        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
-      idempotent: true,
-      schemaKey: "targets.delete",
-      options,
-    });
-  }
-
-  /**
-   * Update a Target or its Deliveries
-   *
-   * Omitted fields keep their current values. Supplied config, checks, and deliveries replace their
-   * complete stored values.
-   * With Project auto_generate enabled, changing Target config, checks, or Deliveries queues that
-   * Target's Generation. A queued or running Target reuses that Generation.
+   * Omitted fields keep their current values. Supplied config and checks replace their complete
+   * stored values. Change Deliveries with createDelivery, updateDelivery, and deleteDelivery.
+   * With Project auto_generate enabled, changing Target config or checks queues that Target's
+   * Generation. A queued or running Target reuses that Generation.
    * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
    * returns 412 precondition_failed without saving.
    * Select the next version through PATCH /drafts/{draft_id} on the Target's draft_id.
@@ -231,7 +192,46 @@ export class TargetsResource {
   }
 
   /**
-   * Adopt a verified existing package as the latest release
+   * Delete a Target
+   *
+   * Deletes a Target with no Generation history, release history, or active Draft. A `409
+   * resource_has_dependencies` means one of those resources still depends on it. Retrieve the
+   * Target, disable it instead, or resolve the dependency before retrying.
+   *
+   * See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag
+   * and If-Match.
+   * `DELETE /targets/{target_id}`
+   */
+  async delete(
+    targetId: TargetId,
+    params?: TargetsDeleteParams,
+    options?: RequestOptions,
+  ): Promise<DeletedTargetRead> {
+    return this._core.requestData<DeletedTargetRead, TargetsDeleteError>({
+      method: "DELETE",
+      path: `/targets/${encodeURIComponent(String(targetId))}`,
+      security: [{"apiKey":[]}],
+      headers: {
+        "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
+      },
+      errors: {
+        "400": BadRequestError,
+        "401": UnauthorizedError,
+        "403": ForbiddenError,
+        "404": NotFoundError,
+        "409": ConflictError,
+        "412": PreconditionFailedError,
+        "429": RateLimitedError,
+        "500": InternalServerError,
+      },
+      idempotent: true,
+      schemaKey: "targets.delete",
+      options,
+    });
+  }
+
+  /**
+   * Adopt a package release
    *
    * Checks the repository tag, package metadata, and registry artifact, then records the package as
    * an Imported latest release. Opens the first Typeship Draft at the next major version; review it
@@ -271,6 +271,32 @@ export class TargetsResource {
   }
 }
 
+export interface TargetsCreateParams {
+  /**
+   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
+   * and operation; generation without an organization uses a hashed network identity. Retrying the
+   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
+   * the key with changed intent returns 409. After expiry the key starts a new write.
+   */
+  idempotencyKey?: string;
+}
+
+/** Typed errors `create` can throw. */
+export type TargetsCreateError =
+  | BadRequestError
+  | UnauthorizedError
+  | PaymentRequiredError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | UnprocessableEntityError
+  | RateLimitedError
+  | InternalServerError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
 export interface TargetsListParams {
   /**
    * Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits
@@ -304,61 +330,11 @@ export type TargetsListError =
   | TransportError
   | ValidationError;
 
-export interface TargetsCreateParams {
-  /**
-   * Identifies one logical write for 24 hours. The key is scoped to the authenticated organization
-   * and operation; generation without an organization uses a hashed network identity. Retrying the
-   * same method, path, query, If-Match header, and JSON body replays the original response. Reusing
-   * the key with changed intent returns 409. After expiry the key starts a new write.
-   */
-  idempotencyKey?: string;
-}
-
-/** Typed errors `create` can throw. */
-export type TargetsCreateError =
-  | BadRequestError
-  | UnauthorizedError
-  | PaymentRequiredError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
 /** Typed errors `get` can throw. */
 export type TargetsGetError =
   | UnauthorizedError
   | ForbiddenError
   | NotFoundError
-  | RateLimitedError
-  | InternalServerError
-  | UnexpectedApiError
-  | ResponseParseError
-  | TransportError
-  | ValidationError;
-
-export interface TargetsDeleteParams {
-  /**
-   * ETag from a preceding response. The write applies only if the resource still has that version;
-   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
-   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
-   */
-  ifMatch?: string;
-}
-
-/** Typed errors `delete` can throw. */
-export type TargetsDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | PreconditionFailedError
   | RateLimitedError
   | InternalServerError
   | UnexpectedApiError
@@ -388,6 +364,30 @@ export type TargetsUpdateError =
   | RateLimitedError
   | InternalServerError
   | BadGatewayError
+  | UnexpectedApiError
+  | ResponseParseError
+  | TransportError
+  | ValidationError;
+
+export interface TargetsDeleteParams {
+  /**
+   * ETag from a preceding response. The write applies only if the resource still has that version;
+   * otherwise it returns 412 precondition_failed without changes. Omit to write the current
+   * version. See https://typeship.dev/docs/typeship-api#conditional-writes.
+   */
+  ifMatch?: string;
+}
+
+/** Typed errors `delete` can throw. */
+export type TargetsDeleteError =
+  | BadRequestError
+  | UnauthorizedError
+  | ForbiddenError
+  | NotFoundError
+  | ConflictError
+  | PreconditionFailedError
+  | RateLimitedError
+  | InternalServerError
   | UnexpectedApiError
   | ResponseParseError
   | TransportError

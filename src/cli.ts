@@ -13,15 +13,15 @@ import { checkConsoleBrowserLogin } from "./console-login-check.js";
 import { type FileCredentialStore, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
 import { createCredentialStore } from "./credential-storage.js";
 import { identityPolicyOf, identityFetch, identityResult, verifyApiIdentity, verifyClientIdentity, readApiIdentity, assertApiIdentity, type ApiIdentity, type IdentityConfiguration, type IdentityPolicy, type VerifiedIdentity } from "./api-identity.js";
-import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, missingCredentials, oauthSessionSchemes, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
+import { parseNamedCredentials, readNamedCredentialsFile, resolveNamedCredentials, namedCredentialAvailability, missingCredentials, oauthSessionSchemes, parseExtraHeaders, applyExtraHeaders, type NamedCredentials, type CredentialSchemes } from "./named-credentials.js";
 import { resolveProfile, listProfiles, selectProfile, removeProfile, readProfileConfig, updateProfileConfig, type ProfileContext } from "./auth-profiles.js";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
-import { asApiResult, validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
+import { asApiResult, mediaTypeForPath, validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
 import { SCHEMAS, DEFS } from "./schemas.js";
 import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
@@ -36,11 +36,21 @@ import { docsReadCommand, docsReadTarget, fetchDocsText, resolveDocsContentUrl, 
 const BIN = "typeship";
 const DEFAULT_BASE_URL = "https://typeship.dev/api/v1";
 const NAMED_SCHEMES: CredentialSchemes = {"apiKey":{"kind":"bearer","options":["bearerToken"]}};
-const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_TOKEN"}];
+const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option":"bearerToken","flag":"token","env":"TYPESHIP_API_KEY"}];
 /** Hosted MCP request headers as name → env reference, never a literal. */
-const HOSTED_MCP_HEADERS: Record<string, string> = {"Authorization":"Bearer ${TYPESHIP_TOKEN}"};
+const HOSTED_MCP_HEADERS: Record<string, string> = {"Authorization":"Bearer ${TYPESHIP_API_KEY}"};
 const HOSTED_MCP_NOTE: string | null = null;
 const BASIC: { envUser: string; envPass: string } | null = null;
+/** Older generic credential variable names, read when the documented one is unset. */
+const ENV_ALIASES: Record<string, string[]> = {"TYPESHIP_API_KEY":["TYPESHIP_TOKEN"]};
+for (const [name, aliases] of Object.entries(ENV_ALIASES)) {
+  const alias = aliases.find((candidate) => process.env[candidate] !== undefined);
+  if (process.env[name] === undefined && alias !== undefined) process.env[name] = process.env[alias];
+}
+/** The spec declares no security, so the token is offered, never required. */
+const AUTH_UNDECLARED = false;
+/** Repeated --header "Name: value" flags for this invocation. */
+let HEADER_FLAGS: string[] = [];
 /** Operations omitted from the generated package by its plan cap. */
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
@@ -1077,6 +1087,7 @@ function agentContext(): AgentContext {
     version: VERSION,
     envPrefix: ENV_PREFIX,
     authEnvVars: [...AUTH_SCALARS.map((a) => a.env), ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []), ...(Object.keys(NAMED_SCHEMES).length ? ["TYPESHIP_CREDENTIALS"] : [])],
+    ...(AUTH_UNDECLARED ? { authNotDeclared: true } : {}),
     docsUrl: docsSiteUrl(),
     docsIndexUrl: docsIndexUrl(),
     generatedOperationCount: OPS.length,
@@ -1155,7 +1166,7 @@ function helpJson(): Record<string, unknown> {
       note: "Choose an operation from this index, then read only that operation's complete schemas and example arguments.",
     },
     builtins: BUILTIN_COMMANDS,
-    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
+    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--header 'Name: value'", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
     auth_env_vars: agentContext().authEnvVars,
   };
 }
@@ -1214,7 +1225,8 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
     base_url: resolveBaseUrl(parsed.flags) ?? null,
     next_steps: authenticated ? [] : [
       ...AUTH_SCALARS.map((a) => "Set " + a.env + " in the environment, or run '" + BIN + " login --" + a.flag + " <value>'."),
-      "Then run '" + BIN + " auth check --live'.",
+      ...(AUTH_UNDECLARED ? ["The API Spec does not declare authentication. Add another header with --header \"Name: value\" or TYPESHIP_HEADERS."] : []),
+      ...(WHOAMI ? ["Then run '" + BIN + " auth check --live'."] : []),
     ],
   };
   if (authenticated && parsed.flags.get("live") === true && WHOAMI) {
@@ -1487,7 +1499,7 @@ function completionFlagsFor(op: OpSpec): { flags: string[]; values: Record<strin
   return { flags, values };
 }
 
-const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
+const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--header", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
 const BUILTIN_WORDS: Record<string, string[]> = {
   config: ["list", "get", "set", "unset", "path"],
   completion: ["bash", "zsh", "fish"],
@@ -1935,7 +1947,7 @@ function helpSentence(description: string | undefined): string {
 /** Type column text for a param: string, number, string[], a|b|c, enum, object, json, path. */
 function typeLabel(p: ParamSpec): string {
   if (p.nullable) return typeLabel({ ...p, nullable: false }) + "|null";
-  if (p.type === "file") return "path (uploaded)";
+  if (p.type === "file") return p.multiple ? "paths (uploaded, repeatable)" : "path (uploaded)";
   if (p.format && p.type === "string") return p.format;
   const inlineEnum = (values: string[] | undefined) => values && values.join("|").length <= 24 ? values.join("|") : undefined;
   if (p.type === "array") {
@@ -2034,13 +2046,15 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
   }
   lines.push("");
-  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
+  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
   lines.push(...labeled(paintOut("bold", "Global flags:") + " ", flagsText, width, 14).map((l, i) => (i === 0 ? l : l)));
   lines.push(...labeled("Credential env vars: ", [
     "TYPESHIP_CREDENTIALS", ...AUTH_SCALARS.map((a) => a.env),
     ...(BASIC ? [BASIC.envUser, BASIC.envPass] : []),
   ].join(", ") || "none", width, 21));
+  if (AUTH_UNDECLARED) lines.push(...labeled("Auth: ", "not declared by the API Spec; " + AUTH_SCALARS[0]!.env + " is sent as Authorization: Bearer when set", width, 6));
+  lines.push(...labeled("Extra headers: ", "--header \"Name: value\" (repeatable) or TYPESHIP_HEADERS", width, 15));
   lines.push(...labeled("Endpoint env var: ", "TYPESHIP_BASE_URL", width, 18));
   lines.push(...labeled("Sign-in: ", BIN + " login | logout | whoami | auth check  (stored at " + credsPath() + ")", width, 9));
   lines.push(...labeled("Setup: ", BIN + " init (connect this machine)" + " | " + BIN + " config (defaults)" + (HAS_MCP || MCP_URL ? " | " + BIN + " mcp install --all (agent clients)" : "") + " | " + BIN + " doctor | " + BIN + " upgrade | " + BIN + " completion <shell>", width, 7));
@@ -2083,6 +2097,7 @@ function commandExtras(op: OpSpec): [string, string][] {
   const extras: [string, string][] = [];
   if (op.auth !== "none" && Object.keys(NAMED_SCHEMES).length) extras.push(["--credentials @<file>|-", "named credentials as JSON; use - for stdin"]);
   if (op.hasBody && op.bodyKind === "binary") extras.push(["--file <path>", "raw request body, uploaded as-is (- reads stdin)"]);
+  if (op.rawResponse) extras.push(["--output <file>", "write the " + (op.rawResponse === "binary" ? "binary " : "") + "response body to a file (- for stdout) and print what was written"]);
   else if (op.hasBody) extras.push(["--data '<json>'", "raw JSON body" + (op.bodyStyle === "fields" ? " (merged under field flags)" : "") + "; @<file> reads a file, - reads stdin"]);
   if (op.select) extras.push(["--select '<selection>'", "GraphQL selection set replacing the default, e.g. '{ id name }'"]);
   if (op.paginated) extras.push(["--all", "stream every item from every page (NDJSON)"]);
@@ -2127,6 +2142,7 @@ function exampleLine(op: OpSpec): string {
 
 /** " (no auth needed)" for an anonymous operation in an API that otherwise authenticates. */
 function authNote(op: OpSpec): string {
+  if (AUTH_UNDECLARED) return op.auth === "none" ? " (no auth needed)" : " (auth not declared)";
   const apiHasAuth = AUTH_SCALARS.length > 0 || BASIC !== null || HAS_OAUTH_LOGIN;
   return apiHasAuth && op.auth === "none" ? " (no auth needed)" : apiHasAuth && op.auth === "optional" ? " (auth optional)" : "";
 }
@@ -2188,7 +2204,7 @@ function readStdinBytes(): Promise<Uint8Array<ArrayBuffer>> {
 /** A local file as an upload part; the SDK's multipart encoder takes Blobs. */
 function fileFromPath(flag: string, path: string): File {
   try {
-    return new File([readFileSync(path)], basename(path));
+    return new File([readFileSync(path)], basename(path), { type: mediaTypeForPath(path) });
   } catch (e) {
     return fail(2, "--" + flag + ": cannot read " + path + " (" + (e as Error).message + ")");
   }
@@ -2235,6 +2251,7 @@ function coerce(spec: ParamSpec, raw: string | boolean, repeated?: string[]): un
   if (spec.nullable && raw === "null" && repeated === undefined) return null;
   if (spec.type === "file") {
     if (raw === true) fail(2, "--" + spec.flag + " expects a file path");
+    if (spec.multiple) return (repeated ?? [String(raw)]).map((path) => fileFromPath(spec.flag, path));
     return fileFromPath(spec.flag, String(raw));
   }
   if (spec.type === "boolean") {
@@ -2357,6 +2374,13 @@ function environmentCredentials(): NamedCredentials {
   return value === undefined ? {} : parseNamedCredentials(value, NAMED_SCHEMES);
 }
 
+/** --header flags and TYPESHIP_HEADERS: sent on every API request, after
+ * (and in place of) any generated header of the same name. */
+function extraRequestHeaders(): Record<string, string> {
+  try { return parseExtraHeaders(process.env["TYPESHIP_HEADERS"], HEADER_FLAGS, "TYPESHIP_HEADERS"); }
+  catch (error) { fail(2, (error as Error).message); }
+}
+
 /** Where a credential would come from, without sending it: "flags", "env:<VAR>", "login", or null. */
 function credentialSource(flags: Map<string, string | boolean>): string | null {
   if (Object.keys(flagCredentials(flags)).length) return "flags";
@@ -2473,6 +2497,8 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
     "User-Agent": PKG_NAME + "-cli/" + VERSION + (details ? " (" + details + ")" : ""),
   };
   if (forIdentity) { options.fetch = identityFetch(baseUrl); options.maxRetries = 0; options.timeoutMs = 10_000; }
+  const extraHeaders = extraRequestHeaders();
+  if (Object.keys(extraHeaders).length) options.onRequest = (context) => { applyExtraHeaders(context.headers, extraHeaders); };
   return new TypeshipClient(options);
 }
 
@@ -2521,6 +2547,9 @@ const BUILTIN_COMMANDS = ["login","logout","whoami","config","mcp","docs","upgra
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const parsed = parseArgv(argv);
+  const headerFlag = parsed.flags.get("header");
+  HEADER_FLAGS = parsed.repeated.get("header") ?? (typeof headerFlag === "string" ? [headerFlag] : []);
+  if (headerFlag === true) fail(2, "--header expects \"Name: value\".");
   if (!parsed.help) validateCredentialsInput(parsed.flags);
   const profileFlag = parsed.flags.get("profile");
   if (profileFlag !== undefined && typeof profileFlag !== "string") fail(2, "--profile requires a profile name.");
@@ -2629,7 +2658,7 @@ async function main(): Promise<void> {
   // Mirrors opReservedFlags() in the generator: API parameters never use these
   // names (colliding ones are emitted as --<kind>-<name>), so an unknown flag
   // check can be exact.
-  const RESERVED_FLAGS = new Set(["data", "credentials", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
+  const RESERVED_FLAGS = new Set(["data", "credentials", "header", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
   for (const spec of op.params) {
     if (spec.kind === "path") continue;
     const raw = parsed.flags.get(spec.flag);
@@ -2638,7 +2667,7 @@ async function main(): Promise<void> {
     // every value (each coerced to the element type); loosely typed (json)
     // params become an array of the parsed values.
     const all = parsed.repeated.get(spec.flag);
-    values[spec.name] = spec.type === "array"
+    values[spec.name] = spec.type === "array" || (spec.type === "file" && spec.multiple)
       ? coerce(spec, raw, all)
       : all !== undefined && spec.type === "json"
         ? all.map((v) => coerce(spec, v))
@@ -2647,6 +2676,7 @@ async function main(): Promise<void> {
   for (const key of parsed.flags.keys()) {
     if (RESERVED_FLAGS.has(key)) continue;
     if (key === "file" && op.bodyKind === "binary") continue;
+    if (key === "output" && op.rawResponse) continue;
     if (!op.params.some((p) => p.flag === key)) {
       const suggestion = didYouMean(key, [...op.params.filter((p) => p.kind !== "path").map((p) => p.flag), ...RESERVED_FLAGS]);
       fail(2, "Unknown flag --" + key + "." + (suggestion ? " Did you mean --" + suggestion + "?" : ""));
@@ -2683,6 +2713,13 @@ async function main(): Promise<void> {
   }
 
   validateParameters(op, values, parsed.flags);
+  // Raw bytes on a terminal are unreadable and can garble it: ask for a
+  // destination before the request runs (it may be billed, like speech).
+  const outputFlag = op.rawResponse ? parsed.flags.get("output") : undefined;
+  if (outputFlag === true) fail(2, "--output expects a file path, or - for stdout.");
+  if (op.rawResponse === "binary" && outputFlag === undefined && process.stdout.isTTY) {
+    fail(2, op.command.join(" ") + " returns binary data. Pass --output <file>, or redirect stdout to a file.");
+  }
   const client = await makeClient(parsed.flags, op);
 
   // Destructive commands need --force. A person gets asked; an agent gets
@@ -2691,7 +2728,7 @@ async function main(): Promise<void> {
   if (op.safety === "destructive" && !assumeYes(parsed)) {
     // Credential flags are replaced by placeholders: the rerun is shown to
     // agents and logged, so it must never repeat a key.
-    const secretFlags = new Set(AUTH_SCALARS.map((a) => "--" + a.flag));
+    const secretFlags = new Set([...AUTH_SCALARS.map((a) => "--" + a.flag), "--header"]);
     const rerun = BIN + " " + process.argv.slice(2).map((a, i, all) => {
       const eq = a.indexOf("=");
       if (a.startsWith("--") && eq > 0 && secretFlags.has(a.slice(0, eq))) return a.slice(0, eq) + "=<" + a.slice(2, eq) + ">";
@@ -2748,6 +2785,22 @@ async function main(): Promise<void> {
         }
       } catch (e) {
         failApi(e, LAST_CLIENT_HAD_CREDENTIAL);
+      }
+      await flushExit(0);
+    }
+    // A non-JSON body (audio, a file, CSV): raw bytes to stdout, or to the
+    // --output file with a JSON note of what was written. Never "{}".
+    if (op.rawResponse || result.data instanceof Blob) {
+      const data = result.data;
+      const bytes = data instanceof Blob
+        ? new Uint8Array(await data.arrayBuffer())
+        : new TextEncoder().encode(typeof data === "string" ? data : JSON.stringify(data ?? ""));
+      if (typeof outputFlag === "string" && outputFlag !== "-") {
+        try { writeFileSync(outputFlag, bytes); } catch (e) { fail(1, "--output: cannot write " + outputFlag + " (" + (e as Error).message + ")"); }
+        const mediaType = data instanceof Blob && data.type ? data.type : op.rawResponse === "text" ? "text/plain" : "application/octet-stream";
+        out({ saved_to: resolvePath(outputFlag), bytes: bytes.length, media_type: mediaType });
+      } else {
+        process.stdout.write(bytes);
       }
       await flushExit(0);
     }

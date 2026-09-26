@@ -572,6 +572,8 @@ export interface AgentContext {
   version: string;
   envPrefix: string;
   authEnvVars: string[];
+  /** The API Spec is silent on authentication: say so instead of "no auth". */
+  authNotDeclared?: boolean;
   docsUrl: string | null;
   docsIndexUrl?: string | null;
   generatedOperationCount?: number;
@@ -611,7 +613,9 @@ export function agentBlock(ctx: AgentContext, commands: CommandSummary[]): strin
     "API commands write JSON on stdout; discovery commands take --json. Errors are JSON on stderr ({status, issues[{code,message}], next_steps}), exit 0/1/2. Non-interactive under an agent: no prompts, no browsers.",
     "",
     ...((ctx.omittedOperations?.length ?? 0) > 0 ? ["- Plan limit: generated " + (ctx.generatedOperationCount ?? commands.length) + " of " + ((ctx.generatedOperationCount ?? commands.length) + ctx.omittedOperations!.length) + " operations. Omitted: " + ctx.omittedOperations!.map((op) => "`" + op.tool + "` (" + op.method + " " + op.path + ")").join(", ") + ". These return `PLAN_LIMIT`; upgrade and regenerate before use."] : []),
-    "- Auth: " + auth + " in the environment, or `" + ctx.bin + " login`. Never write a key into a file in this repo.",
+    ctx.authNotDeclared
+      ? "- Auth: not declared by the API Spec. If the API needs a token, set " + auth + " or run `" + ctx.bin + " login`; other headers go in `--header \"Name: value\"` or " + ctx.envPrefix + "_HEADERS. Never write a key into a file in this repo."
+      : "- Auth: " + auth + " in the environment, or `" + ctx.bin + " login`. Never write a key into a file in this repo.",
     "- Discover: `" + ctx.bin + " --help`, `" + ctx.bin + " <resource> <command> --help`, `" + ctx.bin + " help --json` (machine-readable), `" + ctx.bin + " agent-guide --format json`.",
     "- Docs: " + (index ? "`" + ctx.bin + " docs search <term> --json`; " + index : "`" + ctx.bin + " docs <resource> <command> --json` (a docs URL was not provided at generate time)") + ".",
     "- Lists: `--all` streams every page as NDJSON. Destructive commands need `--force`.",

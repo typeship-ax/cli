@@ -94,3 +94,46 @@ export function readNamedCredentialsFile(input: string, schemes: CredentialSchem
   } finally { if (fd !== undefined && input !== "-") closeSync(fd); }
   return parseNamedCredentials(Buffer.concat(chunks).toString("utf8"), schemes);
 }
+
+const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+const TRANSPORT_HEADERS = new Set(["host", "content-length", "content-type", "transfer-encoding", "connection"]);
+
+/** Extra request headers from repeated `--header "Name: value"` flags and a
+ * `<PREFIX>_HEADERS` variable (a JSON object, or one `Name: value` per line).
+ * The escape hatch for credentials a spec does not declare. Flags win over
+ * the environment; values never appear in errors. */
+export function parseExtraHeaders(environment: string | undefined, flags: readonly string[], variable: string): Record<string, string> {
+  const entries: [string, string][] = [];
+  const line = (text: string, source: string) => {
+    const colon = text.indexOf(":");
+    if (colon <= 0) throw new Error(source + " expects \"Name: value\".");
+    entries.push([text.slice(0, colon).trim(), text.slice(colon + 1).trim()]);
+  };
+  if (environment !== undefined && environment.trim()) {
+    const text = environment.trim();
+    if (text.startsWith("{")) {
+      let value: unknown;
+      try { value = JSON.parse(text); } catch { throw new Error(variable + " must be a JSON object of header names to values, or one \"Name: value\" per line."); }
+      if (!value || typeof value !== "object" || Array.isArray(value) || Object.values(value).some((entry) => typeof entry !== "string")) throw new Error(variable + " must map header names to string values.");
+      entries.push(...Object.entries(value as Record<string, string>));
+    } else for (const part of text.split(/\r?\n/)) if (part.trim()) line(part, variable);
+  }
+  for (const flag of flags) line(flag, "--header");
+  const headers: Record<string, string> = {};
+  for (const [name, value] of entries) {
+    if (!HEADER_NAME.test(name)) throw new Error("Header names may contain only token characters. Check --header and " + variable + ".");
+    if (TRANSPORT_HEADERS.has(name.toLowerCase())) throw new Error("The " + name + " header is set by the client and cannot be overridden.");
+    if (/[\r\n\0]/.test(value)) throw new Error("Header values cannot contain line breaks. Check --header and " + variable + ".");
+    for (const existing of Object.keys(headers)) if (existing.toLowerCase() === name.toLowerCase()) delete headers[existing];
+    headers[name] = value;
+  }
+  return headers;
+}
+
+/** Apply extra headers last, replacing any header of the same name. */
+export function applyExtraHeaders(target: Record<string, string>, extra: Record<string, string>): void {
+  for (const [name, value] of Object.entries(extra)) {
+    for (const existing of Object.keys(target)) if (existing.toLowerCase() === name.toLowerCase()) delete target[existing];
+    target[name] = value;
+  }
+}

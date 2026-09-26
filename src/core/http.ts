@@ -435,6 +435,11 @@ export interface CoreRequest {
   headers?: Record<string, string | undefined>;
   body?: unknown;
   bodyKind?: "json" | "form" | "multipart" | "text" | "binary";
+  /** Per-field wire encoding (the media type's `encoding`): a multipart
+   * part's Content-Type, or the delimiter of an unexploded form array. */
+  bodyEncoding?: Record<string, { contentType?: string; delimiter?: string }>;
+  /** Multipart fields that must hold a Blob or File (or an array of them). */
+  fileFields?: string[];
   /** Status matcher -> generated error class ("404", "4XX", "default"). */
   errors?: Record<string, ErrorCtor>;
   /** Idempotent requests are retried automatically. */
@@ -993,6 +998,20 @@ export function bearerAuth(token: AuthValue): AuthValue {
 }
 
 
+/** The media type a local file is uploaded as, from its extension. A
+ * Worker module (.mjs) must arrive as application/javascript+module. */
+export function mediaTypeForPath(path: string): string {
+  const extension = /\.([A-Za-z0-9]+)$/.exec(path)?.[1]?.toLowerCase() ?? "";
+  const types: Record<string, string> = {
+    mjs: "application/javascript+module", js: "application/javascript", cjs: "application/javascript", wasm: "application/wasm",
+    json: "application/json", jsonl: "application/jsonl", txt: "text/plain", md: "text/markdown", csv: "text/csv", html: "text/html",
+    xml: "application/xml", yaml: "application/yaml", yml: "application/yaml", pdf: "application/pdf", zip: "application/zip",
+    png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml",
+    mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", flac: "audio/flac", m4a: "audio/mp4", mp4: "video/mp4", webm: "video/webm",
+  };
+  return types[extension] ?? "application/octet-stream";
+}
+
 /**
  * Join a query array into one delimited value (`ids=1,2`) for parameters
  * whose spec says `explode: false`. Other values pass through unchanged.
@@ -1019,6 +1038,7 @@ function appendDeep(target: URLSearchParams, key: string, value: unknown): void 
     target.append(key, value instanceof Date ? value.toISOString() : String(value));
   }
 }
+
 
 function serializeBody(req: CoreRequest): { body: NonNullable<RequestInit["body"]> | undefined; contentType?: string } {
   if (req.body === undefined) return { body: undefined };

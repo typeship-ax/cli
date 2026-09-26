@@ -24,7 +24,7 @@ petstore Spec is a runnable sample.
 - Start with the local build or installation instructions in `README.md`. Generation does not publish a registry package.
 
 ## Authentication
-- Bearer token: set the `TYPESHIP_TOKEN` environment variable.
+- Bearer token: set the `TYPESHIP_API_KEY` environment variable.
 
 ## Using the CLI
 - `typeship <resource> <command>` calls an API operation; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).

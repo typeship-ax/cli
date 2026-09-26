@@ -1151,15 +1151,17 @@
                         "enum": [
                           "bearer",
                           "basic",
+                          "basic_api_key",
                           "api_key",
+                          "api_key_or_bearer",
                           "none"
                         ],
-                        "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                        "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                         "default": "bearer",
                         "type": "string"
                       },
                       "api_key_header": {
-                        "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                        "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                         "type": "string"
                       },
                       "title": {
@@ -3466,15 +3468,17 @@
                     "enum": [
                       "bearer",
                       "basic",
+                      "basic_api_key",
                       "api_key",
+                      "api_key_or_bearer",
                       "none"
                     ],
-                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                     "default": "bearer",
                     "type": "string"
                   },
                   "api_key_header": {
-                    "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                    "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                     "type": "string"
                   },
                   "title": {
@@ -3870,15 +3874,17 @@
                     "enum": [
                       "bearer",
                       "basic",
+                      "basic_api_key",
                       "api_key",
+                      "api_key_or_bearer",
                       "none"
                     ],
-                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                     "default": "bearer",
                     "type": "string"
                   },
                   "api_key_header": {
-                    "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                    "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                     "type": "string"
                   },
                   "title": {
@@ -4136,15 +4142,17 @@
                     "enum": [
                       "bearer",
                       "basic",
+                      "basic_api_key",
                       "api_key",
+                      "api_key_or_bearer",
                       "none"
                     ],
-                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                     "default": "bearer",
                     "type": "string"
                   },
                   "api_key_header": {
-                    "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                    "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                     "type": "string"
                   },
                   "title": {
@@ -4489,15 +4497,17 @@
                     "enum": [
                       "bearer",
                       "basic",
+                      "basic_api_key",
                       "api_key",
+                      "api_key_or_bearer",
                       "none"
                     ],
-                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                     "default": "bearer",
                     "type": "string"
                   },
                   "api_key_header": {
-                    "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                    "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                     "type": "string"
                   },
                   "title": {
@@ -14090,15 +14100,17 @@
                     "enum": [
                       "bearer",
                       "basic",
+                      "basic_api_key",
                       "api_key",
+                      "api_key_or_bearer",
                       "none"
                     ],
-                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); api_key sends a header named by api_key_header; none generates no auth option.",
+                    "description": "How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs (public key as username, private key as password); basic_api_key sends one API key as the Basic-auth username with an empty password; api_key sends a header named by api_key_header; api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts an OAuth access token as Authorization: Bearer; none generates no auth option.",
                     "default": "bearer",
                     "type": "string"
                   },
                   "api_key_header": {
-                    "description": "Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent a vendor-specific header name.",
+                    "description": "Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes; Typeship does not invent a vendor-specific header name.",
                     "type": "string"
                   },
                   "title": {

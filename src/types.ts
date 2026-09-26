@@ -2885,14 +2885,21 @@ export interface GraphqlSettings {
   }>;
   /**
    * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
-   * (public key as username, private key as password); api_key sends a header named by
-   * api_key_header; none generates no auth option.
+   * (public key as username, private key as password); basic_api_key sends one API key as the
+   * Basic-auth username with an empty password; api_key sends a header named by api_key_header;
+   * api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts
+   * an OAuth access token as Authorization: Bearer; none generates no auth option.
    * Default: "bearer"
    */
-  auth?: "bearer" | "basic" | "api_key" | "none";
+  auth?: "bearer"
+    | "basic"
+    | "basic_api_key"
+    | "api_key"
+    | "api_key_or_bearer"
+    | "none";
   /**
-   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
-   * a vendor-specific header name.
+   * Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes;
+   * Typeship does not invent a vendor-specific header name.
    */
   api_key_header?: string;
   /**
@@ -2926,14 +2933,21 @@ export interface GraphqlSettingsRead {
   }>;
   /**
    * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
-   * (public key as username, private key as password); api_key sends a header named by
-   * api_key_header; none generates no auth option.
+   * (public key as username, private key as password); basic_api_key sends one API key as the
+   * Basic-auth username with an empty password; api_key sends a header named by api_key_header;
+   * api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts
+   * an OAuth access token as Authorization: Bearer; none generates no auth option.
    * Default: "bearer"
    */
-  auth?: ("bearer" | "basic" | "api_key" | "none") | (string & {});
+  auth?: ("bearer"
+    | "basic"
+    | "basic_api_key"
+    | "api_key"
+    | "api_key_or_bearer"
+    | "none") | (string & {});
   /**
-   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
-   * a vendor-specific header name.
+   * Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes;
+   * Typeship does not invent a vendor-specific header name.
    */
   api_key_header?: string;
   /**
@@ -4261,14 +4275,21 @@ export interface GraphqlSettingsResponse {
   }>;
   /**
    * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
-   * (public key as username, private key as password); api_key sends a header named by
-   * api_key_header; none generates no auth option.
+   * (public key as username, private key as password); basic_api_key sends one API key as the
+   * Basic-auth username with an empty password; api_key sends a header named by api_key_header;
+   * api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts
+   * an OAuth access token as Authorization: Bearer; none generates no auth option.
    * Default: "bearer"
    */
-  auth?: "bearer" | "basic" | "api_key" | "none";
+  auth?: "bearer"
+    | "basic"
+    | "basic_api_key"
+    | "api_key"
+    | "api_key_or_bearer"
+    | "none";
   /**
-   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
-   * a vendor-specific header name.
+   * Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes;
+   * Typeship does not invent a vendor-specific header name.
    */
   api_key_header?: string;
   /**
@@ -4302,14 +4323,21 @@ export interface GraphqlSettingsResponseRead {
   }>;
   /**
    * How requests authenticate. bearer sends Authorization: Bearer; basic is for key-pair APIs
-   * (public key as username, private key as password); api_key sends a header named by
-   * api_key_header; none generates no auth option.
+   * (public key as username, private key as password); basic_api_key sends one API key as the
+   * Basic-auth username with an empty password; api_key sends a header named by api_key_header;
+   * api_key_or_bearer sends a key in api_key_header (Authorization for a raw key) and also accepts
+   * an OAuth access token as Authorization: Bearer; none generates no auth option.
    * Default: "bearer"
    */
-  auth?: ("bearer" | "basic" | "api_key" | "none") | (string & {});
+  auth?: ("bearer"
+    | "basic"
+    | "basic_api_key"
+    | "api_key"
+    | "api_key_or_bearer"
+    | "none") | (string & {});
   /**
-   * Header carrying the key when auth is api_key. Required for that mode; Typeship does not invent
-   * a vendor-specific header name.
+   * Header carrying the key when auth is api_key or api_key_or_bearer. Required for those modes;
+   * Typeship does not invent a vendor-specific header name.
    */
   api_key_header?: string;
   /**

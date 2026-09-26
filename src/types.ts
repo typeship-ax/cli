@@ -898,6 +898,69 @@ export type DeliveryInputRead = RepositoryDeliveryInputRead
   | HostedMcpDeliveryInputRead
   | Record<string, unknown> & { type?: string };
 
+export interface RepositoryDeliveryCreateRequest {
+  target_id: TargetId;
+  type: "repository";
+  repository: RepositoryDeliverySettingsInput;
+}
+
+/** Response shape for RepositoryDeliveryCreateRequest. */
+export interface RepositoryDeliveryCreateRequestRead {
+  target_id: TargetId;
+  type: "repository" | (string & {});
+  repository: RepositoryDeliverySettingsInputRead;
+}
+
+export interface HostedMcpDeliveryCreateRequest {
+  target_id: TargetId;
+  type: "hosted_mcp";
+}
+
+/** Response shape for HostedMcpDeliveryCreateRequest. */
+export interface HostedMcpDeliveryCreateRequestRead {
+  target_id: TargetId;
+  type: "hosted_mcp" | (string & {});
+}
+
+export type DeliveryCreateRequest = RepositoryDeliveryCreateRequest | HostedMcpDeliveryCreateRequest;
+
+/** Response shape for DeliveryCreateRequest. */
+export type DeliveryCreateRequestRead = RepositoryDeliveryCreateRequestRead
+  | HostedMcpDeliveryCreateRequestRead
+  | Record<string, unknown> & { type?: string };
+
+export interface DeliveryUpdateRequest {
+  /**
+   * Replaces the complete repository settings, so omitted optional settings reset to their
+   * defaults. Only repository Deliveries have settings to update.
+   */
+  repository: RepositoryDeliverySettingsInput;
+}
+
+/** Response shape for DeliveryUpdateRequest. */
+export interface DeliveryUpdateRequestRead {
+  /**
+   * Replaces the complete repository settings, so omitted optional settings reset to their
+   * defaults. Only repository Deliveries have settings to update.
+   */
+  repository: RepositoryDeliverySettingsInputRead;
+}
+
+export interface DeletedDelivery {
+  id: DeliveryId;
+  object: "delivery";
+  deleted: true;
+  request_id: RequestId;
+}
+
+/** Response shape for DeletedDelivery. */
+export interface DeletedDeliveryRead {
+  id: DeliveryId;
+  object: "delivery" | (string & {});
+  deleted: true;
+  request_id: RequestId;
+}
+
 export interface RepositoryDeliverySettings {
   provider: RepositoryProvider;
   identifier: RepositoryIdentifier;
@@ -1226,14 +1289,6 @@ export interface TargetUpdateRequest {
    * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfig | null;
-  /**
-   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
-   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
-   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
-   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
-   * for hosted_mcp, a new URL.
-   */
-  deliveries?: DeliveryInput[];
 }
 
 /** Response shape for TargetUpdateRequest. */
@@ -1247,14 +1302,6 @@ export interface TargetUpdateRequestRead {
    * inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec.
    */
   config?: TargetConfigRead | null;
-  /**
-   * Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their
-   * ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so
-   * omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or
-   * send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and,
-   * for hosted_mcp, a new URL.
-   */
-  deliveries?: DeliveryInputRead[];
 }
 
 /**
@@ -3481,6 +3528,7 @@ export const ErrorCode = {
   PUBLICATION_RECOVERY_UNAVAILABLE: "publication_recovery_unavailable",
   PUBLICATION_FAILED: "publication_failed",
   DELIVERY_CONFLICT: "delivery_conflict",
+  DELIVERY_EXISTS: "delivery_exists",
   RESOURCE_HAS_DEPENDENCIES: "resource_has_dependencies",
   CUSTOMIZATION_CONFLICT: "customization_conflict",
   HISTORY_RECOVERY_REQUIRED: "history_recovery_required",

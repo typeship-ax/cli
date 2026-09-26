@@ -178,12 +178,12 @@ export class TargetsResource {
   }
 
   /**
-   * Update a Target or its Deliveries
+   * Update a Target
    *
-   * Omitted fields keep their current values. Supplied config, checks, and deliveries replace their
-   * complete stored values.
-   * With Project auto_generate enabled, changing Target config, checks, or Deliveries queues that
-   * Target's Generation. A queued or running Target reuses that Generation.
+   * Omitted fields keep their current values. Supplied config and checks replace their complete
+   * stored values. Change Deliveries with createDelivery, updateDelivery, and deleteDelivery.
+   * With Project auto_generate enabled, changing Target config or checks queues that Target's
+   * Generation. A queued or running Target reuses that Generation.
    * Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag
    * returns 412 precondition_failed without saving.
    * Select the next version through PATCH /drafts/{draft_id} on the Target's draft_id.

@@ -494,14 +494,14 @@ Read the full command contract with `typeship docs targets delete --json`.
 
 ### `typeship targets update <target_id> [flags]`
 
-Update a Target or its Deliveries
+Update a Target
 
 `PATCH /targets/{target_id}`
 
 Safety: **write** · Authentication: **required**
 
-Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.
-With Project auto_generate enabled, changing Target config, checks, or Deliveries queues that Target's Generation. A queued or running Target reuses that Generation.
+Omitted fields keep their current values. Supplied config and checks replace their complete stored values. Change Deliveries with createDelivery, updateDelivery, and deleteDelivery.
+With Project auto_generate enabled, changing Target config or checks queues that Target's Generation. A queued or running Target reuses that Generation.
 Omitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.
 Select the next version through PATCH /drafts/{draft_id} on the Target's draft_id.
 
@@ -517,7 +517,6 @@ See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writ
 | `--release-channel` | body | `string` | no | — |
 | `--checks` | body | `object` | no | Required checks run against the code in the Draft. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list. |
 | `--config` | body | `json` | no | Replaces the complete stored override object. Send null or an empty object to resume Project inheritance. Effective values merge over Project.config; GraphQL settings belong to the Spec. |
-| `--deliveries` | body | `array` | no | Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and, for hosted_mcp, a new URL. |
 | `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
@@ -814,6 +813,34 @@ Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` co
 
 Read the full command contract with `typeship docs deliveries list --json`.
 
+### `typeship deliveries create [flags]`
+
+Create a Delivery
+
+`POST /deliveries`
+
+Safety: **write** · Authentication: **required**
+
+Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each type; a `409 delivery_exists` means it already has one, so update that Delivery instead.
+With Project auto_generate enabled, adding a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
+
+A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
+A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
+
+Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
+
+```sh
+typeship deliveries create --data '{"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}'
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries create --json`.
+
 ### `typeship deliveries get <delivery_id> [flags]`
 
 Get a Delivery
@@ -835,6 +862,64 @@ typeship deliveries get dlv_4q8m2v7k1p9d5h6c
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
 Read the full command contract with `typeship docs deliveries get --json`.
+
+### `typeship deliveries delete <delivery_id> [flags]`
+
+Delete a Delivery
+
+`DELETE /deliveries/{delivery_id}`
+
+Safety: **destructive** · Authentication: **required**
+
+Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.
+
+A `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+```sh
+typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries delete --json`.
+
+### `typeship deliveries update <delivery_id> [flags]`
+
+Update a Delivery
+
+`PATCH /deliveries/{delivery_id}`
+
+Safety: **write** · Authentication: **required**
+
+Replaces a repository Delivery's settings. Omitted optional settings reset to their defaults. Hosted MCP Deliveries have no settings to update.
+With Project auto_generate enabled, changing a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.
+Omitting If-Match applies the update to the current Delivery; with If-Match, a stale ETag returns 412 precondition_failed without saving.
+
+A `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.
+A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.
+See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.
+
+| Argument or flag | In | Type | Required | Description |
+| --- | --- | --- | --- | --- |
+| `<delivery_id>` | path | `string` | yes | — |
+| `--repository` | body | `object` | yes | — |
+| `--if-match` | header | `string` | no | ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes. |
+
+Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
+
+```sh
+typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":true}'
+```
+
+Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
+
+Read the full command contract with `typeship docs deliveries update --json`.
 
 ## publications
 

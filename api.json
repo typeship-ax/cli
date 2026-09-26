@@ -130,7 +130,19 @@
       ],
       [
         "deliveries",
+        "create"
+      ],
+      [
+        "deliveries",
         "get"
+      ],
+      [
+        "deliveries",
+        "delete"
+      ],
+      [
+        "deliveries",
+        "update"
       ],
       [
         "publications",
@@ -361,7 +373,25 @@
       {
         "command": [
           "deliveries",
+          "create"
+        ]
+      },
+      {
+        "command": [
+          "deliveries",
           "get"
+        ]
+      },
+      {
+        "command": [
+          "deliveries",
+          "delete"
+        ]
+      },
+      {
+        "command": [
+          "deliveries",
+          "update"
         ]
       },
       {
@@ -759,6 +789,17 @@
       },
       {
         "resource": "deliveries",
+        "method": "create",
+        "command": [
+          "deliveries",
+          "create"
+        ],
+        "tool": "deliveries_create",
+        "httpMethod": "POST",
+        "path": "/deliveries"
+      },
+      {
+        "resource": "deliveries",
         "method": "get",
         "command": [
           "deliveries",
@@ -766,6 +807,28 @@
         ],
         "tool": "deliveries_get",
         "httpMethod": "GET",
+        "path": "/deliveries/{delivery_id}"
+      },
+      {
+        "resource": "deliveries",
+        "method": "delete",
+        "command": [
+          "deliveries",
+          "delete"
+        ],
+        "tool": "deliveries_delete",
+        "httpMethod": "DELETE",
+        "path": "/deliveries/{delivery_id}"
+      },
+      {
+        "resource": "deliveries",
+        "method": "update",
+        "command": [
+          "deliveries",
+          "update"
+        ],
+        "tool": "deliveries_update",
+        "httpMethod": "PATCH",
         "path": "/deliveries/{delivery_id}"
       },
       {
@@ -8035,13 +8098,6 @@
           "required": false
         },
         {
-          "name": "deliveries",
-          "flag": "--deliveries",
-          "in": "body",
-          "type": "array",
-          "required": false
-        },
-        {
           "name": "If-Match",
           "flag": "--if-match",
           "in": "header",
@@ -8052,8 +8108,8 @@
       "example_command": "typeship targets update tgt_5m8q2v7k1p9d4h6c --status disabled",
       "method": "PATCH",
       "path": "/targets/{target_id}",
-      "summary": "Update a Target or its Deliveries",
-      "description": "Omitted fields keep their current values. Supplied config, checks, and deliveries replace their complete stored values.\nWith Project auto_generate enabled, changing Target config, checks, or Deliveries queues that Target's Generation. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\nSelect the next version through PATCH /drafts/{draft_id} on the Target's draft_id.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `409 delivery_conflict` means another Target owns the requested repository tree; retrieve both Targets, choose a free destination, and retry.\nA `502 follow_up_failed` means the update was saved, but retiring an obsolete review or regenerating the Target failed. Retrieve the Target and follow the error's retryable and suggested_action fields.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "summary": "Update a Target",
+      "description": "Omitted fields keep their current values. Supplied config and checks replace their complete stored values. Change Deliveries with createDelivery, updateDelivery, and deleteDelivery.\nWith Project auto_generate enabled, changing Target config or checks queues that Target's Generation. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current resource; with If-Match, a stale ETag returns 412 precondition_failed without saving.\nSelect the next version through PATCH /drafts/{draft_id} on the Target's draft_id.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `409 delivery_conflict` means another Target owns the requested repository tree; retrieve both Targets, choose a free destination, and retry.\nA `502 follow_up_failed` means the update was saved, but retiring an obsolete review or regenerating the Target failed. Retrieve the Target and follow the error's retryable and suggested_action fields.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -8465,92 +8521,6 @@
                 "type": "null"
               }
             ]
-          },
-          "deliveries": {
-            "description": "Replaces the Delivery set; include each kind you want to keep. Retained kinds preserve their ID, creation time, and hosted URL. Each supplied Delivery replaces its configuration, so omitted optional settings reset to their defaults. Omit deliveries to keep the existing set, or send [] to remove all Deliveries. Removing and later recreating a kind allocates a new ID and, for hosted_mcp, a new URL.",
-            "maxItems": 2,
-            "items": {
-              "anyOf": [
-                {
-                  "properties": {
-                    "type": {
-                      "const": "repository",
-                      "type": "string"
-                    },
-                    "repository": {
-                      "properties": {
-                        "provider": {
-                          "enum": [
-                            "github"
-                          ],
-                          "description": "GitHub is the only launch provider; the field is stable for future adapters.",
-                          "type": "string"
-                        },
-                        "identifier": {
-                          "description": "Provider-native repository identity, opaque outside its adapter.",
-                          "examples": [
-                            "parcel-example/api"
-                          ],
-                          "maxLength": 512,
-                          "type": "string"
-                        },
-                        "directory": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "package_name": {
-                          "description": "npm or Python registry identity where applicable.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "module_path": {
-                          "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
-                          "type": [
-                            "string",
-                            "null"
-                          ]
-                        },
-                        "publish_on_merge": {
-                          "description": "Commit repository-owned registry automation and report publication after the Draft merges.",
-                          "default": false,
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "provider",
-                        "identifier"
-                      ],
-                      "additionalProperties": false,
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "type",
-                    "repository"
-                  ],
-                  "additionalProperties": false,
-                  "type": "object"
-                },
-                {
-                  "properties": {
-                    "type": {
-                      "const": "hosted_mcp",
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "type"
-                  ],
-                  "additionalProperties": false,
-                  "type": "object"
-                }
-              ]
-            },
-            "type": "array"
           }
         },
         "required": [
@@ -13428,6 +13398,344 @@
       "example_arguments": {}
     },
     {
+      "operation": "deliveries.create",
+      "signature": "typeship deliveries create [flags]",
+      "command": [
+        "typeship",
+        "deliveries",
+        "create"
+      ],
+      "parameters": [
+        {
+          "name": "Idempotency-Key",
+          "flag": "--idempotency-key",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship deliveries create --data '{\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}'",
+      "method": "POST",
+      "path": "/deliveries",
+      "summary": "Create a Delivery",
+      "description": "Adds a repository or hosted MCP Delivery to a Target. A Target has at most one Delivery of each type; a `409 delivery_exists` means it already has one, so update that Delivery instead.\nWith Project auto_generate enabled, adding a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.\n\nA `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.\nA `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.",
+      "safety": "write",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "Idempotency-Key": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[!-~]+$",
+            "type": "string",
+            "description": "Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write."
+          },
+          "body": {
+            "anyOf": [
+              {
+                "properties": {
+                  "target_id": {
+                    "description": "Stable identifier for one configured generated product.",
+                    "examples": [
+                      "tgt_5m8q2v7k1p9d4h6c"
+                    ],
+                    "pattern": "^tgt_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "repository",
+                    "type": "string"
+                  },
+                  "repository": {
+                    "properties": {
+                      "provider": {
+                        "enum": [
+                          "github"
+                        ],
+                        "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                        "type": "string"
+                      },
+                      "identifier": {
+                        "description": "Provider-native repository identity, opaque outside its adapter.",
+                        "examples": [
+                          "parcel-example/api"
+                        ],
+                        "maxLength": 512,
+                        "type": "string"
+                      },
+                      "directory": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "package_name": {
+                        "description": "npm or Python registry identity where applicable.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "module_path": {
+                        "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "publish_on_merge": {
+                        "description": "Commit repository-owned registry automation and report publication after the Draft merges.",
+                        "default": false,
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "provider",
+                      "identifier"
+                    ],
+                    "additionalProperties": false,
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "target_id",
+                  "type",
+                  "repository"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "target_id": {
+                    "description": "Stable identifier for one configured generated product.",
+                    "examples": [
+                      "tgt_5m8q2v7k1p9d4h6c"
+                    ],
+                    "pattern": "^tgt_[a-z0-9]{16}$",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "hosted_mcp",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "target_id",
+                  "type"
+                ],
+                "additionalProperties": false,
+                "type": "object"
+              }
+            ],
+            "example": {
+              "target_id": "tgt_5m8q2v7k1p9d4h6c",
+              "type": "repository",
+              "repository": {
+                "provider": "github",
+                "identifier": "parcel-example/parcel-client",
+                "package_name": "parcel-client",
+                "publish_on_merge": false
+              }
+            }
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "output_schema": {
+        "description": "repository is present for a repository Delivery, with issues, required_checks, and last_event; hosted_mcp is present for a hosted_mcp Delivery.",
+        "properties": {
+          "id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "delivery",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "repository",
+              "hosted_mcp"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "action_required",
+              "disabled"
+            ],
+            "type": "string"
+          },
+          "repository": {
+            "properties": {
+              "provider": {
+                "enum": [
+                  "github"
+                ],
+                "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                "type": "string"
+              },
+              "identifier": {
+                "description": "Provider-native repository identity, opaque outside its adapter.",
+                "examples": [
+                  "parcel-example/api"
+                ],
+                "maxLength": 512,
+                "type": "string"
+              },
+              "directory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "package_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "module_path": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publish_on_merge": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "issues": {
+            "items": {
+              "properties": {
+                "code": {
+                  "enum": [
+                    "app_not_installed",
+                    "repository_unreachable",
+                    "contents_write_missing",
+                    "pull_request_missing",
+                    "approval_label_missing",
+                    "check_missing",
+                    "event_failed"
+                  ],
+                  "type": "string"
+                },
+                "message": {
+                  "description": "Specific customer action or repository setting to inspect.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "required_checks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "properties": {
+                  "event": {
+                    "description": "Repository event type.",
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "queued",
+                      "running",
+                      "completed",
+                      "failed",
+                      "superseded"
+                    ],
+                    "description": "superseded: a newer event for the same repository replaced this one before it finished.",
+                    "type": "string"
+                  },
+                  "created_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hosted_mcp": {
+            "properties": {
+              "url": {
+                "format": "uri",
+                "description": "Hosted MCP endpoint for this Target, or null while it is being provisioned.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "body": {
+          "target_id": "tgt_5m8q2v7k1p9d4h6c",
+          "type": "repository",
+          "repository": {
+            "provider": "github",
+            "identifier": "parcel-example/parcel-client",
+            "package_name": "parcel-client",
+            "publish_on_merge": false
+          }
+        }
+      }
+    },
+    {
       "operation": "deliveries.get",
       "signature": "typeship deliveries get <delivery_id> [flags]",
       "command": [
@@ -13648,6 +13956,399 @@
       }
     },
     {
+      "operation": "deliveries.delete",
+      "signature": "typeship deliveries delete <delivery_id> [flags]",
+      "command": [
+        "typeship",
+        "deliveries",
+        "delete"
+      ],
+      "parameters": [
+        {
+          "name": "delivery_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "If-Match",
+          "flag": "--if-match",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship deliveries delete dlv_4q8m2v7k1p9d5h6c --force",
+      "method": "DELETE",
+      "path": "/deliveries/{delivery_id}",
+      "summary": "Delete a Delivery",
+      "description": "Removes a Delivery from its Target. Removing a repository Delivery retires the Target's open release pull request; removing a hosted MCP Delivery stops serving its URL. Recreating the type later allocates a new ID and, for hosted MCP, a new URL.\n\nA `409 target_busy` means the Target is publishing; wait for it to finish. A `502 follow_up_failed` means the Delivery was removed, but retiring an obsolete review or regenerating the Target failed.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "destructive",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "If-Match": {
+            "minLength": 1,
+            "maxLength": 1024,
+            "type": "string",
+            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
+          }
+        },
+        "required": [
+          "delivery_id"
+        ]
+      },
+      "output_schema": {
+        "properties": {
+          "id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "delivery",
+            "type": "string"
+          },
+          "deleted": {
+            "const": true,
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "delivery_id": "dlv_4q8m2v7k1p9d5h6c"
+      }
+    },
+    {
+      "operation": "deliveries.update",
+      "signature": "typeship deliveries update <delivery_id> [flags]",
+      "command": [
+        "typeship",
+        "deliveries",
+        "update"
+      ],
+      "parameters": [
+        {
+          "name": "delivery_id",
+          "positional": true,
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "repository",
+          "flag": "--repository",
+          "in": "body",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "If-Match",
+          "flag": "--if-match",
+          "in": "header",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "example_command": "typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":true}'",
+      "method": "PATCH",
+      "path": "/deliveries/{delivery_id}",
+      "summary": "Update a Delivery",
+      "description": "Replaces a repository Delivery's settings. Omitted optional settings reset to their defaults. Hosted MCP Deliveries have no settings to update.\nWith Project auto_generate enabled, changing a Delivery queues the Target's Generation. A queued or running Target reuses that Generation.\nOmitting If-Match applies the update to the current Delivery; with If-Match, a stale ETag returns 412 precondition_failed without saving.\n\nA `409 delivery_conflict` means another Target owns the requested repository directory. A `409 target_busy` means the Target is publishing; wait for it to finish.\nA `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete review or regenerating the Target failed. Get the Delivery and follow the error's retryable and suggested_action fields.\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "safety": "write",
+      "auth": "required",
+      "security": [
+        {
+          "apiKey": []
+        }
+      ],
+      "paginated": false,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "If-Match": {
+            "minLength": 1,
+            "maxLength": 1024,
+            "type": "string",
+            "description": "ETag from a preceding response. The write applies only if the resource still has that version; otherwise it returns 412 precondition_failed without changes. Omit to write the current version. See https://typeship.dev/docs/typeship-api#conditional-writes."
+          },
+          "repository": {
+            "properties": {
+              "provider": {
+                "enum": [
+                  "github"
+                ],
+                "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                "type": "string"
+              },
+              "identifier": {
+                "description": "Provider-native repository identity, opaque outside its adapter.",
+                "examples": [
+                  "parcel-example/api"
+                ],
+                "maxLength": 512,
+                "type": "string"
+              },
+              "directory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "package_name": {
+                "description": "npm or Python registry identity where applicable.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "module_path": {
+                "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publish_on_merge": {
+                "description": "Commit repository-owned registry automation and report publication after the Draft merges.",
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "provider",
+              "identifier"
+            ],
+            "additionalProperties": false,
+            "type": "object",
+            "example": {
+              "provider": "github",
+              "identifier": "parcel-example/parcel-client",
+              "package_name": "parcel-client",
+              "publish_on_merge": true
+            }
+          }
+        },
+        "required": [
+          "delivery_id",
+          "repository"
+        ]
+      },
+      "output_schema": {
+        "description": "repository is present for a repository Delivery, with issues, required_checks, and last_event; hosted_mcp is present for a hosted_mcp Delivery.",
+        "properties": {
+          "id": {
+            "examples": [
+              "dlv_4q8m2v7k1p9d5h6c"
+            ],
+            "pattern": "^dlv_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "object": {
+            "const": "delivery",
+            "type": "string"
+          },
+          "target_id": {
+            "description": "Stable identifier for one configured generated product.",
+            "examples": [
+              "tgt_5m8q2v7k1p9d4h6c"
+            ],
+            "pattern": "^tgt_[a-z0-9]{16}$",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "repository",
+              "hosted_mcp"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "action_required",
+              "disabled"
+            ],
+            "type": "string"
+          },
+          "repository": {
+            "properties": {
+              "provider": {
+                "enum": [
+                  "github"
+                ],
+                "description": "GitHub is the only launch provider; the field is stable for future adapters.",
+                "type": "string"
+              },
+              "identifier": {
+                "description": "Provider-native repository identity, opaque outside its adapter.",
+                "examples": [
+                  "parcel-example/api"
+                ],
+                "maxLength": 512,
+                "type": "string"
+              },
+              "directory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "package_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "module_path": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publish_on_merge": {
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "issues": {
+            "items": {
+              "properties": {
+                "code": {
+                  "enum": [
+                    "app_not_installed",
+                    "repository_unreachable",
+                    "contents_write_missing",
+                    "pull_request_missing",
+                    "approval_label_missing",
+                    "check_missing",
+                    "event_failed"
+                  ],
+                  "type": "string"
+                },
+                "message": {
+                  "description": "Specific customer action or repository setting to inspect.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "required_checks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "last_event": {
+            "anyOf": [
+              {
+                "properties": {
+                  "event": {
+                    "description": "Repository event type.",
+                    "type": "string"
+                  },
+                  "status": {
+                    "enum": [
+                      "queued",
+                      "running",
+                      "completed",
+                      "failed",
+                      "superseded"
+                    ],
+                    "description": "superseded: a newer event for the same repository replaced this one before it finished.",
+                    "type": "string"
+                  },
+                  "created_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hosted_mcp": {
+            "properties": {
+              "url": {
+                "format": "uri",
+                "description": "Hosted MCP endpoint for this Target, or null while it is being provisioned.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
+            "examples": [
+              "req_3k8m1v6q9p2d7h4c"
+            ],
+            "pattern": "^req_[a-z0-9]{16}$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "example_arguments": {
+        "delivery_id": "dlv_4q8m2v7k1p9d5h6c",
+        "repository": {
+          "provider": "github",
+          "identifier": "parcel-example/parcel-client",
+          "package_name": "parcel-client",
+          "publish_on_merge": true
+        }
+      }
+    },
+    {
       "operation": "publications.list",
       "signature": "typeship publications list [flags]",
       "command": [
@@ -13861,6 +14562,7 @@
                           "publication_recovery_unavailable",
                           "publication_failed",
                           "delivery_conflict",
+                          "delivery_exists",
                           "resource_has_dependencies",
                           "customization_conflict",
                           "history_recovery_required",
@@ -14155,6 +14857,7 @@
                     "publication_recovery_unavailable",
                     "publication_failed",
                     "delivery_conflict",
+                    "delivery_exists",
                     "resource_has_dependencies",
                     "customization_conflict",
                     "history_recovery_required",
@@ -14608,6 +15311,7 @@
                           "publication_recovery_unavailable",
                           "publication_failed",
                           "delivery_conflict",
+                          "delivery_exists",
                           "resource_has_dependencies",
                           "customization_conflict",
                           "history_recovery_required",
@@ -14995,6 +15699,7 @@
                     "publication_recovery_unavailable",
                     "publication_failed",
                     "delivery_conflict",
+                    "delivery_exists",
                     "resource_has_dependencies",
                     "customization_conflict",
                     "history_recovery_required",

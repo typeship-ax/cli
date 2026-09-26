@@ -3441,6 +3441,13 @@ export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
 /** Stable programmatic identifier. Do not branch on message. */
 export const ErrorCode = {
   INPUT_INVALID: "input_invalid",
+  INPUT_MISSING: "input_missing",
+  INPUT_TYPE_INVALID: "input_type_invalid",
+  INPUT_FORMAT_INVALID: "input_format_invalid",
+  INPUT_TOO_LONG: "input_too_long",
+  INPUT_TOO_SHORT: "input_too_short",
+  INPUT_DUPLICATE: "input_duplicate",
+  INPUT_UNKNOWN: "input_unknown",
   QUERY_PARAM_INVALID: "query_param_invalid",
   CURSOR_INVALID: "cursor_invalid",
   METHOD_NOT_ALLOWED: "method_not_allowed",
@@ -3455,7 +3462,8 @@ export const ErrorCode = {
   INSUFFICIENT_SCOPE: "insufficient_scope",
   ROLE_INSUFFICIENT: "role_insufficient",
   RATE_LIMIT_EXCEEDED: "rate_limit_exceeded",
-  PLAN_LIMIT_REACHED: "plan_limit_reached",
+  FEATURE_NOT_AVAILABLE: "feature_not_available",
+  QUOTA_EXCEEDED: "quota_exceeded",
   SPEC_INVALID: "spec_invalid",
   SPEC_TOO_LARGE: "spec_too_large",
   SPEC_UNREACHABLE: "spec_unreachable",

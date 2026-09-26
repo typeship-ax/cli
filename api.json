@@ -153,12 +153,12 @@
         "get"
       ],
       [
-        "generate",
-        "run"
+        "packages",
+        "generate"
       ],
       [
-        "generate",
-        "downloadPackage"
+        "packages",
+        "download"
       ],
       [
         "organization",
@@ -400,14 +400,14 @@
       },
       {
         "command": [
-          "generate",
-          "run"
+          "packages",
+          "generate"
         ]
       },
       {
         "command": [
-          "generate",
-          "download-package"
+          "packages",
+          "download"
         ]
       },
       {
@@ -834,24 +834,24 @@
         "path": "/files/{file_id}"
       },
       {
-        "resource": "generate",
-        "method": "run",
+        "resource": "packages",
+        "method": "generate",
         "command": [
-          "generate",
-          "run"
+          "packages",
+          "generate"
         ],
-        "tool": "generate_run",
+        "tool": "packages_generate",
         "httpMethod": "POST",
         "path": "/generate"
       },
       {
-        "resource": "generate",
-        "method": "downloadPackage",
+        "resource": "packages",
+        "method": "download",
         "command": [
-          "generate",
-          "download-package"
+          "packages",
+          "download"
         ],
-        "tool": "generate_download_package",
+        "tool": "packages_download",
         "httpMethod": "GET",
         "path": "/generate/download"
       },
@@ -13703,12 +13703,12 @@
       }
     },
     {
-      "operation": "generate.run",
-      "signature": "typeship generate run [flags]",
+      "operation": "packages.generate",
+      "signature": "typeship packages generate [flags]",
       "command": [
         "typeship",
-        "generate",
-        "run"
+        "packages",
+        "generate"
       ],
       "parameters": [
         {
@@ -13761,7 +13761,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship generate run --spec '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"type\":\"cli\"}'",
+      "example_command": "typeship packages generate --spec '{\"url\":\"https://typeship.dev/examples/petstore/openapi.yaml\"}' --target '{\"type\":\"cli\"}'",
       "method": "POST",
       "path": "/generate",
       "summary": "Generate a package",
@@ -14722,12 +14722,12 @@
       }
     },
     {
-      "operation": "generate.downloadPackage",
-      "signature": "typeship generate download-package [flags]",
+      "operation": "packages.download",
+      "signature": "typeship packages download [flags]",
       "command": [
         "typeship",
-        "generate",
-        "download-package"
+        "packages",
+        "download"
       ],
       "parameters": [
         {
@@ -14738,11 +14738,11 @@
           "required": true
         }
       ],
-      "example_command": "typeship generate download-package --query-token parcel_download_example_token_1234567890123",
+      "example_command": "typeship packages download --query-token parcel_download_example_token_1234567890123",
       "method": "GET",
       "path": "/generate/download",
       "summary": "Download a generated package",
-      "description": "Download the complete ZIP referenced by `generate_run`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.\n\nThe local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.",
+      "description": "Download the complete ZIP referenced by `packages_generate`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.\n\nThe local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.",
       "safety": "read",
       "auth": "none",
       "security": [

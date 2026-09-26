@@ -954,9 +954,9 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs files get --json`.
 
-## generate
+## packages
 
-### `typeship generate run [flags]`
+### `typeship packages generate [flags]`
 
 Generate a package
 
@@ -987,14 +987,14 @@ An anonymous URL request without source headers may return `claim.url`. Sign in 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship generate run --spec '{"url":"https://typeship.dev/examples/petstore/openapi.yaml"}' --target '{"type":"cli"}'
+typeship packages generate --spec '{"url":"https://typeship.dev/examples/petstore/openapi.yaml"}' --target '{"type":"cli"}'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
-Read the full command contract with `typeship docs generate run --json`.
+Read the full command contract with `typeship docs packages generate --json`.
 
-### `typeship generate download-package [flags]`
+### `typeship packages download [flags]`
 
 Download a generated package
 
@@ -1002,7 +1002,7 @@ Download a generated package
 
 Safety: **read** · Authentication: **none**
 
-Download the complete ZIP referenced by `generate_run`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.
+Download the complete ZIP referenced by `packages_generate`'s `download.url`. Pass the token from that URL. No API key is needed; the token grants access only to that exact package until its replay window expires. Keep the token private.
 
 The local MCP server saves this binary response to disk. On a hosted MCP connection, download the original URL directly to your workspace. Verify the ZIP against `download.sha256` before extracting it into an empty directory. Expired or invalid tokens return `404`; a new generation creates a new download.
 
@@ -1011,12 +1011,12 @@ The local MCP server saves this binary response to disk. On a hosted MCP connect
 | `--query-token` | query | `string` | yes | Private download token from download.url in the generation result. |
 
 ```sh
-typeship generate download-package --query-token parcel_download_example_token_1234567890123
+typeship packages download --query-token parcel_download_example_token_1234567890123
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
 
-Read the full command contract with `typeship docs generate download-package --json`.
+Read the full command contract with `typeship docs packages download --json`.
 
 ## organization
 

@@ -21,7 +21,7 @@ import { GenerationsResource } from "./resources/generations.js";
 import { DraftsResource } from "./resources/drafts.js";
 import { ReleasesResource } from "./resources/releases.js";
 import { FilesResource } from "./resources/files.js";
-import { GenerateResource } from "./resources/generate.js";
+import { PackagesResource } from "./resources/packages.js";
 import { OrganizationResource } from "./resources/organization.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
@@ -108,7 +108,7 @@ export class TypeshipClient {
   readonly drafts: DraftsResource;
   readonly releases: ReleasesResource;
   readonly files: FilesResource;
-  readonly generate: GenerateResource;
+  readonly packages: PackagesResource;
   readonly organization: OrganizationResource;
   readonly apiKeys: ApiKeysResource;
 
@@ -174,7 +174,7 @@ export class TypeshipClient {
     this.drafts = new DraftsResource(core);
     this.releases = new ReleasesResource(core);
     this.files = new FilesResource(core);
-    this.generate = new GenerateResource(core);
+    this.packages = new PackagesResource(core);
     this.organization = new OrganizationResource(core);
     this.apiKeys = new ApiKeysResource(core);
   }
@@ -201,6 +201,6 @@ export * from "./resources/generations.js";
 export * from "./resources/drafts.js";
 export * from "./resources/releases.js";
 export * from "./resources/files.js";
-export * from "./resources/generate.js";
+export * from "./resources/packages.js";
 export * from "./resources/organization.js";
 export * from "./resources/api-keys.js";

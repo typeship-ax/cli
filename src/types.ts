@@ -34,8 +34,6 @@ export type DraftId = string;
 
 export type ReleaseId = string;
 
-export type PublicationId = string;
-
 /**
  * Generator implementation selected by a Target. This is configuration, not identity; several
  * Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a
@@ -1422,23 +1420,6 @@ export interface DeliveryListRead {
   request_id: RequestId;
 }
 
-export interface PublicationList {
-  object: ListObject;
-  data: Publication[];
-  has_more: boolean;
-  next_cursor: string | null;
-  request_id: RequestId;
-}
-
-/** Response shape for PublicationList. */
-export interface PublicationListRead {
-  object: ListObject;
-  data: PublicationRead[];
-  has_more: boolean;
-  next_cursor: string | null;
-  request_id: RequestId;
-}
-
 export interface DraftList {
   object: ListObject;
   data: Draft[];
@@ -1619,10 +1600,8 @@ export interface ReleaseListRead {
   request_id: RequestId;
 }
 
+/** One destination's publishing progress for its Release. It has no ID; read it on the Release. */
 export interface Publication {
-  id: PublicationId;
-  object: "publication";
-  release_id: ReleaseId;
   /**
    * Where the release is published. github is the repository's GitHub Release; the others are
    * package registries.
@@ -1631,9 +1610,8 @@ export interface Publication {
   /**
    * queued: the repository workflow has not started this destination; get the Publication or its
    * Release again. running: the workflow is publishing; get it again. completed: the package is
-   * published at registry_url. failed: read errors, correct the cause, then call retryRelease on
-   * release_id. Lifecycle events are publication.running, publication.completed, and
-   * publication.failed.
+   * published at registry_url. failed: read errors, correct the cause, then retry the Release.
+   * Lifecycle events are publication.running, publication.completed, and publication.failed.
    */
   status: "queued" | "running" | "completed" | "failed";
   attempt: number;
@@ -1658,9 +1636,6 @@ export interface Publication {
 
 /** Response shape for Publication. */
 export interface PublicationRead {
-  id: PublicationId;
-  object: "publication" | (string & {});
-  release_id: ReleaseId;
   /**
    * Where the release is published. github is the repository's GitHub Release; the others are
    * package registries.
@@ -1669,9 +1644,8 @@ export interface PublicationRead {
   /**
    * queued: the repository workflow has not started this destination; get the Publication or its
    * Release again. running: the workflow is publishing; get it again. completed: the package is
-   * published at registry_url. failed: read errors, correct the cause, then call retryRelease on
-   * release_id. Lifecycle events are publication.running, publication.completed, and
-   * publication.failed.
+   * published at registry_url. failed: read errors, correct the cause, then retry the Release.
+   * Lifecycle events are publication.running, publication.completed, and publication.failed.
    */
   status: ("queued" | "running" | "completed" | "failed") | (string & {});
   attempt: number;
@@ -1693,11 +1667,6 @@ export interface PublicationRead {
   /** Format: date-time */
   updated_at: string;
 }
-
-export type PublicationResponse = Publication & ResponseMetadata;
-
-/** Response shape for PublicationResponse. */
-export type PublicationResponseRead = PublicationRead & ResponseMetadata;
 
 /**
  * idle: the open Draft has no pending change; generate the Target to start one. working: Typeship

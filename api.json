@@ -149,14 +149,6 @@
         "retry"
       ],
       [
-        "publications",
-        "get"
-      ],
-      [
-        "publications",
-        "list"
-      ],
-      [
         "files",
         "get"
       ],
@@ -398,18 +390,6 @@
         "command": [
           "releases",
           "retry"
-        ]
-      },
-      {
-        "command": [
-          "publications",
-          "get"
-        ]
-      },
-      {
-        "command": [
-          "publications",
-          "list"
         ]
       },
       {
@@ -841,28 +821,6 @@
         "tool": "releases_retry",
         "httpMethod": "POST",
         "path": "/releases/{release_id}/retry"
-      },
-      {
-        "resource": "publications",
-        "method": "get",
-        "command": [
-          "publications",
-          "get"
-        ],
-        "tool": "publications_get",
-        "httpMethod": "GET",
-        "path": "/publications/{publication_id}"
-      },
-      {
-        "resource": "publications",
-        "method": "list",
-        "command": [
-          "publications",
-          "list"
-        ],
-        "tool": "publications_list",
-        "httpMethod": "GET",
-        "path": "/publications"
       },
       {
         "resource": "files",
@@ -8068,25 +8026,8 @@
           "publications": {
             "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
+              "description": "One destination's publishing progress for its Release. It has no ID; read it on the Release.",
               "properties": {
-                "id": {
-                  "examples": [
-                    "pub_2m8q4v7k1p9d5h6c"
-                  ],
-                  "pattern": "^pub_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "publication",
-                  "type": "string"
-                },
-                "release_id": {
-                  "examples": [
-                    "rel_7m2q8v4k1p9d5h6c"
-                  ],
-                  "pattern": "^rel_[a-z0-9]{16}$",
-                  "type": "string"
-                },
                 "type": {
                   "enum": [
                     "github",
@@ -8105,7 +8046,7 @@
                     "completed",
                     "failed"
                   ],
-                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then retry the Release. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -12700,25 +12641,8 @@
                 "publications": {
                   "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
                   "items": {
+                    "description": "One destination's publishing progress for its Release. It has no ID; read it on the Release.",
                     "properties": {
-                      "id": {
-                        "examples": [
-                          "pub_2m8q4v7k1p9d5h6c"
-                        ],
-                        "pattern": "^pub_[a-z0-9]{16}$",
-                        "type": "string"
-                      },
-                      "object": {
-                        "const": "publication",
-                        "type": "string"
-                      },
-                      "release_id": {
-                        "examples": [
-                          "rel_7m2q8v4k1p9d5h6c"
-                        ],
-                        "pattern": "^rel_[a-z0-9]{16}$",
-                        "type": "string"
-                      },
                       "type": {
                         "enum": [
                           "github",
@@ -12737,7 +12661,7 @@
                           "completed",
                           "failed"
                         ],
-                        "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
+                        "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then retry the Release. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                         "type": "string"
                       },
                       "attempt": {
@@ -13108,25 +13032,8 @@
           "publications": {
             "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
+              "description": "One destination's publishing progress for its Release. It has no ID; read it on the Release.",
               "properties": {
-                "id": {
-                  "examples": [
-                    "pub_2m8q4v7k1p9d5h6c"
-                  ],
-                  "pattern": "^pub_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "publication",
-                  "type": "string"
-                },
-                "release_id": {
-                  "examples": [
-                    "rel_7m2q8v4k1p9d5h6c"
-                  ],
-                  "pattern": "^rel_[a-z0-9]{16}$",
-                  "type": "string"
-                },
                 "type": {
                   "enum": [
                     "github",
@@ -13145,7 +13052,7 @@
                     "completed",
                     "failed"
                   ],
-                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then retry the Release. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -13519,25 +13426,8 @@
           "publications": {
             "description": "One entry per destination Typeship has attempted to publish. Empty when publishing is off for the Target's repository Delivery.",
             "items": {
+              "description": "One destination's publishing progress for its Release. It has no ID; read it on the Release.",
               "properties": {
-                "id": {
-                  "examples": [
-                    "pub_2m8q4v7k1p9d5h6c"
-                  ],
-                  "pattern": "^pub_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "publication",
-                  "type": "string"
-                },
-                "release_id": {
-                  "examples": [
-                    "rel_7m2q8v4k1p9d5h6c"
-                  ],
-                  "pattern": "^rel_[a-z0-9]{16}$",
-                  "type": "string"
-                },
                 "type": {
                   "enum": [
                     "github",
@@ -13556,7 +13446,7 @@
                     "completed",
                     "failed"
                   ],
-                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
+                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then retry the Release. Lifecycle events are publication.running, publication.completed, and publication.failed.",
                   "type": "string"
                 },
                 "attempt": {
@@ -13648,656 +13538,6 @@
       "example_arguments": {
         "release_id": "rel_7m2q8v4k1p9d5h6c"
       }
-    },
-    {
-      "operation": "publications.get",
-      "signature": "typeship publications get <publication_id> [flags]",
-      "command": [
-        "typeship",
-        "publications",
-        "get"
-      ],
-      "parameters": [
-        {
-          "name": "publication_id",
-          "positional": true,
-          "in": "path",
-          "type": "string",
-          "required": true
-        }
-      ],
-      "example_command": "typeship publications get pub_2m8q4v7k1p9d5h6c",
-      "method": "GET",
-      "path": "/publications/{publication_id}",
-      "summary": "Get a Publication",
-      "description": "Returns the registry publishing status for a release. A status in another organization returns 404 resource_not_found.",
-      "safety": "read",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": false,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "publication_id": {
-            "examples": [
-              "pub_2m8q4v7k1p9d5h6c"
-            ],
-            "pattern": "^pub_[a-z0-9]{16}$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "publication_id"
-        ]
-      },
-      "output_schema": {
-        "properties": {
-          "id": {
-            "examples": [
-              "pub_2m8q4v7k1p9d5h6c"
-            ],
-            "pattern": "^pub_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "object": {
-            "const": "publication",
-            "type": "string"
-          },
-          "release_id": {
-            "examples": [
-              "rel_7m2q8v4k1p9d5h6c"
-            ],
-            "pattern": "^rel_[a-z0-9]{16}$",
-            "type": "string"
-          },
-          "type": {
-            "enum": [
-              "github",
-              "npm",
-              "pypi",
-              "go",
-              "mcp"
-            ],
-            "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "queued",
-              "running",
-              "completed",
-              "failed"
-            ],
-            "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
-            "type": "string"
-          },
-          "attempt": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "run_url": {
-            "format": "uri",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "registry_url": {
-            "format": "uri",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "artifact_digest": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "errors": {
-            "description": "Recorded failures. Empty when this resource has no recorded failure.",
-            "items": {
-              "properties": {
-                "type": {
-                  "enum": [
-                    "request",
-                    "auth",
-                    "idempotency",
-                    "rate_limit",
-                    "organization",
-                    "source",
-                    "api"
-                  ],
-                  "description": "Who can resolve the error. request: change the request. auth: fix the credential or its grant. idempotency: change or wait on the Idempotency-Key. rate_limit: wait before retrying. organization: the organization's plan must change. source: a system you own failed, such as the Spec URL, repository, or package registry. api: Typeship failed.",
-                  "type": "string"
-                },
-                "code": {
-                  "enum": [
-                    "input_invalid",
-                    "input_missing",
-                    "input_type_invalid",
-                    "input_format_invalid",
-                    "input_too_long",
-                    "input_too_short",
-                    "input_duplicate",
-                    "input_unknown",
-                    "query_param_invalid",
-                    "cursor_invalid",
-                    "method_not_allowed",
-                    "resource_not_found",
-                    "idempotency_key_invalid",
-                    "idempotency_key_reused",
-                    "idempotency_key_in_use",
-                    "auth_required",
-                    "api_key_invalid",
-                    "token_invalid",
-                    "organization_required",
-                    "insufficient_scope",
-                    "role_insufficient",
-                    "rate_limit_exceeded",
-                    "feature_not_available",
-                    "quota_exceeded",
-                    "spec_invalid",
-                    "spec_too_large",
-                    "spec_unreachable",
-                    "repository_provider_unsupported",
-                    "repository_disconnected",
-                    "repository_unavailable",
-                    "target_busy",
-                    "targets_inactive",
-                    "no_draft",
-                    "draft_merged",
-                    "resource_changed",
-                    "precondition_failed",
-                    "version_invalid",
-                    "version_occupied",
-                    "version_too_low",
-                    "target_already_released",
-                    "adoption_unverified",
-                    "publication_disabled",
-                    "publication_not_retryable",
-                    "publication_recovery_unavailable",
-                    "publication_failed",
-                    "delivery_conflict",
-                    "delivery_exists",
-                    "resource_has_dependencies",
-                    "customization_conflict",
-                    "checks_failed",
-                    "draft_title_invalid",
-                    "history_recovery_required",
-                    "checks_unavailable",
-                    "dependency_missing",
-                    "dependency_not_found",
-                    "dependency_self",
-                    "dependency_cycle",
-                    "dependency_cross_project",
-                    "dependency_cross_lineage",
-                    "dependency_wrong_generator",
-                    "dependency_disabled",
-                    "dependency_module_path_missing",
-                    "dependency_unreleased",
-                    "dependency_revision_mismatch",
-                    "regeneration_failed",
-                    "follow_up_failed",
-                    "api_error"
-                  ],
-                  "description": "Stable programmatic identifier. Do not branch on message.",
-                  "type": "string"
-                },
-                "phase": {
-                  "enum": [
-                    "spec",
-                    "generation",
-                    "delivery",
-                    "publication"
-                  ],
-                  "description": "The stage that failed. A delivery failure does not change a completed Generation's status.",
-                  "type": "string"
-                },
-                "target_id": {
-                  "description": "Stable identifier for one configured generated product.",
-                  "examples": [
-                    "tgt_5m8q2v7k1p9d4h6c"
-                  ],
-                  "pattern": "^tgt_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "field": {
-                  "description": "JSON Pointer to the invalid field within the request part named by in. When in is omitted, the pointer refers to the request body. Header pointers use lowercase header names, such as /idempotency-key.",
-                  "type": "string"
-                },
-                "in": {
-                  "enum": [
-                    "body",
-                    "query",
-                    "header"
-                  ],
-                  "description": "Request part containing field. Query-parameter errors use query; header errors use header. Body errors use body or omit in.",
-                  "type": "string"
-                },
-                "message": {
-                  "description": "Human-readable explanation. Its wording may change.",
-                  "type": "string"
-                },
-                "retryable": {
-                  "description": "Whether another attempt can succeed without correcting the inputs. For a recorded failure, start generation or publishing again; retrieving the resource or replaying an idempotency key does not start another attempt.",
-                  "type": "boolean"
-                },
-                "suggested_action": {
-                  "description": "Stable, concise recovery instruction suitable for a person or agent.",
-                  "type": "string"
-                },
-                "docs_url": {
-                  "format": "uri",
-                  "description": "Documentation for this class of error.",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "started_at": {
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "finished_at": {
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "runtime_ms": {
-            "description": "Milliseconds from started_at to finished_at; null until the attempt finishes.",
-            "minimum": 0,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "created_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "request_id": {
-            "description": "Server-generated identifier used to correlate this response with Typeship logs.",
-            "examples": [
-              "req_3k8m1v6q9p2d7h4c"
-            ],
-            "pattern": "^req_[a-z0-9]{16}$",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "example_arguments": {
-        "publication_id": "pub_2m8q4v7k1p9d5h6c"
-      }
-    },
-    {
-      "operation": "publications.list",
-      "signature": "typeship publications list [flags]",
-      "command": [
-        "typeship",
-        "publications",
-        "list"
-      ],
-      "parameters": [
-        {
-          "name": "limit",
-          "flag": "--limit",
-          "in": "query",
-          "type": "number",
-          "required": false
-        },
-        {
-          "name": "cursor",
-          "flag": "--cursor",
-          "in": "query",
-          "type": "string",
-          "required": false
-        },
-        {
-          "name": "release_id",
-          "flag": "--release-id",
-          "in": "query",
-          "type": "string",
-          "required": false
-        },
-        {
-          "name": "status",
-          "flag": "--status",
-          "in": "query",
-          "type": "string",
-          "required": false
-        }
-      ],
-      "example_command": "typeship publications list",
-      "method": "GET",
-      "path": "/publications",
-      "summary": "List Publications",
-      "safety": "read",
-      "auth": "required",
-      "security": [
-        {
-          "apiKey": []
-        }
-      ],
-      "paginated": true,
-      "input_schema": {
-        "type": "object",
-        "properties": {
-          "limit": {
-            "default": 20,
-            "minimum": 1,
-            "maximum": 100,
-            "type": "integer",
-            "description": "Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20."
-          },
-          "cursor": {
-            "minLength": 1,
-            "maxLength": 2048,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "type": "string",
-            "description": "Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests."
-          },
-          "release_id": {
-            "examples": [
-              "rel_7m2q8v4k1p9d5h6c"
-            ],
-            "pattern": "^rel_[a-z0-9]{16}$",
-            "type": "string",
-            "description": "Only publications of this release."
-          },
-          "status": {
-            "enum": [
-              "queued",
-              "running",
-              "completed",
-              "failed"
-            ],
-            "type": "string",
-            "description": "Only publications with this status."
-          }
-        }
-      },
-      "output_schema": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "properties": {
-                "id": {
-                  "examples": [
-                    "pub_2m8q4v7k1p9d5h6c"
-                  ],
-                  "pattern": "^pub_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "object": {
-                  "const": "publication",
-                  "type": "string"
-                },
-                "release_id": {
-                  "examples": [
-                    "rel_7m2q8v4k1p9d5h6c"
-                  ],
-                  "pattern": "^rel_[a-z0-9]{16}$",
-                  "type": "string"
-                },
-                "type": {
-                  "enum": [
-                    "github",
-                    "npm",
-                    "pypi",
-                    "go",
-                    "mcp"
-                  ],
-                  "description": "Where the release is published. github is the repository's GitHub Release; the others are package registries.",
-                  "type": "string"
-                },
-                "status": {
-                  "enum": [
-                    "queued",
-                    "running",
-                    "completed",
-                    "failed"
-                  ],
-                  "description": "queued: the repository workflow has not started this destination; get the Publication or its Release again. running: the workflow is publishing; get it again. completed: the package is published at registry_url. failed: read errors, correct the cause, then call retryRelease on release_id. Lifecycle events are publication.running, publication.completed, and publication.failed.",
-                  "type": "string"
-                },
-                "attempt": {
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "run_url": {
-                  "format": "uri",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "registry_url": {
-                  "format": "uri",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "artifact_digest": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "errors": {
-                  "description": "Recorded failures. Empty when this resource has no recorded failure.",
-                  "items": {
-                    "properties": {
-                      "type": {
-                        "enum": [
-                          "request",
-                          "auth",
-                          "idempotency",
-                          "rate_limit",
-                          "organization",
-                          "source",
-                          "api"
-                        ],
-                        "description": "Who can resolve the error. request: change the request. auth: fix the credential or its grant. idempotency: change or wait on the Idempotency-Key. rate_limit: wait before retrying. organization: the organization's plan must change. source: a system you own failed, such as the Spec URL, repository, or package registry. api: Typeship failed.",
-                        "type": "string"
-                      },
-                      "code": {
-                        "enum": [
-                          "input_invalid",
-                          "input_missing",
-                          "input_type_invalid",
-                          "input_format_invalid",
-                          "input_too_long",
-                          "input_too_short",
-                          "input_duplicate",
-                          "input_unknown",
-                          "query_param_invalid",
-                          "cursor_invalid",
-                          "method_not_allowed",
-                          "resource_not_found",
-                          "idempotency_key_invalid",
-                          "idempotency_key_reused",
-                          "idempotency_key_in_use",
-                          "auth_required",
-                          "api_key_invalid",
-                          "token_invalid",
-                          "organization_required",
-                          "insufficient_scope",
-                          "role_insufficient",
-                          "rate_limit_exceeded",
-                          "feature_not_available",
-                          "quota_exceeded",
-                          "spec_invalid",
-                          "spec_too_large",
-                          "spec_unreachable",
-                          "repository_provider_unsupported",
-                          "repository_disconnected",
-                          "repository_unavailable",
-                          "target_busy",
-                          "targets_inactive",
-                          "no_draft",
-                          "draft_merged",
-                          "resource_changed",
-                          "precondition_failed",
-                          "version_invalid",
-                          "version_occupied",
-                          "version_too_low",
-                          "target_already_released",
-                          "adoption_unverified",
-                          "publication_disabled",
-                          "publication_not_retryable",
-                          "publication_recovery_unavailable",
-                          "publication_failed",
-                          "delivery_conflict",
-                          "delivery_exists",
-                          "resource_has_dependencies",
-                          "customization_conflict",
-                          "checks_failed",
-                          "draft_title_invalid",
-                          "history_recovery_required",
-                          "checks_unavailable",
-                          "dependency_missing",
-                          "dependency_not_found",
-                          "dependency_self",
-                          "dependency_cycle",
-                          "dependency_cross_project",
-                          "dependency_cross_lineage",
-                          "dependency_wrong_generator",
-                          "dependency_disabled",
-                          "dependency_module_path_missing",
-                          "dependency_unreleased",
-                          "dependency_revision_mismatch",
-                          "regeneration_failed",
-                          "follow_up_failed",
-                          "api_error"
-                        ],
-                        "description": "Stable programmatic identifier. Do not branch on message.",
-                        "type": "string"
-                      },
-                      "phase": {
-                        "enum": [
-                          "spec",
-                          "generation",
-                          "delivery",
-                          "publication"
-                        ],
-                        "description": "The stage that failed. A delivery failure does not change a completed Generation's status.",
-                        "type": "string"
-                      },
-                      "target_id": {
-                        "description": "Stable identifier for one configured generated product.",
-                        "examples": [
-                          "tgt_5m8q2v7k1p9d4h6c"
-                        ],
-                        "pattern": "^tgt_[a-z0-9]{16}$",
-                        "type": "string"
-                      },
-                      "field": {
-                        "description": "JSON Pointer to the invalid field within the request part named by in. When in is omitted, the pointer refers to the request body. Header pointers use lowercase header names, such as /idempotency-key.",
-                        "type": "string"
-                      },
-                      "in": {
-                        "enum": [
-                          "body",
-                          "query",
-                          "header"
-                        ],
-                        "description": "Request part containing field. Query-parameter errors use query; header errors use header. Body errors use body or omit in.",
-                        "type": "string"
-                      },
-                      "message": {
-                        "description": "Human-readable explanation. Its wording may change.",
-                        "type": "string"
-                      },
-                      "retryable": {
-                        "description": "Whether another attempt can succeed without correcting the inputs. For a recorded failure, start generation or publishing again; retrieving the resource or replaying an idempotency key does not start another attempt.",
-                        "type": "boolean"
-                      },
-                      "suggested_action": {
-                        "description": "Stable, concise recovery instruction suitable for a person or agent.",
-                        "type": "string"
-                      },
-                      "docs_url": {
-                        "format": "uri",
-                        "description": "Documentation for this class of error.",
-                        "type": "string"
-                      }
-                    },
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
-                "started_at": {
-                  "format": "date-time",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "finished_at": {
-                  "format": "date-time",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "runtime_ms": {
-                  "description": "Milliseconds from started_at to finished_at; null until the attempt finishes.",
-                  "minimum": 0,
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "created_at": {
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "updated_at": {
-                  "format": "date-time",
-                  "type": "string"
-                }
-              },
-              "type": "object"
-            }
-          },
-          "hasMore": {
-            "type": "boolean",
-            "description": "Whether another page exists"
-          },
-          "nextPage": {
-            "type": "object",
-            "description": "Arguments that fetch the next page; pass them to this tool",
-            "additionalProperties": true
-          },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
-          }
-        }
-      },
-      "example_arguments": {}
     },
     {
       "operation": "files.get",

@@ -928,53 +928,6 @@ Output: the response payload as JSON on stdout. A successful response without a 
 
 Read the full command contract with `typeship docs releases retry --json`.
 
-## publications
-
-### `typeship publications get <publication_id> [flags]`
-
-Get a Publication
-
-`GET /publications/{publication_id}`
-
-Safety: **read** · Authentication: **required**
-
-Returns the registry publishing status for a release. A status in another organization returns 404 resource_not_found.
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `<publication_id>` | path | `string` | yes | — |
-
-```sh
-typeship publications get pub_2m8q4v7k1p9d5h6c
-```
-
-Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
-
-Read the full command contract with `typeship docs publications get --json`.
-
-### `typeship publications list [flags]`
-
-List Publications
-
-`GET /publications`
-
-Safety: **read** · Authentication: **required**
-
-| Argument or flag | In | Type | Required | Description |
-| --- | --- | --- | --- | --- |
-| `--limit` | query | `number` | no | Maximum number of resources to return. Omit for 20; otherwise supply base-10 digits representing an integer from 1 to 100. Empty, malformed, or out-of-range values return 400 input_invalid. List query parameters must appear only once; repeated or unrecognized parameters return 400 query_param_invalid. Default: 20. |
-| `--cursor` | query | `string` | no | Opaque cursor from the preceding page's next_cursor. Valid only for the same organization, operation, filters, and ordering that issued it. Omit to start at the first page. Empty or malformed cursors, and cursors issued for different filters, return 400 cursor_invalid; start again from the first page. Repeated cursors return 400 query_param_invalid. The page limit may change between requests. |
-| `--release-id` | query | `string` | no | Only publications of this release. |
-| `--status` | query | `string` | no | Only publications with this status. |
-
-```sh
-typeship publications list
-```
-
-Output: JSON with `items` and `hasMore`; when another page exists, `nextPage` contains its arguments and `nextCommand` contains the command to fetch it. Use `--all` to stream every item from every page as NDJSON.
-
-Read the full command contract with `typeship docs publications list --json`.
-
 ## files
 
 ### `typeship files get <file_id> [flags]`

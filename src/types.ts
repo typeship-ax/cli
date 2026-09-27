@@ -74,7 +74,10 @@ export interface UrlSpecInputRead {
 }
 
 export interface InlineSpecInput {
-  /** Raw Spec text (OpenAPI JSON/YAML or GraphQL SDL). Up to 10MB. */
+  /**
+   * Raw Spec text (OpenAPI JSON/YAML or GraphQL SDL). Up to 4 MB, because the request body carries
+   * it; send Specs up to 10 MB with `url`.
+   */
   inline: string;
 }
 

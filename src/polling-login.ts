@@ -106,9 +106,12 @@ export async function oauthDeviceLogin(config: DeviceLoginConfig, interaction: {
     while (true) {
       await pause(Math.min(intervalMs, Math.max(0, deadline - Date.now())), flow.signal);
       flow.check();
-      if (Date.now() >= deadline) throw new LoginPollingError("expired");
+      // One reading of the clock: a request budget of zero or less is the
+      // login expiring, not a failed request.
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new LoginPollingError("expired");
       let response: Awaited<ReturnType<typeof oauthDeviceRequest>>;
-      try { response = await oauthDeviceRequest(tokenUrl, form({ ...params, grant_type: "urn:ietf:params:oauth:grant-type:device_code", device_code: data.device_code, client_id: config.clientId }, flow.signal), Math.min(30_000, deadline - Date.now())); }
+      try { response = await oauthDeviceRequest(tokenUrl, form({ ...params, grant_type: "urn:ietf:params:oauth:grant-type:device_code", device_code: data.device_code, client_id: config.clientId }, flow.signal), Math.min(30_000, remaining)); }
       catch (error) {
         flow.check();
         if (error instanceof OAuthResponseError && error.code === "timed_out") { intervalMs *= 2; continue; }
@@ -156,10 +159,11 @@ export async function customBrowserApproval(config: { authUrl: string; name: str
     while (true) {
       await pause(Math.min(intervalMs, Math.max(0, deadline - Date.now())), flow.signal);
       flow.check();
-      if (Date.now() >= deadline) throw new LoginPollingError("expired");
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new LoginPollingError("expired");
       let result: Awaited<ReturnType<typeof oauthJsonRequest>>;
       try {
-        result = await oauthJsonRequest(url + "/status", post({ session: start.session, code_verifier: verifier }), Math.min(15_000, deadline - Date.now()));
+        result = await oauthJsonRequest(url + "/status", post({ session: start.session, code_verifier: verifier }), Math.min(15_000, remaining));
       } catch (error) {
         flow.check();
         if (error instanceof OAuthResponseError && error.code === "timed_out" && Date.now() >= deadline) {

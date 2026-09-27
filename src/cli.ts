@@ -1195,7 +1195,7 @@ function helpJson(): Record<string, unknown> {
       note: "Choose an operation from this index, then read only that operation's complete schemas and example arguments.",
     },
     builtins: BUILTIN_COMMANDS,
-    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--header 'Name: value'", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
+    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--header 'Name: value'", "--timeout <seconds>", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
     auth_env_vars: agentContext().authEnvVars,
   };
 }
@@ -1303,7 +1303,13 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
   if (baseUrl) {
     try {
       const response = await fetch(baseUrl, { method: "GET", signal: AbortSignal.timeout(8_000) });
-      checks.push({ name: "base_url", ok: true, detail: baseUrl + " → HTTP " + response.status });
+      void response.body?.cancel().catch(() => {});
+      const reachable = response.status >= 200 && response.status < 300;
+      checks.push({ name: "base_url", ok: reachable, detail: baseUrl + " → HTTP " + response.status, ...(reachable ? {} : { fix: response.status === 404 || response.status === 405
+        ? "The API does not answer at this base URL. Check --base-url / " + ENV_PREFIX + "_BASE_URL, or run '" + BIN + " upgrade' if this CLI is older than the API."
+        : response.status === 401 || response.status === 403
+          ? "The API answered without a credential with HTTP " + response.status + "; the identity check below tests the credential."
+          : "The API answered HTTP " + response.status + ". Check the base URL and the API's status." }) });
     } catch (e) {
       checks.push({ name: "base_url", ok: false, detail: baseUrl + ": " + (e as Error).message, fix: "Check the network, or set --base-url / " + ENV_PREFIX + "_BASE_URL." });
     }
@@ -1317,7 +1323,13 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
         const client = await makeClient(parsed.flags, op);
         const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; error?: unknown }>>>)[op.resource]!;
         const result = await asApiResult(target[op.method]!());
-        checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message, fix: "The credential was rejected; run '" + BIN + " login' with a current one." });
+        const status = (result.error as { status?: unknown } | undefined)?.status;
+        checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message,
+          // Only 401 and 403 are about the credential. A 404 or 405 means the
+          // API no longer has this endpoint where this CLI version expects it.
+          fix: status === 401 || status === 403 ? "The credential was rejected; run '" + BIN + " login' with a current one."
+            : status === 404 || status === 405 ? "The API does not know " + wireOf(op) + ", which this CLI version calls. Run '" + BIN + " upgrade', and check the base URL."
+            : "The identity read failed; the detail says why." });
       } catch (e) {
         checks.push({ name: "identity", ok: false, detail: (e as Error).message });
       }
@@ -1533,7 +1545,7 @@ function completionFlagsFor(op: OpSpec): { flags: string[]; values: Record<strin
   return { flags, values };
 }
 
-const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--header", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
+const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--header", "--timeout", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
 const BUILTIN_WORDS: Record<string, string[]> = {
   config: ["list", "get", "set", "unset", "path"],
   completion: ["bash", "zsh", "fish"],
@@ -2080,7 +2092,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
   }
   lines.push("");
-  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
+  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --timeout <seconds>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
   lines.push(...labeled(paintOut("bold", "Global flags:") + " ", flagsText, width, 14).map((l, i) => (i === 0 ? l : l)));
   lines.push(...labeled("Credential env vars: ", [
@@ -2410,6 +2422,16 @@ function environmentCredentials(): NamedCredentials {
   return value === undefined ? {} : parseNamedCredentials(value, NAMED_SCHEMES);
 }
 
+/** --timeout <seconds> or TYPESHIP_TIMEOUT: the per-attempt deadline
+ * (default 30 seconds) for slow operations. */
+function requestTimeoutMs(flags: Map<string, string | boolean>): number | undefined {
+  const raw = typeof flags.get("timeout") === "string" ? flags.get("timeout") as string : process.env["TYPESHIP_TIMEOUT"];
+  if (raw === undefined) return undefined;
+  const seconds = Number(raw);
+  if (!/^\d+(\.\d+)?$/.test(raw.trim()) || !Number.isFinite(seconds) || seconds <= 0 || seconds > 3600) fail(2, "--timeout expects seconds between 0 and 3600, such as --timeout 120.");
+  return Math.round(seconds * 1000);
+}
+
 /** --header flags and TYPESHIP_HEADERS: sent on every API request, after
  * (and in place of) any generated header of the same name. */
 function extraRequestHeaders(): Record<string, string> {
@@ -2515,6 +2537,8 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
     options.debug = (event: DebugEvent) => process.stderr.write(paintErr("dim", formatDebugEvent(BIN, event)) + "\n");
   }
   if (flags.get("validate") === true) options.validate = true;
+  const timeout = requestTimeoutMs(flags);
+  if (timeout !== undefined) options.timeoutMs = timeout;
   for (const g of GLOBALS) {
     const flagValue = flags.get(g.flag);
     const value = typeof flagValue === "string" ? flagValue : process.env["TYPESHIP_" + g.envSuffix];
@@ -2695,7 +2719,7 @@ async function main(): Promise<void> {
   // Mirrors opReservedFlags() in the generator: API parameters never use these
   // names (colliding ones are emitted as --<kind>-<name>), so an unknown flag
   // check can be exact.
-  const RESERVED_FLAGS = new Set(["data", "credentials", "header", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
+  const RESERVED_FLAGS = new Set(["data", "credentials", "header", "timeout", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
   for (const spec of op.params) {
     if (spec.kind === "path") continue;
     const raw = parsed.flags.get(spec.flag);

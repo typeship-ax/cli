@@ -197,7 +197,6 @@ function nextStep(status: number): string {
   if (status === 403) return "Check the credential's permissions and retry.";
   if (status === 404) return "Check the requested identifier or path.";
   if (status === 409) return "Refresh the resource and retry the change.";
-  if (status === 413) return "Send less data in one request.";
   if (status === 422 || status === 400) return "Correct the request and retry.";
   if (status === 429) return "Wait before retrying the request.";
   if (status >= 500) return "Retry later; contact the API provider if this continues.";
@@ -663,6 +662,18 @@ export class HttpCore {
 
     let lastError: unknown;
     let credentialsRefreshed = false;
+    // With an automatic Idempotency-Key, a retry that the API refuses as a
+    // duplicate still in progress (409/429) is about our own first attempt.
+    // Report that original failure instead, with its request id.
+    let original: { error: E; response?: ResponseMeta } | undefined;
+    const errorFor = (response: Response, body: unknown, responseMeta: ResponseMeta, limit: RateLimitInfo | undefined): E => {
+      const Ctor = limit && !(response.status === 429 && req.errors?.["429"])
+        ? RateLimitError
+        : req.errors?.[String(response.status)] ??
+          req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
+          req.errors?.["default"];
+      return (Ctor ? new Ctor(body, responseMeta) : new UnexpectedApiError(response.status, body, responseMeta)) as unknown as E;
+    };
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response;
       const attemptStarted = Date.now();
@@ -691,6 +702,7 @@ export class HttpCore {
           error: cause instanceof Error ? cause.message : String(cause),
         });
         if (attempt < maxRetries && retryAllowed && !req.options?.signal?.aborted) {
+          if (autoIdempotencyKey) original = { error: new TransportError(transportFailureMessage(req.method, this.config.baseUrl.replace(/\/+$/, "") + req.path, cause), cause) as unknown as E };
           await sleep(backoff(attempt, policy));
           continue;
         }
@@ -767,6 +779,12 @@ export class HttpCore {
       // time in the error, rather than holding the caller.
       const requestedWait = limit?.retryAfterMs ?? retryAfterMs(response);
       const withinCeiling = requestedWait === undefined || requestedWait <= (this.config.maxRetryWaitMs ?? 60_000);
+      if (original && (response.status === 409 || response.status === 429)) {
+        void response.body?.cancel().catch(() => {});
+        emitResponseDebug(response);
+        await this.config.onError?.(original.error, { method: req.method, path: req.path });
+        return { ok: false, error: original.error, ...(original.response ? { response: original.response } : {}) };
+      }
       if (attempt < maxRetries && retryableStatus && withinCeiling) {
         const delay = requestedWait ?? backoff(attempt, policy);
         let retryBody: unknown;
@@ -776,6 +794,10 @@ export class HttpCore {
           retryBody = undefined;
         }
         emitResponseDebug(response, retryBody);
+        if (autoIdempotencyKey && response.status >= 500) {
+          const failedMeta = meta(response, retryBody);
+          original = { error: errorFor(response, retryBody, failedMeta, limit), response: failedMeta };
+        }
         await sleep(delay);
         continue;
       }
@@ -802,14 +824,7 @@ export class HttpCore {
       // A rate limit is its own error whatever the status: a 403 that means
       // "wait" must not read as "your credential lacks access". A 429 the
       // spec documents keeps its generated class (which carries rateLimit).
-      const Ctor = limit && !(response.status === 429 && req.errors?.["429"])
-        ? RateLimitError
-        : req.errors?.[String(response.status)] ??
-          req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
-          req.errors?.["default"];
-      const error = (Ctor
-        ? new Ctor(body, responseMeta)
-        : new UnexpectedApiError(response.status, body, responseMeta)) as unknown as E;
+      const error = errorFor(response, body, responseMeta, limit);
       await this.config.onError?.(error, { method: req.method, path: req.path });
       return { ok: false, error, response: responseMeta };
     }

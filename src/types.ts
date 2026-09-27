@@ -2668,6 +2668,16 @@ export interface Config {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -2702,6 +2712,16 @@ export interface ConfigRead {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -2741,6 +2761,16 @@ export interface ProjectConfig {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -2774,6 +2804,16 @@ export interface ProjectConfigRead {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -2811,6 +2851,16 @@ export interface TargetConfig {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -2844,6 +2894,16 @@ export interface TargetConfigRead {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuning;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -4131,6 +4191,16 @@ export interface ProjectConfigResponse {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuningResponse;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -4164,6 +4234,16 @@ export interface ProjectConfigResponseRead {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuningResponse;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -4201,6 +4281,16 @@ export interface TargetConfigResponse {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuningResponse;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are
@@ -4234,6 +4324,16 @@ export interface TargetConfigResponseRead {
    * are reported as generation warnings.
    */
   globals?: string[];
+  /**
+   * Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one
+   * path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied
+   * before the Spec size limit, with components nothing references any more removed, so a one-shot
+   * run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as
+   * generation warnings.
+   */
+  include?: string[];
+  /** Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`. */
+  exclude?: string[];
   retries?: RetryTuningResponse;
   /**
    * Per-operation pagination control, keyed by operationId or "METHOD /path". Unmatched keys are

@@ -197,6 +197,7 @@ function nextStep(status: number): string {
   if (status === 403) return "Check the credential's permissions and retry.";
   if (status === 404) return "Check the requested identifier or path.";
   if (status === 409) return "Refresh the resource and retry the change.";
+  if (status === 413) return "Send less data in one request.";
   if (status === 422 || status === 400) return "Correct the request and retry.";
   if (status === 429) return "Wait before retrying the request.";
   if (status >= 500) return "Retry later; contact the API provider if this continues.";

@@ -12,6 +12,10 @@ export interface RequestOptions {
   timeoutMs?: number;
   /** Retry attempts after the first try. Overrides the client default. */
   maxRetries?: number;
+  /** For a list that pages by URL (a Link header or a next-page URL field):
+   * start from this page URL, as a previous page's nextPageParams() gave it.
+   * It must be on the API's origin. */
+  pageUrl?: string;
   /** Receives this call's response metadata (status, headers, ETag,
    * rate-limit state) once a response arrives, whether the call succeeded
    * or failed. A 304 Not Modified resolves the call to `null`; read
@@ -193,6 +197,7 @@ function nextStep(status: number): string {
   if (status === 403) return "Check the credential's permissions and retry.";
   if (status === 404) return "Check the requested identifier or path.";
   if (status === 409) return "Refresh the resource and retry the change.";
+  if (status === 413) return "Send less data in one request.";
   if (status === 422 || status === 400) return "Correct the request and retry.";
   if (status === 429) return "Wait before retrying the request.";
   if (status >= 500) return "Retry later; contact the API provider if this continues.";

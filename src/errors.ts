@@ -118,12 +118,12 @@ export class BadGatewayError extends ApiError<502, ErrorModelRead> {
 }
 
 /**
- * The Spec is over 10 MB, or an inline Spec is over 4 MB; send large Specs by URL.
+ * The Spec exceeds the supported size.
  * Raised for HTTP 413 responses.
  */
 export class PayloadTooLargeError extends ApiError<413, ErrorModelRead> {
   constructor(body: ErrorModelRead, response: ResponseMeta) {
-    super("The Spec is over 10 MB, or an inline Spec is over 4 MB; send large Specs by URL.", 413, body, response);
+    super("The Spec exceeds the supported size.", 413, body, response);
   }
 }
 

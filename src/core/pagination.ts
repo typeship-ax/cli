@@ -34,6 +34,12 @@ export interface PageConfig {
   totalField?: string;
   /** Dot-path of the total page count: page iteration stops at the last page. */
   totalPagesField?: string;
+  /** Each item is this field of the listed element (a Relay edge's `node`). */
+  itemPath?: string;
+  /** Page size sent when the caller gives none (GraphQL `first`). */
+  defaultLimit?: number;
+  /** Relay backward paging, used when the caller passes `backward.limitParam` (`last`). */
+  backward?: { limitParam: string; cursorParam: string; cursorField: string; hasMoreField: string };
 }
 
 /** A list response the pagination rules cannot read. */
@@ -76,7 +82,15 @@ export class Page<Item, E = unknown> {
 
   get items(): Item[] {
     const value = this.config.itemsField === "" ? this.body : getPath(this.body, this.config.itemsField);
-    return Array.isArray(value) ? (value as Item[]) : [];
+    if (!Array.isArray(value)) return [];
+    const path = this.config.itemPath;
+    return path === undefined ? (value as Item[]) : value.map((entry) => (entry as Record<string, unknown> | null)?.[path] as Item);
+  }
+
+  /** True when the caller asked for backward Relay pages (`last`). */
+  private get backward(): PageConfig["backward"] | undefined {
+    const backward = this.config.backward;
+    return backward && this.params[backward.limitParam] !== undefined ? backward : undefined;
   }
 
   hasNextPage(): boolean {
@@ -96,25 +110,24 @@ export class Page<Item, E = unknown> {
     const { config, params } = this;
     const items = this.items;
     if (this.finished()) return null;
+    const backward = this.backward;
 
     switch (config.style) {
       case "cursor": {
-        const next = getPath(this.body, config.nextCursorField!);
+        const cursorParam = backward ? backward.cursorParam : config.cursorParam!;
+        const next = getPath(this.body, backward ? backward.cursorField : config.nextCursorField!);
         if (next === undefined || next === null || next === "") return null;
-        if (next === params[config.cursorParam!]) return null;
-        return { ...params, [config.cursorParam!]: next };
+        if (next === params[cursorParam]) return null;
+        return { ...params, [cursorParam]: next };
       }
     }
-    // URL styles: the next request is the URL itself; its query is what a
-    // caller passes to fetch that page through the operation's parameters.
+    // URL styles: the next request is the URL itself. Pass page_url as the
+    // pageUrl request option to fetch that page.
     const url = this.nextPageUrl();
     if (url === null) return null;
-    const next: Record<string, unknown> = {};
-    for (const [key, value] of new URL(url, "http://base.invalid").searchParams) {
-      const existing = next[key];
-      next[key] = existing === undefined ? value : Array.isArray(existing) ? [...existing, value] : [existing, value];
-    }
-    return next;
+    // The URL is the whole request: its query can hold parameters the
+    // operation does not declare (GitHub's after), so it is passed as is.
+    return { page_url: url };
   }
 
   /** Fetch the next page, or null when this is the last one. Throws the typed error on failure. */
@@ -138,7 +151,9 @@ export class Page<Item, E = unknown> {
 
   /** Signals every style shares: has_more false, or the total reached. */
   private finished(): boolean {
-    if (this.config.hasMoreField !== undefined && getPath(this.body, this.config.hasMoreField) === false) return true;
+    // Backward Relay pages end on hasPreviousPage, forward ones on hasNextPage.
+    const hasMoreField = this.backward?.hasMoreField ?? this.config.hasMoreField;
+    if (hasMoreField !== undefined && getPath(this.body, hasMoreField) === false) return true;
     if (this.config.totalField !== undefined) {
       const total = getPath(this.body, this.config.totalField);
       if (typeof total === "number" && this.before + this.items.length >= total) return true;
@@ -218,7 +233,14 @@ export function paginate<Item, E>(
   for (const [k, v] of Object.entries(seed)) {
     if (v !== undefined) initial[k] = v;
   }
-  return new PagePromise<Item, E>(fetchPage(initial));
+  // Relay servers reject a connection query with neither `first` nor `last`.
+  const backwardLimit = config.backward?.limitParam;
+  if (config.defaultLimit !== undefined && config.limitParam !== undefined && initial[config.limitParam] === undefined
+    && (backwardLimit === undefined || initial[backwardLimit] === undefined)) {
+    initial[config.limitParam] = config.defaultLimit;
+  }
+  const pageUrl = req.options?.pageUrl;
+  return new PagePromise<Item, E>(pageUrl !== undefined ? fetchPage({}, pageUrl) : fetchPage(initial));
 }
 
 

@@ -2975,6 +2975,20 @@ export interface GraphqlSettings {
    * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
    */
   scalars?: Record<string, "string" | "integer" | "number" | "boolean" | "json">;
+  /**
+   * Object types that report a failure when an operation's union or interface result resolves to
+   * them (errors returned as data). Replaces the default, which is every member whose name ends in
+   * Error when the result can also be something else. An empty array treats no result as a failure.
+   * Names that are not object types in the schema produce a generation warning.
+   */
+  error_types?: string[];
+  /**
+   * Page size a paginated connection call sends as first when the caller passes neither first nor
+   * last. Relay servers such as GitHub reject a connection query without one. Ignored for a
+   * connection whose first argument has a schema default.
+   * Default: 100
+   */
+  page_size?: number;
 }
 
 /** Response shape for GraphqlSettings. */
@@ -3023,6 +3037,20 @@ export interface GraphqlSettingsRead {
    * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
    */
   scalars?: Record<string, ("string" | "integer" | "number" | "boolean" | "json") | (string & {})>;
+  /**
+   * Object types that report a failure when an operation's union or interface result resolves to
+   * them (errors returned as data). Replaces the default, which is every member whose name ends in
+   * Error when the result can also be something else. An empty array treats no result as a failure.
+   * Names that are not object types in the schema produce a generation warning.
+   */
+  error_types?: string[];
+  /**
+   * Page size a paginated connection call sends as first when the caller passes neither first nor
+   * last. Relay servers such as GitHub reject a connection query without one. Ignored for a
+   * connection whose first argument has a schema default.
+   * Default: 100
+   */
+  page_size?: number;
 }
 
 /**
@@ -4405,6 +4433,20 @@ export interface GraphqlSettingsResponse {
    * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
    */
   scalars?: Record<string, "string" | "integer" | "number" | "boolean" | "json">;
+  /**
+   * Object types that report a failure when an operation's union or interface result resolves to
+   * them (errors returned as data). Replaces the default, which is every member whose name ends in
+   * Error when the result can also be something else. An empty array treats no result as a failure.
+   * Names that are not object types in the schema produce a generation warning.
+   */
+  error_types?: string[];
+  /**
+   * Page size a paginated connection call sends as first when the caller passes neither first nor
+   * last. Relay servers such as GitHub reject a connection query without one. Ignored for a
+   * connection whose first argument has a schema default.
+   * Default: 100
+   */
+  page_size?: number;
 }
 
 /** Response shape for GraphqlSettingsResponse. */
@@ -4453,6 +4495,20 @@ export interface GraphqlSettingsResponseRead {
    * generate as the language's untyped JSON value and produce a warning. Unmatched keys warn.
    */
   scalars?: Record<string, ("string" | "integer" | "number" | "boolean" | "json") | (string & {})>;
+  /**
+   * Object types that report a failure when an operation's union or interface result resolves to
+   * them (errors returned as data). Replaces the default, which is every member whose name ends in
+   * Error when the result can also be something else. An empty array treats no result as a failure.
+   * Names that are not object types in the schema produce a generation warning.
+   */
+  error_types?: string[];
+  /**
+   * Page size a paginated connection call sends as first when the caller passes neither first nor
+   * last. Relay servers such as GitHub reject a connection query without one. Ignored for a
+   * connection whose first argument has a schema default.
+   * Default: 100
+   */
+  page_size?: number;
 }
 
 /**

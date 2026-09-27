@@ -64,6 +64,9 @@ const WHOAMI: { resource: string; method: string } | null = null;
 const ENVIRONMENTS: Record<string, string> = {};
 const HAS_MCP = false;
 const PKG_NAME = "@typeship-ax/cli";
+/** False when the package name was derived rather than chosen: the npm
+ * package of that name may be someone else's, so upgrade never installs it. */
+const PKG_CONFIRMED = true;
 const UPDATE_NOTICE = false;
 const API_DESCRIPTION: string | null = "Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every\nselected CLI, MCP, and SDK Target current.\n\nEvery operation but one requires a bearer credential: an organization\nAPI key from the console, or an OAuth access token carrying the operation's\nread, generate, or write capability and the organization selected during\nconsent. OAuth grants cannot switch organizations after consent. A browser\nsession is not a credential for this API. The exception is POST /generate,\nwhich works anonymously with the free plan's limits.\n\nExamples use Parcel, a fictional delivery service. Replace its domains,\nrepository names, and resource identifiers with your own. The hosted\npetstore Spec is a runnable sample.\n";
 const DOCS_URL_DEFAULT: string | null = "https://typeship.dev";
@@ -1468,6 +1471,7 @@ function registryBase(): string {
 }
 
 async function latestVersion(timeoutMs: number): Promise<string | null> {
+  if (!PKG_CONFIRMED) return null;
   try {
     const response = await fetch(registryBase() + "/" + PKG_NAME, {
       headers: { Accept: "application/vnd.npm.install-v1+json" },
@@ -1493,6 +1497,9 @@ async function cmdUpgrade(parsed: Parsed): Promise<void> {
     ];
     process.stdout.write(lines.join("\n") + "\n");
     await flushExit(0);
+  }
+  if (!PKG_CONFIRMED) {
+    fail(1, "This build's package name (" + PKG_NAME + ") was not confirmed when it was generated, so upgrade does not look it up on npm, where that name may belong to another package. This package updates by regeneration from its API spec; get the latest from the API provider.");
   }
   const latest = await latestVersion(5000);
   if (latest === null) {

@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "title": "typeship",
+  "title": "Typeship",
   "api_version": "1.0.0",
   "spec_format": "openapi",
   "language": "TypeScript",

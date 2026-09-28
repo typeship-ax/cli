@@ -1,6 +1,6 @@
 # @typeship-ax/cli
 
-CLI for the typeship API. [API reference](./api.md)
+CLI for the Typeship API. [API reference](./api.md)
 
 Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every selected CLI, MCP, and SDK Target current.
 

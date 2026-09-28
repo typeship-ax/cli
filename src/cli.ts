@@ -54,7 +54,7 @@ let HEADER_FLAGS: string[] = [];
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.23.0";
+const VERSION = "0.23.1";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -2037,7 +2037,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "Typeship API" + " (v" + "1.0.0" + "), package " + "0.23.0");
+  lines.push(paintOut("bold", BIN) + ": " + "Typeship API" + " (v" + "1.0.0" + "), package " + "0.23.1");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");

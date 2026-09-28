@@ -1,6 +1,6 @@
 # Typeship: agent guide
 
-Instructions for coding agents that call the Typeship API through this CLI (API version 1.0.0, package version 0.23.0).
+Instructions for coding agents that call the Typeship API through this CLI (API version 1.0.0, package version 0.23.1).
 
 Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.

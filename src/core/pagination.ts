@@ -156,9 +156,27 @@ export class Page<Item, E = unknown> {
     if (hasMoreField !== undefined && getPath(this.body, hasMoreField) === false) return true;
     if (this.config.totalField !== undefined) {
       const total = getPath(this.body, this.config.totalField);
-      if (typeof total === "number" && this.before + this.items.length >= total) return true;
+      if (typeof total === "number" && this.itemsThrough() >= total) return true;
     }
     return false;
+  }
+
+  /** Items up to the end of this page: counted along a walk, or implied by
+   * the page's position when it was fetched on its own (an MCP nextPage). */
+  private itemsThrough(): number {
+    let before = this.before;
+    const { config, params } = this;
+    if (before === 0 && config.style === "offset" && config.offsetParam !== undefined) {
+      const offset = Number(params[config.offsetParam]);
+      if (Number.isFinite(offset) && offset > 0) before = offset;
+    }
+    if (before === 0 && config.style === "page" && config.pageParam !== undefined && config.limitParam !== undefined) {
+      const current = Number(params[config.pageParam]);
+      const limit = Number(params[config.limitParam]);
+      const first = config.firstPage ?? 1;
+      if (Number.isFinite(current) && Number.isFinite(limit) && limit > 0 && current > first) before = (current - first) * limit;
+    }
+    return before + this.items.length;
   }
 
   private looksLikeMore(items: Item[]): boolean {

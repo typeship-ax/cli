@@ -9,14 +9,12 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
-  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
@@ -36,6 +34,8 @@ import type {
   DraftResponseRead,
   DraftStatus,
   DraftUpdateRequest,
+  ErrorModel,
+  ErrorModelRead,
   TargetId,
 } from "../types.js";
 
@@ -60,14 +60,6 @@ export class DraftsResource {
         cursor: params?.cursor,
         target_id: params?.targetId,
         status: params?.status,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "drafts.list",
@@ -96,13 +88,6 @@ export class DraftsResource {
       method: "GET",
       path: `/drafts/${encodeURIComponent(String(draftId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "drafts.get",
       options,
@@ -145,18 +130,7 @@ export class DraftsResource {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "412": PreconditionFailedError },
       schemaKey: "drafts.update",
       options,
     });
@@ -189,15 +163,6 @@ export class DraftsResource {
         filter: params?.filter,
         limit: params?.limit,
         cursor: params?.cursor,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "drafts.listFiles",
@@ -235,15 +200,6 @@ export class DraftsResource {
       path: `/drafts/${encodeURIComponent(String(draftId))}/resolve`,
       security: [{"apiKey":[]}],
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       schemaKey: "drafts.resolve",
       options,
     });
@@ -270,15 +226,6 @@ export class DraftsResource {
       path: `/drafts/${encodeURIComponent(String(draftId))}/recover`,
       security: [{"apiKey":[]}],
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       schemaKey: "drafts.recover",
       options,
     });
@@ -309,12 +256,12 @@ export interface DraftsListParams {
 
 /** Typed errors `list` can throw. */
 export type DraftsListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -323,11 +270,11 @@ export type DraftsListError =
 
 /** Typed errors `get` can throw. */
 export type DraftsGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -345,16 +292,15 @@ export interface DraftsUpdateParams {
 
 /** Typed errors `update` can throw. */
 export type DraftsUpdateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -387,13 +333,13 @@ export interface DraftsListFilesParams {
 
 /** Typed errors `listFiles` can throw. */
 export type DraftsListFilesError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -402,13 +348,13 @@ export type DraftsListFilesError =
 
 /** Typed errors `resolve` can throw. */
 export type DraftsResolveError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -417,13 +363,13 @@ export type DraftsResolveError =
 
 /** Typed errors `recover` can throw. */
 export type DraftsRecoverError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

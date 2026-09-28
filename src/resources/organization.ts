@@ -9,11 +9,10 @@ import {
   UnexpectedApiError,
   ValidationError,
   ForbiddenError,
-  InternalServerError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
 } from "../errors.js";
-import type { Organization, OrganizationRead } from "../types.js";
+import type { ErrorModel, ErrorModelRead, Organization, OrganizationRead } from "../types.js";
 
 export class OrganizationResource {
   constructor(private readonly _core: HttpCore) {}
@@ -29,12 +28,6 @@ export class OrganizationResource {
       method: "GET",
       path: "/organization",
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "organization.get",
       options,
@@ -44,10 +37,10 @@ export class OrganizationResource {
 
 /** Typed errors `get` can throw. */
 export type OrganizationGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

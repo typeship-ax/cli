@@ -12,14 +12,19 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PayloadTooLargeError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
-import type { GenerateRequest, GenerationResult, GenerationResultRead } from "../types.js";
+import type {
+  ErrorModel,
+  ErrorModelRead,
+  GenerateRequest,
+  GenerationResult,
+  GenerationResultRead,
+} from "../types.js";
 
 export class PackagesResource {
   constructor(private readonly _core: HttpCore) {}
@@ -61,17 +66,7 @@ export class PackagesResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "409": ConflictError,
-        "413": PayloadTooLargeError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        default: ApiResponseError,
-      },
+      errors: { "413": PayloadTooLargeError, default: ApiResponseError },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "packages.generate",
       options,
@@ -99,12 +94,6 @@ export class PackagesResource {
       query: {
         token: params.token,
       },
-      errors: {
-        "400": BadRequestError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "packages.download",
       options,
@@ -124,14 +113,14 @@ export interface PackagesGenerateParams {
 
 /** Typed errors `generate` can throw. */
 export type PackagesGenerateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PayloadTooLargeError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | ApiResponseError
   | RateLimitError
   | UnexpectedApiError
@@ -146,10 +135,10 @@ export interface PackagesDownloadParams {
 
 /** Typed errors `download` can throw. */
 export type PackagesDownloadError =
-  | BadRequestError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

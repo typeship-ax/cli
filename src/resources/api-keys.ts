@@ -11,10 +11,9 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
 } from "../errors.js";
 import type {
@@ -24,6 +23,8 @@ import type {
   ApiKeyRead,
   ApiKeyResponse,
   ApiKeyResponseRead,
+  ErrorModel,
+  ErrorModelRead,
 } from "../types.js";
 
 export class ApiKeysResource {
@@ -46,13 +47,6 @@ export class ApiKeysResource {
         limit: params?.limit,
         cursor: params?.cursor,
         status: params?.status,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "apiKeys.list",
@@ -78,13 +72,6 @@ export class ApiKeysResource {
       method: "GET",
       path: `/api-keys/${encodeURIComponent(String(apiKeyId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "apiKeys.get",
       options,
@@ -115,15 +102,7 @@ export class ApiKeysResource {
       headers: {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
+      errors: { "412": PreconditionFailedError },
       schemaKey: "apiKeys.revoke",
       options,
     });
@@ -152,11 +131,11 @@ export interface ApiKeysListParams {
 
 /** Typed errors `list` can throw. */
 export type ApiKeysListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -165,11 +144,11 @@ export type ApiKeysListError =
 
 /** Typed errors `get` can throw. */
 export type ApiKeysGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -187,13 +166,13 @@ export interface ApiKeysRevokeParams {
 
 /** Typed errors `revoke` can throw. */
 export type ApiKeysRevokeError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
   | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

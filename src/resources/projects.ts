@@ -9,16 +9,14 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
-  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PayloadTooLargeError,
   PaymentRequiredError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
@@ -26,6 +24,8 @@ import type {
   CreateProjectRequest,
   DeletedProject,
   DeletedProjectRead,
+  ErrorModel,
+  ErrorModelRead,
   GenerateProjectRequest,
   GenerationBatch,
   GenerationBatchRead,
@@ -67,16 +67,7 @@ export class ProjectsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
+      errors: { "402": PaymentRequiredError },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.create",
       options,
@@ -97,13 +88,6 @@ export class ProjectsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "projects.list",
@@ -130,13 +114,6 @@ export class ProjectsResource {
       method: "GET",
       path: `/projects/${encodeURIComponent(String(projectId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "projects.get",
       options,
@@ -176,19 +153,7 @@ export class ProjectsResource {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "402": PaymentRequiredError, "412": PreconditionFailedError },
       schemaKey: "projects.update",
       options,
     });
@@ -216,16 +181,7 @@ export class ProjectsResource {
       headers: {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "412": PreconditionFailedError },
       idempotent: true,
       schemaKey: "projects.delete",
       options,
@@ -263,19 +219,7 @@ export class ProjectsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "413": PayloadTooLargeError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "402": PaymentRequiredError, "413": PayloadTooLargeError },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "projects.generate",
       options,
@@ -295,14 +239,14 @@ export interface ProjectsCreateParams {
 
 /** Typed errors `create` can throw. */
 export type ProjectsCreateError =
-  | BadRequestError
-  | UnauthorizedError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
   | PaymentRequiredError
-  | ForbiddenError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
+  | ForbiddenError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -329,11 +273,11 @@ export interface ProjectsListParams {
 
 /** Typed errors `list` can throw. */
 export type ProjectsListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -342,11 +286,11 @@ export type ProjectsListError =
 
 /** Typed errors `get` can throw. */
 export type ProjectsGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -364,17 +308,16 @@ export interface ProjectsUpdateParams {
 
 /** Typed errors `update` can throw. */
 export type ProjectsUpdateError =
-  | BadRequestError
-  | UnauthorizedError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
   | PaymentRequiredError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -392,14 +335,13 @@ export interface ProjectsDeleteParams {
 
 /** Typed errors `delete` can throw. */
 export type ProjectsDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
   | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -418,17 +360,16 @@ export interface ProjectsGenerateParams {
 
 /** Typed errors `generate` can throw. */
 export type ProjectsGenerateError =
-  | BadRequestError
-  | UnauthorizedError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
   | PaymentRequiredError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PayloadTooLargeError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

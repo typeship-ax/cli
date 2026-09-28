@@ -11,12 +11,13 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
 } from "../errors.js";
 import type {
+  ErrorModel,
+  ErrorModelRead,
   FileList,
   FileListRead,
   FileModel,
@@ -48,13 +49,6 @@ export class GenerationsResource {
       method: "GET",
       path: `/generations/${encodeURIComponent(String(generationId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "generations.get",
       options,
@@ -81,14 +75,6 @@ export class GenerationsResource {
         project_id: params?.projectId,
         target_id: params?.targetId,
         status: params?.status,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "generations.list",
@@ -123,14 +109,6 @@ export class GenerationsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "generations.listFiles",
@@ -167,11 +145,11 @@ export class GenerationsResource {
 
 /** Typed errors `get` can throw. */
 export type GenerationsGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -204,12 +182,12 @@ export interface GenerationsListParams {
 
 /** Typed errors `list` can throw. */
 export type GenerationsListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -236,12 +214,12 @@ export interface GenerationsListFilesParams {
 
 /** Typed errors `listFiles` can throw. */
 export type GenerationsListFilesError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

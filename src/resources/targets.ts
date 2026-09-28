@@ -9,21 +9,21 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
-  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PaymentRequiredError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
 import type {
   DeletedTarget,
   DeletedTargetRead,
+  ErrorModel,
+  ErrorModelRead,
   ProjectId,
   ReleaseResponse,
   ReleaseResponseRead,
@@ -63,17 +63,7 @@ export class TargetsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
+      errors: { "402": PaymentRequiredError },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.create",
       options,
@@ -95,14 +85,6 @@ export class TargetsResource {
         limit: params?.limit,
         cursor: params?.cursor,
         project_id: params?.projectId,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "targets.list",
@@ -126,13 +108,6 @@ export class TargetsResource {
       method: "GET",
       path: `/targets/${encodeURIComponent(String(targetId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "targets.get",
       options,
@@ -174,19 +149,7 @@ export class TargetsResource {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "402": PaymentRequiredError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "402": PaymentRequiredError, "412": PreconditionFailedError },
       schemaKey: "targets.update",
       options,
     });
@@ -215,16 +178,7 @@ export class TargetsResource {
       headers: {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
+      errors: { "412": PreconditionFailedError },
       idempotent: true,
       schemaKey: "targets.delete",
       options,
@@ -255,16 +209,6 @@ export class TargetsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "targets.adopt",
       options,
@@ -284,15 +228,15 @@ export interface TargetsCreateParams {
 
 /** Typed errors `create` can throw. */
 export type TargetsCreateError =
-  | BadRequestError
-  | UnauthorizedError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
   | PaymentRequiredError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -321,12 +265,12 @@ export interface TargetsListParams {
 
 /** Typed errors `list` can throw. */
 export type TargetsListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -335,11 +279,11 @@ export type TargetsListError =
 
 /** Typed errors `get` can throw. */
 export type TargetsGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -357,17 +301,16 @@ export interface TargetsUpdateParams {
 
 /** Typed errors `update` can throw. */
 export type TargetsUpdateError =
-  | BadRequestError
-  | UnauthorizedError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
   | PaymentRequiredError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -385,14 +328,14 @@ export interface TargetsDeleteParams {
 
 /** Typed errors `delete` can throw. */
 export type TargetsDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -411,14 +354,14 @@ export interface TargetsAdoptParams {
 
 /** Typed errors `adopt` can throw. */
 export type TargetsAdoptError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

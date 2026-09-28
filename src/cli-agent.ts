@@ -39,6 +39,7 @@ export type IssueCode =
   | "UNKNOWN_COMMAND"
   | "UNKNOWN_FLAG"
   | "MISSING_ARGUMENT"
+  | "FIELDS_UNMATCHED"      // the call ran, but a --fields path matched nothing in the result
   | "CALL_FAILED";          // anything else
 
 export interface Issue {
@@ -84,6 +85,7 @@ export function exitCodeFor(code: IssueCode): 1 | 2 {
     case "UNKNOWN_COMMAND":
     case "UNKNOWN_FLAG":
     case "MISSING_ARGUMENT":
+    case "FIELDS_UNMATCHED":
     case "TTY_REQUIRED":
     case "CONFIRMATION_REQUIRED":
       return 2;
@@ -95,13 +97,13 @@ export function exitCodeFor(code: IssueCode): 1 | 2 {
 /** Interpret an SDK error result: HTTP status, body, transport, validation. */
 export function classifyApiError(
   error: unknown,
-  context: { bin: string; hadCredential: boolean; docsUrl: string | null; requiredScopes?: string[]; canLogin?: boolean },
+  context: { bin: string; envPrefix: string; hadCredential: boolean; docsUrl: string | null; requiredScopes?: string[]; canLogin?: boolean },
 ): EnvelopeInput {
   const e = (error ?? {}) as { name?: string; message?: string; status?: number; code?: unknown; body?: unknown; violations?: unknown; direction?: string; target?: string; rateLimit?: { retryAt?: Date }; response?: { requestId?: string } };
   // The message is the API's own words when it sent any, else the SDK's
-  // (the spec's response description). The error class name rides in
-  // detail, not in front of the message: "NotFoundError: No such account
-  // (no such account)" said one thing three times.
+  // ("HTTP 404"). The error class name rides in detail, not in front of the
+  // message: "NotFoundError: No such account (no such account)" said one
+  // thing three times.
   const base = e.message ? e.message : String(error);
   if (e.violations !== undefined) {
     const nextStep = e.direction === "response"
@@ -111,12 +113,12 @@ export function classifyApiError(
         : "Correct the body fields named in detail.violations to match their constraints, then run the command again.";
     return { code: "VALIDATION_FAILED", message: base, detail: { ...(e.name ? { error: e.name } : {}), violations: e.violations }, nextSteps: [nextStep] };
   }
-  if (e.name === "TransportError" || (typeof e.status !== "number" && /fetch|ECONN|ENOTFOUND|timed out|TLS|abort/i.test(base))) {
+  if (e.name === "TransportError" || (e.name !== "PaginationError" && typeof e.status !== "number" && /fetch|ECONN|ENOTFOUND|timed out|TLS|abort/i.test(base))) {
     return {
       code: "NETWORK_ERROR",
       message: base,
       nextSteps: [
-        "Check the base URL (--base-url, the " + context.bin.toUpperCase().replace(/[^A-Z0-9]/g, "_") + "_BASE_URL variable, or '" + context.bin + " config base-url') and the network.",
+        "Check the base URL (--base-url, the " + context.envPrefix + "_BASE_URL variable, or '" + context.bin + " config base-url') and the network.",
         "Retry once with backoff; do not loop.",
       ],
     };
@@ -588,7 +590,8 @@ export interface AgentContext {
   docsUrl: string | null;
   docsIndexUrl?: string | null;
   generatedOperationCount?: number;
-  omittedOperations?: { command: string; tool: string; method: string; path: string }[];
+  /** Operations in the API left out of a capped build; api.json lists them. */
+  omittedOperationCount?: number;
   /** The API's hosted MCP endpoint, when it has one. */
   mcpUrl: string | null;
   /** Skills repository (owner/name) an agent can install with npx skills add. */
@@ -623,7 +626,7 @@ export function agentBlock(ctx: AgentContext, commands: CommandSummary[]): strin
     "",
     "API commands write JSON on stdout; discovery commands take --json. Errors are JSON on stderr ({status, issues[{code,message}], next_steps}), exit 0/1/2. Non-interactive under an agent: no prompts, no browsers.",
     "",
-    ...((ctx.omittedOperations?.length ?? 0) > 0 ? ["- Plan limit: generated " + (ctx.generatedOperationCount ?? commands.length) + " of " + ((ctx.generatedOperationCount ?? commands.length) + ctx.omittedOperations!.length) + " operations. Omitted: " + ctx.omittedOperations!.map((op) => "`" + op.tool + "` (" + op.method + " " + op.path + ")").join(", ") + ". These return `PLAN_LIMIT`; upgrade and regenerate before use."] : []),
+    ...((ctx.omittedOperationCount ?? 0) > 0 ? ["- Coverage: this build includes " + (ctx.generatedOperationCount ?? commands.length) + " of " + ((ctx.generatedOperationCount ?? commands.length) + ctx.omittedOperationCount!) + " operations; api.json lists the rest, and calling one returns `PLAN_LIMIT`."] : []),
     ctx.authNotDeclared
       ? "- Auth: not declared by the API Spec. If the API needs a token, set " + auth + " or run `" + ctx.bin + " login`; other headers go in `--header \"Name: value\"` or " + ctx.envPrefix + "_HEADERS. Never write a key into a file in this repo."
       : "- Auth: " + auth + " in the environment, or `" + ctx.bin + " login`. Never write a key into a file in this repo.",
@@ -658,7 +661,7 @@ export function agentGuide(ctx: AgentContext, commands: CommandSummary[]): Recor
     first_command: first ? ctx.bin + " " + first.resource + " " + first.command : ctx.bin + " --help",
     docs_index_url: docsIndexUrl,
     docs_full_url: docsFullUrl,
-    ...((ctx.omittedOperations?.length ?? 0) > 0 ? { coverage: { generated_operations: ctx.generatedOperationCount ?? commands.length, total_operations: (ctx.generatedOperationCount ?? commands.length) + ctx.omittedOperations!.length, omitted_operations: ctx.omittedOperations } } : {}),
+    ...((ctx.omittedOperationCount ?? 0) > 0 ? { coverage: { generated_operations: ctx.generatedOperationCount ?? commands.length, total_operations: (ctx.generatedOperationCount ?? commands.length) + ctx.omittedOperationCount! } } : {}),
     hosted_mcp_url: ctx.mcpUrl,
     local_mcp: ctx.hasMcp ? ctx.bin + "-mcp (stdio) or '" + ctx.bin + " mcp install --all'" : null,
     skills_install: ctx.skillsRepo ? "npx skills add " + ctx.skillsRepo : null,

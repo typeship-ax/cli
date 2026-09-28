@@ -10,12 +10,17 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
 } from "../errors.js";
-import type { FileId, FileResponse, FileResponseRead } from "../types.js";
+import type {
+  ErrorModel,
+  ErrorModelRead,
+  FileId,
+  FileResponse,
+  FileResponseRead,
+} from "../types.js";
 
 export class FilesResource {
   constructor(private readonly _core: HttpCore) {}
@@ -35,14 +40,6 @@ export class FilesResource {
       query: {
         cursor: params?.cursor,
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "files.get",
       options,
@@ -57,12 +54,12 @@ export interface FilesGetParams {
 
 /** Typed errors `get` can throw. */
 export type FilesGetError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

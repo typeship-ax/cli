@@ -1813,6 +1813,14 @@
                   "package": {
                     "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                     "properties": {
+                      "title": {
+                        "description": "The API's name as generated READMEs, AGENTS.md, package descriptions, and help text show it, such as \"Parcel\" for a Spec titled \"Parcel - Public API\". Display only: package, client, and command names still come from the Spec. Defaults to the Spec title with common noise removed (\"Parcel - API\" shows as Parcel).",
+                        "maxLength": 100,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "homepage": {
                         "description": "Homepage written into registry metadata.",
                         "type": [
@@ -2832,6 +2840,14 @@
                   "package": {
                     "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                     "properties": {
+                      "title": {
+                        "description": "The API's name as generated READMEs, AGENTS.md, package descriptions, and help text show it, such as \"Parcel\" for a Spec titled \"Parcel - Public API\". Display only: package, client, and command names still come from the Spec. Defaults to the Spec title with common noise removed (\"Parcel - API\" shows as Parcel).",
+                        "maxLength": 100,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "homepage": {
                         "description": "Homepage written into registry metadata.",
                         "type": [
@@ -6125,6 +6141,14 @@
                   "package": {
                     "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                     "properties": {
+                      "title": {
+                        "description": "The API's name as generated READMEs, AGENTS.md, package descriptions, and help text show it, such as \"Parcel\" for a Spec titled \"Parcel - Public API\". Display only: package, client, and command names still come from the Spec. Defaults to the Spec title with common noise removed (\"Parcel - API\" shows as Parcel).",
+                        "maxLength": 100,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "homepage": {
                         "description": "Homepage written into registry metadata.",
                         "type": [
@@ -7636,6 +7660,14 @@
                   "package": {
                     "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                     "properties": {
+                      "title": {
+                        "description": "The API's name as generated READMEs, AGENTS.md, package descriptions, and help text show it, such as \"Parcel\" for a Spec titled \"Parcel - Public API\". Display only: package, client, and command names still come from the Spec. Defaults to the Spec title with common noise removed (\"Parcel - API\" shows as Parcel).",
+                        "maxLength": 100,
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
                       "homepage": {
                         "description": "Homepage written into registry metadata.",
                         "type": [
@@ -14884,6 +14916,14 @@
               "package": {
                 "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                 "properties": {
+                  "title": {
+                    "description": "The API's name as generated READMEs, AGENTS.md, package descriptions, and help text show it, such as \"Parcel\" for a Spec titled \"Parcel - Public API\". Display only: package, client, and command names still come from the Spec. Defaults to the Spec title with common noise removed (\"Parcel - API\" shows as Parcel).",
+                    "maxLength": 100,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
                   "homepage": {
                     "description": "Homepage written into registry metadata.",
                     "type": [

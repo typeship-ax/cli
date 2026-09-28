@@ -170,25 +170,37 @@ export class SdkError extends Error {
   }
 }
 
+function errorFields(body: unknown): { error?: Record<string, unknown>; value?: Record<string, unknown>; first?: Record<string, unknown> } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return {};
+  const value = body as Record<string, unknown>;
+  const nested = value.error && typeof value.error === "object" && !Array.isArray(value.error) ? value.error as Record<string, unknown> : undefined;
+  const first = Array.isArray(value.errors) && value.errors[0] && typeof value.errors[0] === "object" ? value.errors[0] as Record<string, unknown> : undefined;
+  return { error: nested, value, first };
+}
+
+/** The API's own error code: `error.code`, `code`, `error.type`, then
+ * `errors[0].code`; numeric codes (Twilio's 20404) as strings. */
 function errorCode(body: unknown, fallback: string): string {
-  if (body && typeof body === "object" && !Array.isArray(body)) {
-    const value = body as Record<string, unknown>;
-    const first = Array.isArray(value.errors) ? value.errors[0] as { code?: unknown } | undefined : undefined;
-    const code = value.code ?? first?.code;
+  const { error, value, first } = errorFields(body);
+  if (!value) return fallback;
+  for (const code of [error?.code, value.code, error?.type, first?.code]) {
     if (typeof code === "string" && code.trim()) return code;
     if (typeof code === "number" && Number.isFinite(code)) return String(code);
-    // Slack-style `{"ok": false, "error": "invalid_auth"}`: the error is a code.
-    if (typeof value.error === "string" && /^[A-Za-z][\w.-]{0,63}$/.test(value.error)) return value.error;
   }
+  // Slack-style `{"ok": false, "error": "invalid_auth"}`: the error is a code.
+  if (typeof value.error === "string" && /^[A-Za-z][\w.-]{0,63}$/.test(value.error)) return value.error;
   return fallback;
 }
 
+/** The API's own message: `error.message`, `message`, `errors[0].message`,
+ * `detail`, `error_description`, then a string `error`. */
 function errorDetail(body: unknown): string {
-  if (!body || typeof body !== "object" || Array.isArray(body)) return "";
-  const value = body as Record<string, unknown>;
-  const first = Array.isArray(value.errors) ? value.errors[0] as { message?: unknown } | undefined : undefined;
-  const detail = value.message ?? value.error ?? value.detail ?? first?.message;
-  return typeof detail === "string" && detail.trim() ? ": " + detail : "";
+  const { error, value, first } = errorFields(body);
+  if (!value) return "";
+  for (const detail of [error?.message, value.message, first?.message, value.detail, value.error_description, value.error]) {
+    if (typeof detail === "string" && detail.trim()) return detail.trim();
+  }
+  return "";
 }
 
 function nextStep(status: number): string {
@@ -204,7 +216,9 @@ function nextStep(status: number): string {
   return "Inspect the error body and correct the request before retrying.";
 }
 
-/** Base class for every HTTP error response. */
+/** Base class for every HTTP error response. The message leads with the
+ * status and the API's own message ("HTTP 404: No such customer"), then the
+ * next step. `code` is the API's error code when the body names one. */
 export class ApiError<S extends number = number, B = unknown> extends SdkError {
   readonly status: S;
   readonly body: B;
@@ -214,12 +228,14 @@ export class ApiError<S extends number = number, B = unknown> extends SdkError {
    * whose headers say the quota is spent): when to retry. */
   readonly rateLimit?: RateLimitInfo;
 
-  constructor(message: string, status: S, body: B, response: ResponseMeta) {
+  /** `summary` leads the message ("HTTP 404"); the API's message follows it. */
+  constructor(summary: string, status: S, body: B, response: ResponseMeta, own?: { message: string; code: string }) {
     const limit = response.rateLimit ?? (response.headers ? rateLimitInfo(status, response.headers) : undefined);
+    const detail = errorDetail(body);
     super(
       // An API message usually ends its own sentence; do not double it.
-      (message + errorDetail(body)).replace(/[.!?]+$/, "") + ". " + (limit ? rateLimitStep(limit) : nextStep(status)),
-      errorCode(body, limit ? "rate_limited" : "http_" + status),
+      own?.message ?? (summary + (detail ? ": " + detail : "")).replace(/[.!?]+$/, "") + ". " + (limit ? rateLimitStep(limit) : nextStep(status)),
+      own?.code ?? errorCode(body, limit ? "rate_limited" : "http_" + status),
       status, body, response.requestId,
     );
     this.status = status;
@@ -229,13 +245,77 @@ export class ApiError<S extends number = number, B = unknown> extends SdkError {
   }
 }
 
-/** The API rate limited the call: a 403 whose headers say the quota is
- * spent, or a 429 the spec did not document. `rateLimit.retryAt` says when
- * to try again. Every ApiError carries `rateLimit` when it applies. */
-export class RateLimitError extends ApiError<number, unknown> {
-  constructor(body: unknown, response: ResponseMeta) {
-    super("Rate limited (HTTP " + response.status + ")", response.status, body, response);
+/** HTTP 400: the API rejected the request as malformed. Raised for every
+ * 400, documented or not; `body` is typed where the operation declares it. */
+export class BadRequestError<B = unknown> extends ApiError<400, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 400", 400, body, response);
   }
+}
+
+/** HTTP 401: the credential is missing, invalid or expired. */
+export class UnauthorizedError<B = unknown> extends ApiError<401, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 401", 401, body, response);
+  }
+}
+
+/** HTTP 403: the credential lacks access. A 403 that signals a rate limit
+ * raises RateLimitError instead. */
+export class ForbiddenError<B = unknown> extends ApiError<403, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 403", 403, body, response);
+  }
+}
+
+/** HTTP 404: the resource or path does not exist. */
+export class NotFoundError<B = unknown> extends ApiError<404, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 404", 404, body, response);
+  }
+}
+
+/** HTTP 409: the request conflicts with the resource's current state. */
+export class ConflictError<B = unknown> extends ApiError<409, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 409", 409, body, response);
+  }
+}
+
+/** HTTP 422: the request was well formed but failed validation. */
+export class UnprocessableEntityError<B = unknown> extends ApiError<422, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP 422", 422, body, response);
+  }
+}
+
+/** The API rate limited the call: every 429, and a 403 whose headers say
+ * the quota is spent. `rateLimit.retryAt` says when to try again. */
+export class RateLimitError<B = unknown> extends ApiError<number, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP " + response.status, response.status, body, response);
+  }
+}
+
+/** Any 5xx: the API failed to handle a valid request. */
+export class ServerError<B = unknown> extends ApiError<number, B> {
+  constructor(body: B, response: ResponseMeta) {
+    super("HTTP " + response.status, response.status, body, response);
+  }
+}
+
+/** The class raised for a status whatever the operation declares. */
+function statusFamily(status: number): ErrorCtor | undefined {
+  switch (status) {
+    case 400: return BadRequestError;
+    case 401: return UnauthorizedError;
+    case 403: return ForbiddenError;
+    case 404: return NotFoundError;
+    case 409: return ConflictError;
+    case 422: return UnprocessableEntityError;
+    case 429: return RateLimitError;
+  }
+  return status >= 500 && status < 600 ? ServerError : undefined;
 }
 
 /** A 2xx response whose payload reported a failure: a declared envelope
@@ -250,10 +330,11 @@ export class PayloadError extends ApiError<number, unknown> {
   }
 }
 
-/** A response status the spec didn't document. */
+/** A status with no family class (a 402, 405 or 410, say) that the
+ * operation did not document. */
 export class UnexpectedApiError extends ApiError<number, unknown> {
   constructor(status: number, body: unknown, response: ResponseMeta) {
-    super("Unexpected HTTP status " + status, status, body, response);
+    super("HTTP " + status, status, body, response);
   }
 }
 
@@ -423,13 +504,35 @@ function transportFailureMessage(method: string, url: string, cause: unknown): s
   return method + " " + url + " failed: " + detail;
 }
 
-/** The request failed before a complete HTTP response arrived (network failure, timeout, abort, or truncated body). */
+/** Why a request failed in transit, as TransportError's `code`: the
+ * caller's AbortSignal fired ("aborted"), the per-attempt timeout elapsed
+ * ("timeout"), or the connection or body read failed ("transport_error"). */
+export type TransportFailure = "aborted" | "timeout" | "transport_error";
+
+function transportFailure(cause: unknown, signal?: AbortSignal): TransportFailure {
+  if (signal?.aborted) return "aborted";
+  let node: unknown = cause;
+  for (let depth = 0; depth < 5 && node !== null && typeof node === "object"; depth++) {
+    if ((node as { name?: unknown }).name === "TimeoutError") return "timeout";
+    node = (node as { cause?: unknown }).cause;
+  }
+  return "transport_error";
+}
+
+const TRANSPORT_NEXT_STEP: Record<TransportFailure, string> = {
+  aborted: ". The caller's AbortSignal cancelled the request.",
+  timeout: ". The request timed out; retry, or raise timeoutMs.",
+  transport_error: ". Check the connection and retry.",
+};
+
+/** The request failed before a complete HTTP response arrived (network failure, timeout, abort, or truncated body); `code` says which. */
 export class TransportError extends SdkError {
   override readonly cause?: unknown;
   readonly response?: ResponseMeta;
+  declare readonly code: TransportFailure;
 
-  constructor(message: string, cause?: unknown, response?: ResponseMeta) {
-    super(message + ". Check the connection and retry.", "transport_error", response?.status ?? null, undefined, response?.requestId);
+  constructor(message: string, cause?: unknown, response?: ResponseMeta, failure: TransportFailure = "transport_error") {
+    super(message + TRANSPORT_NEXT_STEP[failure], failure, response?.status ?? null, undefined, response?.requestId);
     this.cause = cause;
     this.response = response;
   }
@@ -465,13 +568,13 @@ export interface CoreRequest {
   /** The success body's envelope flag (`ok`, `success`): `false` there is a
    * failure reported inside a 2xx response, raised as a PayloadError. */
   failureFlag?: string;
-  /** Operation-level retry policy (x-typeship-retries), merged over the
+  /** Operation-level retry policy from the API definition, merged over the
    * client-level policy; per-call options.maxRetries still wins. */
   retry?: RetryPolicy;
   options?: RequestOptions;
 }
 
-/** Tunable retry behavior (x-typeship-retries; defaults preserved when unset). */
+/** Tunable retry behavior (defaults preserved when unset). */
 export interface RetryPolicy {
   maxRetries?: number;
   /** Replaces the default retryable set (408, 429, 500, 502, 503, 504). */
@@ -538,17 +641,18 @@ export interface CoreConfig {
    * spec's schemas. Zero-dependency: the validator lives in this file and
    * the schema table in schemas.ts. */
   validate?: { requests: boolean; responses: boolean; mode: "throw" | "warn" };
-  /** Per-operation schema table, keyed "resource.method" (see schemas.ts). */
-  schemas?: Record<string, { req?: unknown; res?: unknown }>;
-  /** Shared component definitions the schema table references. */
-  schemaDefs?: Record<string, unknown>;
-  /** Root-level retry policy (x-typeship-retries at the document root). */
+  /** Loads the per-operation schema table, keyed "resource.method", and the
+   * shared component definitions it references (see schemas.ts). Called on
+   * the first validated request, so the table stays out of the startup path
+   * and, in a bundler that splits dynamic imports, out of the main bundle. */
+  loadSchemas?: () => Promise<SchemaTables>;
+  /** API-wide retry policy from the API definition. */
   retry?: RetryPolicy;
   /** The longest server-requested wait (Retry-After, x-ratelimit-reset) a
    * retry honors. A longer wait fails the call at once with the reset time
    * instead of sleeping. Default 60000ms. */
   maxRetryWaitMs?: number;
-  /** Client-level values for x-typeship-globals parameters, by wire name. */
+  /** Client-level values for global parameters, by wire name. */
   globals?: Record<string, unknown>;
   /** Header names the spec's API-key schemes use. fetch drops the standard
    * credential headers on a cross-origin redirect but knows nothing of these,
@@ -595,8 +699,15 @@ function isStreamBody(body: unknown): boolean {
   return typeof (body as { getReader?: unknown } | undefined)?.getReader === "function";
 }
 
+/** The validation tables schemas.ts exports. */
+export interface SchemaTables {
+  SCHEMAS: Record<string, { req?: unknown; res?: unknown }>;
+  DEFS: Record<string, unknown>;
+}
+
 export class HttpCore {
   readonly config: CoreConfig;
+  private schemaTables?: Promise<SchemaTables>;
   /** Lowercased header names dropped on a cross-origin hop. */
   private readonly sensitiveHeaders: string[];
   /** Whether this runtime follows redirects itself instead of letting the
@@ -617,7 +728,7 @@ export class HttpCore {
     this.manualRedirects = custom.length > 0 && (globalThis as { document?: unknown }).document === undefined;
   }
 
-  /** The client-level value for an x-typeship-globals parameter. */
+  /** The client-level value for a global parameter. */
   globalValue(name: string): unknown {
     return this.config.globals?.[name];
   }
@@ -644,11 +755,18 @@ export class HttpCore {
         ? crypto.randomUUID()
         : undefined;
 
-    const opSchemas = this.config.validate && req.schemaKey ? this.config.schemas?.[req.schemaKey] : undefined;
+    const tables = this.config.validate && req.schemaKey && this.config.loadSchemas
+      ? await (this.schemaTables ??= this.config.loadSchemas())
+      : undefined;
+    const opSchemas = tables && req.schemaKey ? tables.SCHEMAS[req.schemaKey] : undefined;
     if (opSchemas?.req && this.config.validate!.requests
         && req.body !== undefined && (req.bodyKind ?? "json") === "json") {
       const violations: Violation[] = [];
-      validateAgainstSchema(req.body, opSchemas.req, "body", violations, this.config.schemaDefs);
+      // A GraphQL body is the {query, variables} envelope; the schema
+      // describes the variables.
+      let validated: unknown = req.body;
+      let label = "body";
+      validateAgainstSchema(validated, opSchemas.req, label, violations, tables!.DEFS);
       if (violations.length > 0) {
         const validationError = new ValidationError("request", violations);
         if (this.config.validate!.mode === "warn") {
@@ -668,9 +786,12 @@ export class HttpCore {
     // Report that original failure instead, with its request id.
     let original: { error: E; response?: ResponseMeta } | undefined;
     const errorFor = (response: Response, body: unknown, responseMeta: ResponseMeta, limit: RateLimitInfo | undefined): E => {
-      const Ctor = limit && !(response.status === 429 && req.errors?.["429"])
-        ? RateLimitError
+      // A documented status keeps its own class; a family status (404,
+      // 429, 5xx) raises the family class declared or not, so one catch
+      // covers it; ranges and default cover the rest.
+      const Ctor = limit ? RateLimitError
         : req.errors?.[String(response.status)] ??
+          statusFamily(response.status) ??
           req.errors?.[String(Math.floor(response.status / 100)) + "XX"] ??
           req.errors?.["default"];
       return (Ctor ? new Ctor(body, responseMeta) : new UnexpectedApiError(response.status, body, responseMeta)) as unknown as E;
@@ -703,13 +824,15 @@ export class HttpCore {
           error: cause instanceof Error ? cause.message : String(cause),
         });
         if (attempt < maxRetries && retryAllowed && !req.options?.signal?.aborted) {
-          if (autoIdempotencyKey) original = { error: new TransportError(transportFailureMessage(req.method, this.config.baseUrl.replace(/\/+$/, "") + req.path, cause), cause) as unknown as E };
+          if (autoIdempotencyKey) original = { error: new TransportError(transportFailureMessage(req.method, this.config.baseUrl.replace(/\/+$/, "") + req.path, cause), cause, undefined, transportFailure(cause)) as unknown as E };
           await sleep(backoff(attempt, policy));
           continue;
         }
         const error = new TransportError(
           transportFailureMessage(req.method, this.config.baseUrl.replace(/\/+$/, "") + req.path, cause),
           cause,
+          undefined,
+          transportFailure(cause, req.options?.signal),
         ) as unknown as E;
         await this.config.onError?.(error, { method: req.method, path: req.path });
         return { ok: false, error };
@@ -736,6 +859,7 @@ export class HttpCore {
             "The response body read failed before completing",
             cause,
             meta(response),
+            transportFailure(cause, req.options?.signal),
           )) as unknown as E;
           await this.config.onError?.(error, { method: req.method, path: req.path });
           return { ok: false, error, response: parseError?.response ?? meta(response) };
@@ -755,7 +879,7 @@ export class HttpCore {
         let shouldValidateResponse = responseData !== undefined;
         if (opSchemas?.res && this.config.validate!.responses && shouldValidateResponse) {
           const violations: Violation[] = [];
-          validateAgainstSchema(responseData, opSchemas.res, "response", violations, this.config.schemaDefs);
+          validateAgainstSchema(responseData, opSchemas.res, "response", violations, tables!.DEFS);
           if (violations.length > 0) {
             const validationError = new ValidationError("response", violations);
             if (this.config.validate!.mode === "warn") {
@@ -823,8 +947,7 @@ export class HttpCore {
       const responseMeta = meta(response, body);
       req.options?.onResponse?.(responseMeta);
       // A rate limit is its own error whatever the status: a 403 that means
-      // "wait" must not read as "your credential lacks access". A 429 the
-      // spec documents keeps its generated class (which carries rateLimit).
+      // "wait" must not read as "your credential lacks access".
       const error = errorFor(response, body, responseMeta, limit);
       await this.config.onError?.(error, { method: req.method, path: req.path });
       return { ok: false, error, response: responseMeta };

@@ -8,18 +8,23 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
-  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
-import type { Spec, SpecId, SpecRead, SpecUpdateRequest } from "../types.js";
+import type {
+  ErrorModel,
+  ErrorModelRead,
+  Spec,
+  SpecId,
+  SpecRead,
+  SpecUpdateRequest,
+} from "../types.js";
 
 export class SpecsResource {
   constructor(private readonly _core: HttpCore) {}
@@ -32,13 +37,6 @@ export class SpecsResource {
       method: "GET",
       path: `/specs/${encodeURIComponent(String(specId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "specs.get",
       options,
@@ -77,17 +75,7 @@ export class SpecsResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
+      errors: { "412": PreconditionFailedError },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "specs.update",
       options,
@@ -113,17 +101,6 @@ export class SpecsResource {
       headers: {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "specs.refresh",
       options,
@@ -133,11 +110,11 @@ export class SpecsResource {
 
 /** Typed errors `get` can throw. */
 export type SpecsGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -162,15 +139,15 @@ export interface SpecsUpdateParams {
 
 /** Typed errors `update` can throw. */
 export type SpecsUpdateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -189,15 +166,14 @@ export interface SpecsRefreshParams {
 
 /** Typed errors `refresh` can throw. */
 export type SpecsRefreshError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

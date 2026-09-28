@@ -11,12 +11,13 @@ import {
   ValidationError,
   BadRequestError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
 } from "../errors.js";
 import type {
+  ErrorModel,
+  ErrorModelRead,
   SpecId,
   SpecRevision,
   SpecRevisionFile,
@@ -55,14 +56,6 @@ export class SpecRevisionsResource {
         cursor: params?.cursor,
         spec_id: params?.specId,
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "specRevisions.list",
       options,
@@ -99,14 +92,6 @@ export class SpecRevisionsResource {
         include: params?.include,
         filter: params?.filter,
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "specRevisions.get",
       options,
@@ -134,14 +119,6 @@ export class SpecRevisionsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "specRevisions.listFiles",
@@ -179,12 +156,12 @@ export interface SpecRevisionsListParams {
 
 /** Typed errors `list` can throw. */
 export type SpecRevisionsListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -208,12 +185,12 @@ export interface SpecRevisionsGetParams {
 
 /** Typed errors `get` can throw. */
 export type SpecRevisionsGetError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -240,12 +217,12 @@ export interface SpecRevisionsListFilesParams {
 
 /** Typed errors `listFiles` can throw. */
 export type SpecRevisionsListFilesError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

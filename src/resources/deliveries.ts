@@ -9,14 +9,12 @@ import {
   TransportError,
   UnexpectedApiError,
   ValidationError,
-  BadGatewayError,
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServerError,
   NotFoundError,
   PreconditionFailedError,
-  RateLimitedError,
+  ServerError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from "../errors.js";
@@ -32,6 +30,8 @@ import type {
   DeliveryResponse,
   DeliveryResponseRead,
   DeliveryUpdateRequest,
+  ErrorModel,
+  ErrorModelRead,
   TargetId,
 } from "../types.js";
 
@@ -67,17 +67,6 @@ export class DeliveriesResource {
         "Idempotency-Key": params?.idempotencyKey === undefined ? undefined : String(params?.idempotencyKey),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
       idempotencyKey: "Idempotency-Key",
       schemaKey: "deliveries.create",
       options,
@@ -102,14 +91,6 @@ export class DeliveriesResource {
         limit: params?.limit,
         cursor: params?.cursor,
         target_id: params?.targetId,
-      },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
       },
       idempotent: true,
       schemaKey: "deliveries.list",
@@ -136,13 +117,6 @@ export class DeliveriesResource {
       method: "GET",
       path: `/deliveries/${encodeURIComponent(String(deliveryId))}`,
       security: [{"apiKey":[]}],
-      errors: {
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-      },
       idempotent: true,
       schemaKey: "deliveries.get",
       options,
@@ -182,18 +156,7 @@ export class DeliveriesResource {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
       body,
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "422": UnprocessableEntityError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "412": PreconditionFailedError },
       schemaKey: "deliveries.update",
       options,
     });
@@ -225,17 +188,7 @@ export class DeliveriesResource {
       headers: {
         "If-Match": params?.ifMatch === undefined ? undefined : String(params?.ifMatch),
       },
-      errors: {
-        "400": BadRequestError,
-        "401": UnauthorizedError,
-        "403": ForbiddenError,
-        "404": NotFoundError,
-        "409": ConflictError,
-        "412": PreconditionFailedError,
-        "429": RateLimitedError,
-        "500": InternalServerError,
-        "502": BadGatewayError,
-      },
+      errors: { "412": PreconditionFailedError },
       idempotent: true,
       schemaKey: "deliveries.delete",
       options,
@@ -255,15 +208,14 @@ export interface DeliveriesCreateParams {
 
 /** Typed errors `create` can throw. */
 export type DeliveriesCreateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -292,12 +244,12 @@ export interface DeliveriesListParams {
 
 /** Typed errors `list` can throw. */
 export type DeliveriesListError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -306,11 +258,11 @@ export type DeliveriesListError =
 
 /** Typed errors `get` can throw. */
 export type DeliveriesGetError =
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | RateLimitedError
-  | InternalServerError
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -328,16 +280,15 @@ export interface DeliveriesUpdateParams {
 
 /** Typed errors `update` can throw. */
 export type DeliveriesUpdateError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | UnprocessableEntityError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | UnprocessableEntityError<ErrorModelRead>
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError
@@ -355,15 +306,14 @@ export interface DeliveriesDeleteParams {
 
 /** Typed errors `delete` can throw. */
 export type DeliveriesDeleteError =
-  | BadRequestError
-  | UnauthorizedError
-  | ForbiddenError
-  | NotFoundError
-  | ConflictError
+  | BadRequestError<ErrorModelRead>
+  | UnauthorizedError<ErrorModelRead>
+  | ForbiddenError<ErrorModelRead>
+  | NotFoundError<ErrorModelRead>
+  | ConflictError<ErrorModelRead>
   | PreconditionFailedError
-  | RateLimitedError
-  | InternalServerError
-  | BadGatewayError
+  | RateLimitError<ErrorModelRead>
+  | ServerError<ErrorModelRead>
   | RateLimitError
   | UnexpectedApiError
   | ResponseParseError

@@ -6,7 +6,7 @@ import { TypeshipClient } from "../dist/index.js";
 import { startMock } from "./helper.mjs";
 
 test("organization.get GET /organization", async () => {
-  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"example\",\"object\":\"organization\",\"name\":\"example\",\"plan\":\"free\",\"created_at\":\"2024-01-01T00:00:00Z\",\"updated_at\":\"2024-01-01T00:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
+  const mock = await startMock({ status: 200, contentType: "application/json", body: "{\"id\":\"id_123\",\"object\":\"organization\",\"name\":\"example\",\"plan\":\"free\",\"created_at\":\"2026-01-15T12:00:00Z\",\"updated_at\":\"2026-01-15T12:00:00Z\",\"request_id\":\"req_3k8m1v6q9p2d7h4c\"}" });
   try {
     const client = new TypeshipClient({ baseUrl: mock.url, credentials: {"apiKey":"test-token"} });
     const result = await client.organization.get();

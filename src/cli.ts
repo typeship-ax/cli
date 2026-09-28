@@ -9,7 +9,6 @@ import { spawnSync } from "node:child_process";
 import { oauthBrowserLogin, type OAuthLoginSession } from "./oauth-login.js";
 import { oauthDeviceLogin, customBrowserApproval, loginEndpoint, type ApprovedCredential } from "./polling-login.js";
 import { oauthStatusRequest } from "./oauth-request.js";
-import { checkConsoleBrowserLogin } from "./console-login-check.js";
 import { type FileCredentialStore, sessionCredential, assertCredentialDestination, assertStoredIdentity, credentialIdentityBinding, type CredentialDestination, oauthSessionToken, sessionBinding, type SessionConfiguration, type StoredCredentials as StoredCreds } from "./oauth-session.js";
 import { createCredentialStore } from "./credential-storage.js";
 import { identityPolicyOf, identityFetch, identityResult, verifyApiIdentity, verifyClientIdentity, readApiIdentity, assertApiIdentity, type ApiIdentity, type IdentityConfiguration, type IdentityPolicy, type VerifiedIdentity } from "./api-identity.js";
@@ -30,7 +29,10 @@ import {
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
+import { checkValue, type ArgumentIssue } from "./arguments.js";
 import { docsReadCommand, docsReadTarget, fetchDocsText, resolveDocsContentUrl, searchConnectedGuides } from "./docs.js";
+import { projectFields, unmatchedFields, unmatchedFieldsMessage } from "./fields.js";
+import { SEARCH_PAGE_SIZE, rankOperations } from "./search.js";
 
 
 const BIN = "typeship";
@@ -241,25 +243,46 @@ function out(value: unknown): void {
 /** --fields a,b.c: the dotted paths to keep in API results (null = everything). Set in main(). */
 let FIELDS: string[][] | null = null;
 
-/** Keep only FIELDS of a result: arrays item by item, objects by dotted path; scalars untouched. */
-function project(value: unknown, paths: string[][] | null = FIELDS): unknown {
-  if (paths === null) return value;
-  if (Array.isArray(value)) return value.map((item) => project(item, paths));
-  if (value === null || typeof value !== "object") return value;
-  const groups = new Map<string, string[][]>();
-  for (const [key, ...rest] of paths) {
-    if (key === undefined) continue;
-    const group = groups.get(key);
-    if (group) group.push(rest); else groups.set(key, [rest]);
-  }
-  const out: Record<string, unknown> = {};
-  for (const [key, rests] of groups) {
-    const child = (value as Record<string, unknown>)[key];
-    if (child === undefined) continue;
-    if (rests.some((rest) => rest.length === 0)) out[key] = child;
-    else if (child !== null && typeof child === "object") out[key] = project(child, rests);
-  }
-  return out;
+/** Whether the command being run writes: an --fields mistake on a write
+ * must not tempt anyone into running it again. Set in main(). */
+let FIELDS_AFTER_WRITE = false;
+
+/** Keep only FIELDS of a result: arrays item by item, objects by dotted path;
+ * scalars untouched. A path that matches nothing is an error naming the keys
+ * that exist, never a silent {}. */
+function project(value: unknown, perItem: boolean): unknown {
+  if (FIELDS === null) return value;
+  const unmatched = unmatchedFields(value, FIELDS);
+  if (unmatched.length > 0) failUnmatchedFields(unmatched, perItem, value);
+  return projectFields(value, FIELDS);
+}
+
+/** --fields over a stream (--all, events): paths no item has matched yet.
+ * The stream is printed as it arrives, so the check fails at its end. */
+function streamFieldsCheck(): { item(value: unknown): unknown; finish(): void } {
+  let pending: ReturnType<typeof unmatchedFields> | null = null;
+  return {
+    item(value: unknown): unknown {
+      if (FIELDS === null) return value;
+      const unmatched = unmatchedFields(value, FIELDS);
+      pending = pending === null ? unmatched : pending.filter((p) => unmatched.some((u) => u.path === p.path));
+      return projectFields(value, FIELDS);
+    },
+    finish(): void {
+      if (pending !== null && pending.length > 0) failUnmatchedFields(pending, true, undefined);
+    },
+  };
+}
+
+function failUnmatchedFields(unmatched: ReturnType<typeof unmatchedFields>, perItem: boolean, result: unknown): never {
+  return failWith({
+    code: "FIELDS_UNMATCHED",
+    message: unmatchedFieldsMessage(unmatched, perItem),
+    nextSteps: FIELDS_AFTER_WRITE
+      ? ["This command has already run; do not run it again to change --fields." + (result !== undefined ? " Its full result is in detail.result." : "")]
+      : ["Run the command again with --fields from the available keys" + (perItem ? " (fields apply to each item)" : "") + ", or without --fields for the whole result."],
+    detail: { unmatched, ...(FIELDS_AFTER_WRITE && result !== undefined ? { result } : {}) },
+  });
 }
 
 /** Thrown after scheduling exit so sync callers stop; main() swallows it. */
@@ -342,7 +365,7 @@ let USAGE_HINT = BIN + " --help";
 function fail(code: number, message: string, extra?: unknown, nextSteps?: string[]): never {
   const usageCode: IssueCode = /^Unknown command/.test(message) ? "UNKNOWN_COMMAND"
     : /^Unknown flag/.test(message) ? "UNKNOWN_FLAG"
-    : /^(Missing required|Expected \d+ argument)/.test(message) ? "MISSING_ARGUMENT"
+    : /^(Missing required|Expected \d+ (or \d+ )?argument)/.test(message) ? "MISSING_ARGUMENT"
     : "INVALID_USAGE";
   return failWith({
     code: code === 2 ? usageCode : "CALL_FAILED",
@@ -356,7 +379,7 @@ function fail(code: number, message: string, extra?: unknown, nextSteps?: string
 /** OAuth scopes of the operation being run, so a 403 can name them. */
 let CURRENT_SCOPES: string[] = [];
 function failApi(error: unknown, hadCredential: boolean): never {
-  return failWith(classifyAuthFailure(error, authFailureContext()) ?? classifyApiError(error, { bin: BIN, hadCredential, docsUrl: DOCS_URL_DEFAULT, requiredScopes: CURRENT_SCOPES, canLogin: HAS_OAUTH_LOGIN }));
+  return failWith(classifyAuthFailure(error, authFailureContext()) ?? classifyApiError(error, { bin: BIN, envPrefix: ENV_PREFIX, hadCredential, docsUrl: DOCS_URL_DEFAULT, requiredScopes: CURRENT_SCOPES, canLogin: HAS_OAUTH_LOGIN }));
 }
 
 /** What a login, saved-session or credential-store failure names as alternatives. */
@@ -379,7 +402,7 @@ function credsPath(): string {
   return credentialStore().path;
 }
 
-function credentialStore(): FileCredentialStore { return createCredentialStore(configDir(), process.env["TYPESHIP_CREDENTIAL_STORE"], "TYPESHIP_CREDENTIAL_STORE"); }
+function credentialStore(): FileCredentialStore { return createCredentialStore(configDir(), BIN, process.env["TYPESHIP_CREDENTIAL_STORE"], "TYPESHIP_CREDENTIAL_STORE"); }
 function readCreds(): StoredCreds | null { return credentialStore().read(); }
 function sessionConfiguration(baseUrl: string, config = readConfig()): SessionConfiguration {
   return {
@@ -664,7 +687,7 @@ async function acquireOAuthBrowserSession(parsed: Parsed, clientId: string): Pro
   } }, parsed.flags, loginConfiguration);
 }
 
-/** Normal login and Console verification use the same native exchange. */
+/** The native browser exchange. */
 async function startOAuthBrowserSession(parsed: Parsed, clientId: string, timeoutMs?: number): Promise<OAuthLoginSession> {
   const controller = new AbortController();
   const cancel = () => controller.abort();
@@ -685,43 +708,6 @@ async function startOAuthBrowserSession(parsed: Parsed, clientId: string, timeou
   } finally { process.off("SIGINT", cancel); process.off("SIGTERM", cancel); }
 }
 
-async function cmdConsoleLoginCheck(parsed: Parsed): Promise<void> {
-  const file = parsed.flags.get("console-check");
-  if (typeof file !== "string" || !file || parsed.flags.get("device") === true || parsed.flags.get("with-token") === true || explicitNonInteractive(parsed)) fail(2, "--console-check requires a downloaded JSON file and browser login. Use --no-browser to print the sign-in link.");
-  const baseUrl = resolveBaseUrl(parsed.flags);
-  const clientId = (typeof parsed.flags.get("client-id") === "string" ? parsed.flags.get("client-id") as string : undefined) ?? process.env[ENV_PREFIX + "_CLIENT_ID"] ?? OAUTH_CLIENT_ID;
-  const op = WHOAMI && OPS.find((value) => value.resource === WHOAMI.resource && value.method === WHOAMI.method);
-  if (!baseUrl || !OAUTH_ISSUER || !clientId || OAUTH_LOGIN_METHOD !== "browser" || !op || op.auth !== "required" || !op.security?.length) fail(2, "Configure browser OAuth and a required-authentication identity read, then regenerate this CLI.");
-  const envOptions: Record<string, unknown> = {}, flagOptions: Record<string, unknown> = {};
-  for (const scalar of AUTH_SCALARS) {
-    if (process.env[scalar.env] !== undefined) envOptions[scalar.option] = process.env[scalar.env];
-    if (typeof parsed.flags.get(scalar.flag) === "string") flagOptions[scalar.option] = parsed.flags.get(scalar.flag);
-  }
-  if (BASIC && process.env[BASIC.envUser] && process.env[BASIC.envPass]) envOptions.basicAuth = { username: process.env[BASIC.envUser], password: process.env[BASIC.envPass] };
-  if (BASIC && typeof parsed.flags.get("username") === "string" && typeof parsed.flags.get("password") === "string") flagOptions.basicAuth = { username: parsed.flags.get("username"), password: parsed.flags.get("password") };
-  const environment = (typeof parsed.flags.get("environment") === "string" ? parsed.flags.get("environment") as string : Object.entries(ENVIRONMENTS).find(([, url]) => new URL(url).href === new URL(baseUrl!).href)?.[0]) ?? null;
-  const result = await checkConsoleBrowserLogin({
-    file: file as string, configuration: {
-      baseUrl: baseUrl!, environment, operation: op!.resource + "." + op!.method, requirements: op!.security!,
-      request: { method: op!.graphql ? "POST" : op!.httpMethod, path: op!.graphql ? "" : op!.path, graphqlField: op!.graphql?.field ?? null, graphqlQuery: op!.graphql ? op!.graphql.docPrefix + op!.graphql.defaultSelection + " }" : null },
-      issuer: OAUTH_ISSUER!, clientId: clientId!, discoveryUrl: OAUTH_DISCOVERY_URL ?? null,
-      authorizationUrl: OAUTH_AUTHORIZATION_URL ?? null, tokenUrl: OAUTH_TOKEN_URL,
-      redirectUri: OAUTH_REDIRECT_URI ?? "http://127.0.0.1/callback", scopes: OAUTH_SCOPES,
-      audience: OAUTH_TOKEN_PARAMS.audience ?? null, resource: OAUTH_TOKEN_PARAMS.resource ?? null,
-    }, schemes: NAMED_SCHEMES,
-    credentials: resolveNamedCredentials(NAMED_SCHEMES, [{ options: envOptions, named: environmentCredentials() }, { options: flagOptions, named: flagCredentials(parsed.flags) }]),
-    login: (timeoutMs) => startOAuthBrowserSession(parsed, clientId!, timeoutMs),
-    async verify(credentials, expectations) {
-      const kind = (value: "user" | "account" | "organization") => value === "user" ? "subject" : value;
-      const policy = Object.fromEntries(expectations.map((entry) => [kind(entry.kind), entry.pointer])) as IdentityPolicy;
-      const expected = Object.fromEntries(expectations.map((entry) => [kind(entry.kind), String(entry.expected)])) as ApiIdentity;
-      await verifyClientIdentity((options) => new TypeshipClient(options as unknown as ClientOptions), { baseUrl: baseUrl!,  credentials }, op!, policy, expected);
-    },
-    progress: (message) => process.stderr.write(message + "\n"),
-  });
-  out(result);
-  await flushExit(0);
-}
 
 async function cmdLogin(parsed: Parsed): Promise<void> {
   if (parsed.help) {
@@ -754,9 +740,8 @@ async function cmdLogin(parsed: Parsed): Promise<void> {
   }
   if (parsed.flags.has("login-organization")) {
     expectedLoginIdentity(parsed.flags);
-    if (!HAS_OAUTH_LOGIN || OAUTH_LOGIN_METHOD !== "browser" || parsed.flags.has("device") || parsed.flags.has("console-check") || parsed.flags.has("with-token") || explicitNonInteractive(parsed)) fail(2, "--login-organization is available only for interactive OAuth browser login, including --no-browser.");
+    if (!HAS_OAUTH_LOGIN || OAUTH_LOGIN_METHOD !== "browser" || parsed.flags.has("device") || parsed.flags.has("with-token") || explicitNonInteractive(parsed)) fail(2, "--login-organization is available only for interactive OAuth browser login, including --no-browser.");
   }
-  if (parsed.flags.has("console-check")) { await cmdConsoleLoginCheck(parsed); return; }
   const named = flagCredentials(parsed.flags);
   const scalarValues: Record<string, string> = {};
   for (const a of AUTH_SCALARS) {
@@ -1008,7 +993,7 @@ function mcpEntryFor(url: string | undefined, readOnly = false): { entry: McpEnt
     // The hosted endpoint serves its read-only twin at <url>/readonly; a
     // remote server of someone else's may not, so say so.
     const target = readOnly ? hosted.replace(/\/+$/, "") + "/readonly" : hosted;
-    if (readOnly && url !== undefined && !MCP_URL) warnings.push("--read-only appended /readonly to the URL, which typeship-hosted endpoints serve; check that this server does too.");
+    if (readOnly && url !== undefined && !MCP_URL) warnings.push("--read-only appended /readonly to the URL; check that this server serves a read-only endpoint there.");
     if (HOSTED_MCP_NOTE) warnings.push(HOSTED_MCP_NOTE);
     return { entry: { url: target, ...(Object.keys(HOSTED_MCP_HEADERS).length ? { headers: { ...HOSTED_MCP_HEADERS } } : {}) }, warnings };
   }
@@ -1123,7 +1108,7 @@ function agentContext(): AgentContext {
     docsUrl: docsSiteUrl(),
     docsIndexUrl: docsIndexUrl(),
     generatedOperationCount: OPS.length,
-    omittedOperations: OMITTED_OPS.map((op) => ({ command: op.command.join(" "), tool: op.tool, method: op.httpMethod, path: op.path })),
+    omittedOperationCount: OMITTED_OPS.length,
     mcpUrl: MCP_URL,
     skillsRepo: SKILLS_REPO,
     hasMcp: HAS_MCP,
@@ -1188,8 +1173,6 @@ function helpJson(): Record<string, unknown> {
       coverage: {
         generated_operations: OPS.length,
         total_operations: OPS.length + EXCLUDED_OPS,
-        omitted_operations: OMITTED_OPS.map((op) => ({ command: op.command.join(" "), tool: op.tool, method: op.httpMethod, path: op.path })),
-        reason: "plan_limit",
       },
     } : {}),
     discovery: {
@@ -1276,7 +1259,7 @@ async function cmdAuth(parsed: Parsed): Promise<void> {
         if (op.auth !== "none") { report.authenticated = true; report.verification = "verified"; report.next_steps = []; }
       }
       else {
-        const why = classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT });
+        const why = classifyApiError(result.error, { bin: BIN, envPrefix: ENV_PREFIX, hadCredential: true, docsUrl: DOCS_URL_DEFAULT });
         report.verification = "rejected";
         report.status = "action_required";
         report.live = { ok: false, code: why.code, message: why.message };
@@ -1327,7 +1310,7 @@ async function cmdDoctor(parsed: Parsed): Promise<void> {
         const target = (client as unknown as Record<string, Record<string, () => Promise<{ ok: boolean; error?: unknown }>>>)[op.resource]!;
         const result = await asApiResult(target[op.method]!());
         const status = (result.error as { status?: unknown } | undefined)?.status;
-        checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message,
+        checks.push(result.ok ? { name: "identity", ok: true, detail: op.command.join(" ") + " ok" } : { name: "identity", ok: false, detail: classifyApiError(result.error, { bin: BIN, envPrefix: ENV_PREFIX, hadCredential: true, docsUrl: DOCS_URL_DEFAULT }).message,
           // Only 401 and 403 are about the credential. A 404 or 405 means the
           // API no longer has this endpoint where this CLI version expects it.
           fix: status === 401 || status === 403 ? "The credential was rejected; run '" + BIN + " login' with a current one."
@@ -1692,34 +1675,6 @@ async function fetchDocs(pathOrFile: string): Promise<string | null> {
   }
 }
 
-function searchTerms(query: string): string[] {
-  return [...new Set(query.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length >= 2))];
-}
-
-/** Token search across names, prose, paths, and arguments. A phrase such as
- * "create project" should find the projects create command, even though that exact
- * substring never occurs in the generated command. */
-function referenceSearchScore(op: OpSpec, query: string): number {
-  const terms = searchTerms(query);
-  if (terms.length === 0) return 0;
-  const names = [...op.command, op.tool].join("_").toLowerCase().split(/[^a-z0-9]+/);
-  const summary = (op.summary ?? "").toLowerCase();
-  const description = (op.description ?? "").toLowerCase();
-  const path = op.path.toLowerCase();
-  const params = op.params.flatMap((p) => [p.name.toLowerCase(), p.flag.toLowerCase()]);
-  let score = 0;
-  for (const term of terms) {
-    if (names.includes(term)) score += 10;
-    if (summary.split(/[^a-z0-9]+/).includes(term)) score += 5;
-    else if (summary.includes(term)) score += 3;
-    if (path.includes(term)) score += 3;
-    if (params.includes(term)) score += 3;
-    else if (params.some((param) => param.includes(term))) score += 1;
-    if (description.includes(term)) score += 1;
-  }
-  return score;
-}
-
 function referenceFor(op: OpSpec, includeSchemas = false): string {
   const lines: string[] = [];
   lines.push(paintOut("bold", usageLine(op)));
@@ -1808,23 +1763,22 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     const term = parsed.positionals.slice(2).join(" ");
     if (!term) fail(2, "docs search expects a term");
     const jsonOutput = parsed.flags.get("json") === true || parsed.flags.get("format") === "json";
-    const refMatches = OPS.map((op) => ({ op, score: referenceSearchScore(op, term) }))
-      .filter((match) => match.score > 0)
-      .sort((a, b) => b.score - a.score || a.op.command.join(" ").localeCompare(b.op.command.join(" ")))
-      .map((match) => match.op);
+    // The MCP server's search_docs ranking, so both surfaces agree.
+    const refMatches = rankOperations(OPS, term).map((match) => match.op);
     const { guides: proseMatches, status: docsStatus } = await searchConnectedGuides(docsSiteUrl(), docsIndexUrl(), fetchDocs, term);
     if (jsonOutput) {
       out({
         schema_version: "1",
         query: term,
-        reference: refMatches.slice(0, 15).map((op) => ({
+        reference: refMatches.slice(0, SEARCH_PAGE_SIZE).map((op) => ({
           command: op.command.join(" "),
           method: op.httpMethod,
           path: op.path,
           ...(op.summary ? { summary: op.summary } : {}),
+          ...(op.deprecated ? { deprecated: true } : {}),
           details_command: BIN + " docs " + op.command.join(" ") + " --json",
         })),
-        guides: proseMatches.slice(0, 15).map((match) => ({ ...match, read_command: docsReadCommand(BIN, match.url) })),
+        guides: proseMatches.slice(0, SEARCH_PAGE_SIZE).map((match) => ({ ...match, read_command: docsReadCommand(BIN, match.url) })),
         totals: { reference: refMatches.length, guides: proseMatches.length },
         guides_status: docsStatus,
         ...(docsStatus === "not_configured" ? { next_steps: ["Run '" + BIN + " config set docs-url <url>' to add guide search; the API reference was still searched."] } : {}),
@@ -1835,11 +1789,11 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
     const lines: string[] = [];
     if (refMatches.length > 0) {
       lines.push(paintOut("bold", "Reference:"));
-      for (const op of refMatches.slice(0, 15)) lines.push("  " + padPaint("cyan", op.command.join(" "), 34) + (op.summary ?? wireOf(op)));
+      for (const op of refMatches.slice(0, SEARCH_PAGE_SIZE)) lines.push("  " + padPaint("cyan", op.command.join(" "), 34) + (op.deprecated ? "(deprecated) " : "") + (op.summary ?? wireOf(op)));
     }
     if (proseMatches.length > 0) {
       lines.push(...(lines.length > 0 ? [""] : []), paintOut("bold", "Guides:"));
-      for (const match of proseMatches.slice(0, 15)) lines.push("  " + paintOut("cyan", match.title + (match.section ? " / " + match.section : "")), "    " + match.excerpt, "    " + docsReadCommand(BIN, match.url));
+      for (const match of proseMatches.slice(0, SEARCH_PAGE_SIZE)) lines.push("  " + paintOut("cyan", match.title + (match.section ? " / " + match.section : "")), "    " + match.excerpt, "    " + docsReadCommand(BIN, match.url));
     } else if (docsStatus === "not_configured") {
       lines.push(...(lines.length > 0 ? [""] : []), "(no docs site configured for guide search: '" + BIN + " config set docs-url <url>')");
     } else if (docsStatus === "unavailable") {
@@ -1952,7 +1906,7 @@ function shellQuote(value: string): string {
 }
 
 function usageLine(op: OpSpec): string {
-  const paths = op.params.filter((p) => p.kind === "path").map((p) => "<" + p.name + ">").join(" ");
+  const paths = op.params.filter((p) => p.kind === "path").map((p) => p.credential ? "[<" + p.name + ">]" : "<" + p.name + ">").join(" ");
   return BIN + " " + op.command[0] + " " + op.command[1] + (paths ? " " + paths : "");
 }
 
@@ -2094,9 +2048,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   if (EXCLUDED_OPS > 0) {
     lines.push("");
-    lines.push(...labeled(paintOut("yellow", "Plan limit:") + " ", "generated " + OPS.length + " of " + (OPS.length + EXCLUDED_OPS) + " operations", width, 14));
-    lines.push(...labeled("Omitted: ", OMITTED_OPS.map((op) => op.command.join(" ") + " (" + op.httpMethod + " " + op.path + ")").join(", "), width, 14));
-    lines.push(...labeled("Upgrade: ", "https://typeship.dev/pricing, then regenerate without the operation cap", width, 14));
+    lines.push(...labeled(paintOut("yellow", "Coverage:") + " ", "this build includes " + OPS.length + " of " + (OPS.length + EXCLUDED_OPS) + " operations; api.json lists the rest", width, 14));
   }
   lines.push("");
   const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --timeout <seconds>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
@@ -2165,6 +2117,7 @@ function commandExtras(op: OpSpec): [string, string][] {
 function exampleLine(op: OpSpec): string {
   const parts = [BIN, op.command[0], op.command[1]];
   for (const p of op.params) {
+    if (p.credential) continue; // defaulted from the configured credential
     const hasExample = p.type !== "file" && Object.hasOwn(op.exampleArguments, p.name);
     if (!p.required && !hasExample) continue;
     const generated = p.type === "file" ? undefined : op.exampleArguments[p.name];
@@ -2377,6 +2330,16 @@ function validateParameters(op: OpSpec, values: Record<string, unknown>, flags: 
 
 /** Whether the last client built carried any credential; failApi tells NO_AUTH from AUTH_INVALID with it. */
 let LAST_CLIENT_HAD_CREDENTIAL = false;
+/** The last client's Basic credentials, for path arguments that default to the username. */
+let LAST_CLIENT_BASIC: { basicAuth?: unknown; credentials?: unknown } = {};
+
+/** The configured Basic-auth username: the named scheme's, else basicAuth's. */
+function credentialUsername(scheme: string): string | undefined {
+  const named = (LAST_CLIENT_BASIC.credentials as Record<string, unknown> | undefined)?.[scheme];
+  const username = named && typeof named === "object" ? (named as { username?: unknown }).username
+    : (LAST_CLIENT_BASIC.basicAuth as { username?: unknown } | undefined)?.username;
+  return typeof username === "string" && username !== "" ? username : undefined;
+}
 
 /** Check the same complete alternatives the request runtime can select, after
  * per-scheme flag, environment, profile, and OAuth resolution. */
@@ -2552,6 +2515,7 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
     if (value !== undefined) options[g.option] = value;
   }
   LAST_CLIENT_HAD_CREDENTIAL = Object.keys(options.credentials ?? {}).length > 0 || AUTH_SCALARS.some((a) => options[a.option] !== undefined) || options.basicAuth !== undefined || options.bearerToken !== undefined;
+  LAST_CLIENT_BASIC = { basicAuth: options.basicAuth, credentials: options.credentials };
   requireOperationCredentials(op, options);
   // Identify the package and version. Optional harness and caller details
   // let the API distinguish agent traffic from other non-interactive use.
@@ -2604,9 +2568,9 @@ function failOmitted(op: OmittedOpSpec): never {
   return failWith({
     status: "action_required",
     code: "PLAN_LIMIT",
-    message: "The command '" + BIN + " " + op.command.join(" ") + "' exists in the API Spec but was omitted from this generated package by its plan limit.",
-    detail: { operation: op.tool, method: op.httpMethod, path: op.path, generated_operations: OPS.length, total_operations: OPS.length + EXCLUDED_OPS },
-    nextSteps: ["Upgrade at https://typeship.dev/pricing and regenerate the package without the operation cap.", "Do not invent or retry an omitted command against this generated package."],
+    message: "The command '" + BIN + " " + op.command.join(" ") + "' is in the API but not in this package, which was generated with " + OPS.length + " of its " + (OPS.length + EXCLUDED_OPS) + " operations.",
+    detail: { operation: op.tool, ...(op.graphql ? { graphql: op.graphql.kind + " " + op.graphql.field } : { method: op.httpMethod, path: op.path }), generated_operations: OPS.length, total_operations: OPS.length + EXCLUDED_OPS },
+    nextSteps: ["The package's publisher can regenerate it with every operation.", "Do not invent or retry an omitted command against this package."],
   });
 }
 
@@ -2700,12 +2664,18 @@ async function main(): Promise<void> {
 
   const pathSpecs = op.params.filter((p) => p.kind === "path");
   const pathValues = parsed.positionals.slice(2);
-  if (pathValues.length !== pathSpecs.length) {
-    fail(2, "Expected " + pathSpecs.length + " argument(s): " + usageLine(op));
+  // A path argument that is the Basic-auth username (Twilio's AccountSid)
+  // may be left out; it defaults to the configured credential below.
+  const pathGiven = pathValues.length === pathSpecs.length ? pathSpecs
+    : pathValues.length === pathSpecs.filter((p) => !p.credential).length ? pathSpecs.filter((p) => !p.credential)
+    : null;
+  if (!pathGiven) {
+    const optional = pathSpecs.filter((p) => p.credential).length;
+    fail(2, "Expected " + (optional ? (pathSpecs.length - optional) + " or " : "") + pathSpecs.length + " argument(s): " + usageLine(op));
   }
 
   const values: Record<string, unknown> = {};
-  pathSpecs.forEach((spec, i) => { values[spec.name] = pathValues[i]; });
+  pathGiven!.forEach((spec, i) => { values[spec.name] = pathValues[i]; });
 
   let dataBody: unknown;
   const dataRaw = parsed.flags.get("data");
@@ -2751,6 +2721,32 @@ async function main(): Promise<void> {
     }
   }
 
+  // Object and array values (a GraphQL input, a JSON flag, --data fields)
+  // get the checks the MCP server applies: nested types, enums, required
+  // properties, patterns and a closed object's unknown keys, all at once.
+  const argumentSchemas = (op.inputSchema.properties ?? {}) as Record<string, Record<string, unknown>>;
+  const nestedIssues: ArgumentIssue[] = [];
+  const checkNested = (name: string, value: unknown): unknown =>
+    value !== null && typeof value === "object" && !(value instanceof Blob) && argumentSchemas[name]
+      ? checkValue(value, argumentSchemas[name]!, name, nestedIssues) : value;
+  for (const spec of op.params) {
+    if (spec.kind !== "path" && spec.type !== "file" && values[spec.name] !== undefined) values[spec.name] = checkNested(spec.name, values[spec.name]);
+  }
+  if (op.bodyStyle === "fields" && dataBody !== null && typeof dataBody === "object" && !Array.isArray(dataBody) && !(dataBody instanceof Blob)) {
+    const body = dataBody as Record<string, unknown>;
+    for (const name of Object.keys(body)) {
+      if (op.params.some((p) => p.kind === "body" && p.name === name && p.type !== "file")) body[name] = checkNested(name, body[name]);
+    }
+  }
+  if (nestedIssues.length > 0) {
+    failWith({
+      code: nestedIssues.every((issue) => issue.code === "MISSING_ARGUMENT") ? "MISSING_ARGUMENT" : "INVALID_USAGE",
+      message: nestedIssues.length + (nestedIssues.length === 1 ? " problem" : " problems") + " in the arguments; nothing was sent: " + nestedIssues.map((issue) => issue.message).join("; "),
+      detail: { issues: nestedIssues },
+      nextSteps: ["Fix the values listed in detail.issues and run again.", "Run '" + USAGE_HINT + "' for each argument's type."],
+    });
+  }
+
   const missing = missingRequired(op, values).filter((name) =>
     !(op.bodyStyle === "fields" && dataBody !== undefined && typeof dataBody === "object" && dataBody !== null && name in (dataBody as object)),
   );
@@ -2770,6 +2766,7 @@ async function main(): Promise<void> {
   if (typeof fieldsRaw === "string") {
     FIELDS = fieldsRaw.split(",").map((f) => f.trim()).filter((f) => f !== "").map((f) => f.split("."));
     if (FIELDS.length === 0) fail(2, "--fields expects at least one field path");
+    FIELDS_AFTER_WRITE = op.safety !== "read";
   }
 
   // --out <dir> materializes a file-shaped response (see cli-agent.ts bundleProperty).
@@ -2794,6 +2791,15 @@ async function main(): Promise<void> {
     fail(2, op.command.join(" ") + " does not paginate, so --all has nothing to walk. Run it without --all; it returns the whole response.");
   }
   const client = await makeClient(parsed.flags, op);
+  for (const spec of pathSpecs) {
+    if (!spec.credential || values[spec.name] !== undefined) continue;
+    const username = credentialUsername(spec.credential.scheme);
+    if (username === undefined) {
+      fail(2, "Missing required: <" + spec.name + ">. It defaults to the Basic-auth username (" + spec.credential.env + "), and none is configured.", undefined,
+        ["Pass " + spec.name + " as an argument: " + usageLine(op) + ".", "Or set " + spec.credential.env + (BASIC ? " and " + BASIC.envPass : "") + ", or run '" + BIN + " login'."]);
+    }
+    values[spec.name] = username;
+  }
 
   // Destructive commands need --force. A person gets asked; an agent gets
   // an action_required envelope with the exact command to run, so nothing
@@ -2822,7 +2828,9 @@ async function main(): Promise<void> {
   }
 
   const selectValue = typeof parsed.flags.get("select") === "string" ? (parsed.flags.get("select") as string) : undefined;
-  const args = buildArgs(op, values, dataBody, selectValue);
+  // The response metadata says whether a conditional request matched (304).
+  const observed: { meta?: { notModified?: boolean; etag?: string } } = {};
+  const args = buildArgs(op, values, dataBody, selectValue, { onResponse: (meta: { notModified?: boolean; etag?: string }) => { observed.meta = meta; } });
   const target = (client as unknown as Record<string, Record<string, (...a: unknown[]) => unknown>>)[op.resource]!;
   // --stream true on an operation with a streaming twin prints its events
   // as NDJSON as they arrive, instead of failing on the event stream.
@@ -2830,10 +2838,12 @@ async function main(): Promise<void> {
   const callResult = target[streaming ? op.streamMethod!.method : op.method]!(...args);
 
   if (op.paginated && parsed.flags.get("all") === true) {
+    const fieldsCheck = streamFieldsCheck();
     try {
       for await (const item of callResult as AsyncIterable<unknown>) {
-        process.stdout.write(JSON.stringify(project(item)) + "\n");
+        process.stdout.write(JSON.stringify(fieldsCheck.item(item)) + "\n");
       }
+      fieldsCheck.finish();
       await flushExit(0);
     } catch (e) {
       failApi(e, LAST_CLIENT_HAD_CREDENTIAL);
@@ -2853,15 +2863,23 @@ async function main(): Promise<void> {
     result = { ...result, data: { ...batch, data: completed } };
   }
   if (result.ok) {
+    // 304 Not Modified: the conditional request matched, so there is no
+    // body. Say so, with the ETag to send next time.
+    if (observed.meta?.notModified) {
+      out({ ok: true, not_modified: true, ...(observed.meta.etag ? { etag: observed.meta.etag } : {}) });
+      await flushExit(0);
+    }
     if (op.sse || streaming) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.
+      const fieldsCheck = streamFieldsCheck();
       try {
         for await (const event of result.data as AsyncIterable<{ event?: string; id?: string; data: string }>) {
-          process.stdout.write(JSON.stringify(project(event)) + "\n");
+          process.stdout.write(JSON.stringify(fieldsCheck.item(event)) + "\n");
         }
       } catch (e) {
         failApi(e, LAST_CLIENT_HAD_CREDENTIAL);
       }
+      fieldsCheck.finish();
       await flushExit(0);
     }
     // A non-JSON body (audio, a file, CSV): raw bytes to stdout, or to the
@@ -2896,7 +2914,7 @@ async function main(): Promise<void> {
       const page = result.data as { items: unknown[]; hasNextPage(): boolean; nextPageParams(): Record<string, unknown> | null; response: { requestId?: string } };
       const next = page.nextPageParams();
       out({
-        items: project(page.items),
+        items: project(page.items, true),
         hasMore: next !== null,
         ...(next !== null ? { nextPage: next, nextCommand: nextCommandFor(op, pathValues, next) } : {}),
         ...(page.response.requestId ? { request_id: page.response.requestId } : {}),
@@ -2905,7 +2923,7 @@ async function main(): Promise<void> {
       // Batch-style collection envelopes ({data: [...]}) use item-relative
       // fields, matching paginated results, while retaining envelope metadata.
       const data = result.data as Record<string, unknown>;
-      out({ ...data, [collectionField]: project(data[collectionField]) });
+      out({ ...data, [collectionField]: project(data[collectionField], true) });
     } else if (outDir !== undefined && bundleField !== null) {
       // --out: a file-shaped response (an array of {path, content}) lands
       // on disk; stdout gets the rest of the response plus a summary.
@@ -2913,9 +2931,9 @@ async function main(): Promise<void> {
       const files = (data[bundleField] as { path: string; content: string }[] | undefined) ?? [];
       const written = writeBundle(outDir, files);
       const { [bundleField]: _omitted, ...rest } = data;
-      out({ ...(project(rest) as Record<string, unknown>), out: written });
+      out({ ...(project(rest, false) as Record<string, unknown>), out: written });
     } else {
-      out(project(result.data ?? { ok: true }));
+      out(result.data === undefined || result.data === null ? { ok: true } : project(result.data, Array.isArray(result.data)));
     }
     await flushExit(0);
   }

@@ -10,7 +10,6 @@ import {
   type RequestContext,
   bearerAuth,
 } from "./core/http.js";
-import { DEFS, SCHEMAS } from "./schemas.js";
 
 import { ProjectsResource } from "./resources/projects.js";
 import { SpecsResource } from "./resources/specs.js";
@@ -171,8 +170,9 @@ export class TypeshipClient {
       onError: options.onError,
       debug,
       validate,
-      schemas: validate ? SCHEMAS : undefined,
-      schemaDefs: validate ? DEFS : undefined,
+      // Loaded on the first validated request, so the schema table costs
+      // nothing when validation is off.
+      loadSchemas: validate ? () => import("./schemas.js") : undefined,
     });
     this.projects = new ProjectsResource(core);
     this.specs = new SpecsResource(core);

@@ -1,6 +1,6 @@
-# typeship — agent context
+# Typeship: agent guide
 
-This package contains the generated CLI for **typeship** (API v1.0.0, package v0.22.0).
+Instructions for coding agents that call the Typeship API through this CLI (API version 1.0.0, package version 0.23.0).
 
 Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.
@@ -16,12 +16,10 @@ Examples use Parcel, a fictional delivery service. Replace its domains,
 repository names, and resource identifiers with your own. The hosted
 petstore Spec is a runnable sample.
 
-## Ground rules
-- Maintaining this package: when its repository receives reviewed regeneration pull requests, committed customizations are preserved and edits that overlap a generated change stop for review. Regenerating into a directory replaces its files.
-- A custom file ships only when the package manifest, exports, build, and tests include it. Add a package check for every custom build or test step.
+## Before writing code
+- `api.md` is the command and flag reference; `api.json` is the machine-readable contract: every operation's inputs, outputs, errors, `safety` (`read`, `write`, or `destructive`), and an example. Look up exact names there instead of guessing.
+- `README.md` covers installation and setup.
 - Zero runtime dependencies; the program runs on Node.js 20+ and platform `fetch`.
-- `api.md` is the command and flag reference; `api.json` is the machine-readable operation, schema, safety, and example contract. Read them before guessing.
-- Start with the local build or installation instructions in `README.md`. Generation does not publish a registry package.
 
 ## Authentication
 - Bearer token: set the `TYPESHIP_TOKEN` environment variable.
@@ -30,6 +28,12 @@ petstore Spec is a runnable sample.
 - `typeship <resource> <command>` calls an API operation; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).
 - Path parameters are positional; other inputs are flags. JSON goes to stdout and exit codes are 0/1/2. Errors are one JSON envelope on stderr: `{status, issues: [{code, message}], next_steps, detail}`; branch on `issues[].code`. Every operation classified as destructive requires `--force` (or `--yes`).
 - `typeship agent-guide --format json` explains the conventions; `typeship help --json` is the command surface as data; `typeship doctor` checks the setup. Read `typeship init --help` before setup: it can store credentials and update agent instructions. Choose the scope the task requires.
+
+## Safety
+- Read credentials from the environment or a secret store. Never hard-code them, print them, or put them in URLs or command arguments.
+- Check an operation's `safety` in `api.json` before calling it. Confirm with the user before running a `write` or `destructive` operation they did not ask for.
+- Destructive commands stop for confirmation unless `--force` (or `--yes`) is passed. Pass it only when the user asked for that change.
+- Keep results small: select only the fields you need with `--fields` (CLI).
 
 ## Documentation
 - The reference for this exact package: `api.md` (offline, always current with the code).

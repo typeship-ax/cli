@@ -14,7 +14,7 @@ npm test
 
 ## Name and version
 
-`package.json` names this package `@typeship-ax/cli` at version `0.23.0`. Raise `version` for every release.
+`package.json` names this package `@typeship-ax/cli` at version `0.23.1`. Raise `version` for every release.
 
 ## Publish
 

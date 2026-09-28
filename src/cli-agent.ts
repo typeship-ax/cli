@@ -25,7 +25,7 @@ export type IssueCode =
   | "PLAN_LIMIT"            // 402: the account's plan stops here
   | "NOT_FOUND"             // 404
   | "INVALID_REQUEST"       // 400/422 the API rejected the input
-  | "SPEC_INVALID"          // 422 whose error code is spec_error
+  | "SPEC_INVALID"          // 422 whose error code is spec_invalid (spec_error before the rename)
   | "RATE_LIMITED"          // 429
   | "SERVER_ERROR"          // 5xx
   | "NETWORK_ERROR"         // no response: DNS, TLS, timeout, refused
@@ -163,7 +163,7 @@ export function classifyApiError(
     return { status: "action_required", code: "PLAN_LIMIT", message, detail, nextSteps: [upgradeUrl ? "Lift the limit at " + upgradeUrl + ", then run the same command again." : "The account's plan stops here; upgrade it, then run the same command again.", "Do not retry the same call as is."] };
   }
   if (status === 404) return { code: "NOT_FOUND", message, detail, nextSteps: notFoundNextSteps(message) };
-  if (status === 422 && apiCode === "spec_error") return { code: "SPEC_INVALID", message, detail, nextSteps: ["The API rejected the spec it was given; the message says why.", context.docsUrl ? "Look the message up: '" + context.bin + " docs search \"" + (apiMessage ?? "").slice(0, 60).replace(/"/g, "'") + "\"'." : "Fix the spec and run again."] };
+  if (status === 422 && (apiCode === "spec_invalid" || apiCode === "spec_error")) return { code: "SPEC_INVALID", message, detail, nextSteps: ["The API rejected the spec it was given; the message says why.", context.docsUrl ? "Look the message up: '" + context.bin + " docs search \"" + (apiMessage ?? "").slice(0, 60).replace(/"/g, "'") + "\"'." : "Fix the spec and run again."] };
   if (status === 400 || status === 422 || status === 409 || status === 413) return { code: "INVALID_REQUEST", message, detail, nextSteps: ["Read detail.body for the field the API named; run the command with --help for its flags."] };
   if (status >= 500) return { code: "SERVER_ERROR", message, detail, nextSteps: ["Retry once with backoff. If it persists, report detail.request_id."] };
   return { code: "CALL_FAILED", message, detail };

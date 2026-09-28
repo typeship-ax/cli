@@ -30,12 +30,22 @@ function parseKey(value: string): Buffer {
   return key;
 }
 
+/** The OS item's service name: the command that owns it, then a digest of
+ * the session file, so each profile has its own key. Limited to a fixed
+ * alphabet because the macOS write passes it through security's command
+ * stream. */
+export function credentialKeyService(owner: string, path: string): string {
+  const name = owner.replace(/[^A-Za-z0-9._-]/g, "-") || "cli";
+  return name + ".credentials." + createHash("sha256").update(resolve(path)).digest("hex");
+}
+
 /** A small wrapping key avoids OS item-size limits; session files are encrypted
- * separately so refresh rotation can retain the atomic file/lock transaction. */
-export function nativeCredentialKeyStore(path: string, platform: NodeJS.Platform = process.platform, run: NativeCommand = nativeCommand, environmentName = "CREDENTIAL_STORE"): CredentialKeyStore {
+ * separately so refresh rotation can retain the atomic file/lock transaction.
+ * `owner` is the command name; the CLI and its local MCP server pass the same
+ * one so they share the key. */
+export function nativeCredentialKeyStore(path: string, owner: string, platform: NodeJS.Platform = process.platform, run: NativeCommand = nativeCommand, environmentName = "CREDENTIAL_STORE"): CredentialKeyStore {
   const failed = (name: string): never => unavailable(name, environmentName);
-  const identity = createHash("sha256").update(resolve(path)).digest("hex");
-  const service = "typeship.credentials." + identity;
+  const service = credentialKeyService(owner, path);
   const account = "session-key";
   if (platform === "darwin") {
     const name = "macOS Keychain";
@@ -175,9 +185,9 @@ export function encryptedCredentialCodec(path: string, keyStore: CredentialKeySt
 /** OS protection is the default. Plaintext storage is an explicit, separate
  * store for environments where the owner accepts that tradeoff. Never migrate
  * or fall back silently when an OS service is unavailable. */
-export function createCredentialStore(directory: string, mode: string = "os", environmentName = "CREDENTIAL_STORE"): FileCredentialStore {
+export function createCredentialStore(directory: string, owner: string, mode: string = "os", environmentName = "CREDENTIAL_STORE"): FileCredentialStore {
   if (mode === "file") return new FileCredentialStore(join(directory, "credentials.json"));
   if (mode !== "os") throw new CredentialStorageError(environmentName + " must be os or file.");
   const path = join(directory, "credentials.enc");
-  return new FileCredentialStore(path, 40_000, encryptedCredentialCodec(path, nativeCredentialKeyStore(path, process.platform, nativeCommand, environmentName)));
+  return new FileCredentialStore(path, 40_000, encryptedCredentialCodec(path, nativeCredentialKeyStore(path, owner, process.platform, nativeCommand, environmentName)));
 }

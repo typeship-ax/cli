@@ -26,9 +26,9 @@ export interface CredentialDestination { apiBaseUrl: string; environment?: strin
 
 export function assertCredentialDestination(credentials: StoredCredentials, destination: CredentialDestination): void {
   const saved = credentials.destination;
-  if (!saved) throw new Error("Saved credentials have no API and profile binding. Log in again before using them.");
-  if (new URL(saved.apiBaseUrl).href !== new URL(destination.apiBaseUrl).href) throw new Error("The API destination changed. Log in again before using saved credentials.");
-  if ((saved.environment ?? null) !== (destination.environment ?? null) || (saved.profile ?? null) !== (destination.profile ?? null)) throw new Error("The credential environment or profile changed. Log in again before using saved credentials.");
+  if (!saved) throw new OAuthSessionError("Saved credentials have no API and profile binding. Log in again before using them.");
+  if (new URL(saved.apiBaseUrl).href !== new URL(destination.apiBaseUrl).href) throw new OAuthSessionError("The API destination changed. Log in again before using saved credentials.");
+  if ((saved.environment ?? null) !== (destination.environment ?? null) || (saved.profile ?? null) !== (destination.profile ?? null)) throw new OAuthSessionError("The credential environment or profile changed. Log in again before using saved credentials.");
 }
 
 export interface StoredCredentials {
@@ -67,7 +67,7 @@ export function credentialIdentityBinding(credentials: StoredCredentials, identi
 export function assertStoredIdentity(credentials: StoredCredentials, identity?: IdentityConfiguration): void {
   if (!identity) return;
   if (!credentials.identity?.values || credentials.identity.binding !== credentialIdentityBinding(credentials, identity) || Object.keys(identity.fields).some((kind) => !Object.hasOwn(credentials.identity!.values, kind))) {
-    throw new Error("The saved login has no matching API identity verification. Sign in again to verify the current account and organization.");
+    throw new OAuthSessionError("The saved login has no matching API identity verification. Sign in again to verify the current account and organization.");
   }
 }
 
@@ -99,7 +99,14 @@ function alive(pid: number): boolean {
   try { process.kill(pid, 0); return true; } catch (error) { return code(error) !== "ESRCH"; }
 }
 
-export class CredentialStorageError extends Error {}
+/** The OS credential store or the saved credential file cannot be used. */
+export class CredentialStorageError extends Error {
+  constructor(message?: string) { super(message); this.name = "CredentialStorageError"; }
+}
+/** A saved login cannot be used as is; the remedy is to sign in again. */
+export class OAuthSessionError extends Error {
+  constructor(message?: string) { super(message); this.name = "OAuthSessionError"; }
+}
 
 export interface CredentialCodec {
   readonly name: string;
@@ -127,7 +134,7 @@ export class FileCredentialStore implements CredentialStore {
     } catch (error) {
       if (code(error) === "ENOENT") return null;
       if (error instanceof CredentialStorageError) throw error;
-      throw new Error("Cannot read saved credentials. Check the credential store before logging in again.");
+      throw new CredentialStorageError("Cannot read saved credentials. Check the credential store before logging in again.");
     }
   }
 
@@ -154,9 +161,9 @@ export class FileCredentialStore implements CredentialStore {
       while (!acquired) {
         try { linkSync(claim, lock); acquired = true; }
         catch (error) {
-          if (code(error) !== "EEXIST") throw new Error("Cannot lock the credential store.");
+          if (code(error) !== "EEXIST") throw new CredentialStorageError("Cannot lock the credential store.");
           this.recoverDeadOwner(lock);
-          if (Date.now() >= deadline) throw new Error("The credential store is busy. Wait for the other login or refresh to finish and retry. If its process stopped, inspect " + lock + ".");
+          if (Date.now() >= deadline) throw new CredentialStorageError("The credential store is busy. Wait for the other login or refresh to finish and retry. If its process stopped, inspect " + lock + ".");
           await new Promise((resolve) => setTimeout(resolve, 25));
         }
       }
@@ -199,13 +206,13 @@ export class FileCredentialStore implements CredentialStore {
 
 function validSession(credentials: StoredCredentials | null, config: SessionConfiguration, sessionId: string, allowPending = false): StoredOAuthSession {
   const session = credentials?.oauth;
-  if (!session || !session.sessionId || session.sessionId !== sessionId) throw new Error("The saved OAuth session changed or was logged out. Run login again and retry the request.");
-  if (session.apiBaseUrl && new URL(session.apiBaseUrl).href !== new URL(config.apiBaseUrl).href) throw new Error("The API destination changed. Log in again.");
-  if (session.issuer && config.issuer && session.issuer !== config.issuer) throw new Error("The configured issuer changed. Log in again.");
-  if (session.configuredClientId !== (config.clientId ?? null)) throw new Error("The OAuth client changed. Log in again.");
-  if (!session.binding || session.binding !== sessionBinding(config)) throw new Error("The API or OAuth configuration changed. Log in again before using saved credentials.");
-  if (session.refreshPending && !allowPending) throw new Error("The previous OAuth refresh did not finish safely. Log in again; its refresh token will not be reused.");
-  if (typeof session.accessToken !== "string" || !session.accessToken) throw new Error("The saved OAuth session is invalid. Log in again.");
+  if (!session || !session.sessionId || session.sessionId !== sessionId) throw new OAuthSessionError("The saved OAuth session changed or was logged out. Run login again and retry the request.");
+  if (session.apiBaseUrl && new URL(session.apiBaseUrl).href !== new URL(config.apiBaseUrl).href) throw new OAuthSessionError("The API destination changed. Log in again.");
+  if (session.issuer && config.issuer && session.issuer !== config.issuer) throw new OAuthSessionError("The configured issuer changed. Log in again.");
+  if (session.configuredClientId !== (config.clientId ?? null)) throw new OAuthSessionError("The OAuth client changed. Log in again.");
+  if (!session.binding || session.binding !== sessionBinding(config)) throw new OAuthSessionError("The API or OAuth configuration changed. Log in again before using saved credentials.");
+  if (session.refreshPending && !allowPending) throw new OAuthSessionError("The previous OAuth refresh did not finish safely. Log in again; its refresh token will not be reused.");
+  if (typeof session.accessToken !== "string" || !session.accessToken) throw new OAuthSessionError("The saved OAuth session is invalid. Log in again.");
   assertStoredIdentity(credentials!, config.identity);
   return session;
 }
@@ -213,15 +220,17 @@ function validSession(credentials: StoredCredentials | null, config: SessionConf
 /** Re-read on every request attempt; only one process may rotate the token.
  * A failed or interrupted exchange requires login, since the server may have
  * consumed its refresh token even when no response reached this process. */
-export async function oauthSessionToken(store: CredentialStore, config: SessionConfiguration, sessionId: string, tokenParams: Record<string, string> = {}): Promise<string> {
-  const fresh = (session: StoredOAuthSession) => session.expiresAt === undefined || (Number.isFinite(session.expiresAt) && session.expiresAt > Date.now() + 60_000);
+export async function oauthSessionToken(store: CredentialStore, config: SessionConfiguration, sessionId: string, tokenParams: Record<string, string> = {}, rejected?: string): Promise<string> {
+  // A token the API just rejected (401) is refreshed once even if unexpired;
+  // another process may already have replaced it, which is fine.
+  const fresh = (session: StoredOAuthSession) => session.accessToken !== rejected && (session.expiresAt === undefined || (Number.isFinite(session.expiresAt) && session.expiresAt > Date.now() + 60_000));
   const first = validSession(store.read(), config, sessionId, true);
   if (!first.refreshPending && fresh(first)) return first.accessToken;
   return store.withLock(async (locked) => {
     const credentials = locked.read();
     const session = validSession(credentials, config, sessionId);
     if (fresh(session)) return session.accessToken;
-    if (!session.refreshToken || !session.tokenUrl || !session.clientId) throw new Error("The OAuth session expired and cannot be refreshed. Log in again.");
+    if (!session.refreshToken || !session.tokenUrl || !session.clientId) throw new OAuthSessionError(session.accessToken === rejected ? "The API rejected the saved OAuth session and it has no refresh token. Log in again." : "The OAuth session expired and cannot be refreshed. Log in again.");
     const endpoint = new URL(session.tokenUrl);
     if ((endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname))) || endpoint.username || endpoint.password || endpoint.hash) throw new Error("The OAuth token endpoint requires HTTPS; loopback HTTP is allowed for development.");
     locked.write({ ...credentials, oauth: { ...session, refreshPending: true } });
@@ -252,7 +261,16 @@ export async function oauthSessionToken(store: CredentialStore, config: SessionC
       return next.accessToken;
     } catch {
       // Never expose an error body, a refresh token, or fetch's nested cause.
-      throw new Error("The OAuth session could not be refreshed safely. Log in again.");
+      throw new OAuthSessionError("The OAuth session could not be refreshed safely. Log in again.");
     }
   });
+}
+
+/** A saved-session token for the request runtime: resolved before every
+ * attempt, and after a 401 (invalidate) the next resolve forces one refresh
+ * of the token the API rejected. */
+export function sessionCredential(resolve: (rejected?: string) => Promise<string>): (() => Promise<string>) & { invalidate(): void } {
+  let last: string | undefined, rejected: string | undefined;
+  const token = async () => { const previous = rejected; rejected = undefined; last = await resolve(previous); return last; };
+  return Object.assign(token, { invalidate() { rejected = last; } });
 }

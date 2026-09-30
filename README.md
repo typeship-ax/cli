@@ -7,7 +7,7 @@ Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every selected CLI, MC
 ## Installation
 
 ```sh
-npm install --global @typeship-ax/cli@0.23.2
+npm install --global @typeship-ax/cli@0.24.0
 ```
 
 Requires Node.js 20+.

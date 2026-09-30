@@ -42,24 +42,34 @@ export interface UnmatchedField {
  * at least one item has it; reaching null or an empty array counts as a
  * match, because the path may be right and the values merely empty. An
  * empty result matches everything.
+ *
+ * `schema` is the JSON Schema of `value` (the operation's declared
+ * response, or its item schema for a list). A key the schema declares may
+ * be absent from every item, as optional fields are: the path matches, and
+ * projects to nothing. What the schema cannot vouch for (no schema, an
+ * object without properties, a key it does not list) still has to be in
+ * the data.
  */
-export function unmatchedFields(value: unknown, paths: string[][]): UnmatchedField[] {
+export function unmatchedFields(value: unknown, paths: string[][], schema?: unknown): UnmatchedField[] {
   const out: UnmatchedField[] = [];
   for (const path of paths) {
     const miss = { depth: -1, keys: new Set<string>(), segment: null as string | null };
-    if (!pathMatches(value, path, 0, miss)) {
+    if (!pathMatches(value, path, 0, miss, schema)) {
       out.push({ path: path.join("."), available: [...miss.keys].slice(0, 40), missing: miss.segment });
     }
   }
   return out;
 }
 
-function pathMatches(value: unknown, path: string[], index: number, miss: { depth: number; keys: Set<string>; segment: string | null }): boolean {
+type Miss = { depth: number; keys: Set<string>; segment: string | null };
+
+function pathMatches(value: unknown, path: string[], index: number, miss: Miss, schema: unknown): boolean {
   if (value === null || value === undefined) return true;
   if (Array.isArray(value)) {
     if (value.length === 0) return true;
+    const items = arrayItems(schema);
     let any = false;
-    for (const item of value) if (pathMatches(item, path, index, miss)) any = true;
+    for (const item of value) if (pathMatches(item, path, index, miss, items)) any = true;
     return any;
   }
   if (index === path.length) return true;
@@ -70,11 +80,77 @@ function pathMatches(value: unknown, path: string[], index: number, miss: { dept
   const key = path[index]!;
   const record = value as Record<string, unknown>;
   if (!Object.hasOwn(record, key)) {
+    const declared = declaredProperty(schema, key);
+    if (declared !== undefined) return declaredPath(declared, path, index + 1, miss);
     if (miss.depth < index) { miss.depth = index; miss.keys = new Set(); miss.segment = key; }
     if (miss.depth === index) for (const k of Object.keys(record)) miss.keys.add(k);
     return false;
   }
-  return pathMatches(record[key], path, index + 1, miss);
+  return pathMatches(record[key], path, index + 1, miss, declaredProperty(schema, key));
+}
+
+/** The rest of a path below a declared key no item has: nothing in the data
+ * can contradict it, so it matches unless the schema lists that level's
+ * keys and the next segment is not one of them. */
+function declaredPath(schema: unknown, path: string[], index: number, miss: Miss): boolean {
+  if (index === path.length) return true;
+  const key = path[index]!;
+  const declared = declaredProperty(schema, key);
+  if (declared !== undefined) return declaredPath(declared, path, index + 1, miss);
+  const listed = listedProperties(schema);
+  if (listed === null) return true;
+  if (miss.depth < index) { miss.depth = index; miss.keys = new Set(); miss.segment = key; }
+  if (miss.depth === index) for (const k of listed) miss.keys.add(k);
+  return false;
+}
+
+/** A schema with its allOf, anyOf and oneOf branches flattened, arrays
+ * seen through to their items. */
+function variants(schema: unknown, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) return out;
+  const node = schema as Record<string, unknown>;
+  out.push(node);
+  for (const key of ["allOf", "anyOf", "oneOf"]) {
+    const branches = node[key];
+    if (Array.isArray(branches)) for (const branch of branches) variants(branch, out);
+  }
+  return out;
+}
+
+function arrayItems(schema: unknown): unknown {
+  const items = variants(schema).map((node) => node.items).filter((item) => item !== undefined && item !== null);
+  return items.length === 0 ? undefined : items.length === 1 ? items[0] : { anyOf: items };
+}
+
+/** The schema of `key` when some branch declares it, else undefined. */
+function declaredProperty(schema: unknown, key: string): unknown {
+  const found = variants(schema).flatMap((node) => {
+    const properties = node.properties as Record<string, unknown> | undefined;
+    return properties && typeof properties === "object" && Object.hasOwn(properties, key) ? [properties[key] ?? {}] : [];
+  });
+  return found.length === 0 ? undefined : found.length === 1 ? found[0] : { anyOf: found };
+}
+
+/** Every key the schema declares, or null when it cannot say which keys
+ * exist: no schema, an object without properties, or one that admits more. */
+function listedProperties(schema: unknown): string[] | null {
+  const nodes = variants(schema);
+  const keys: string[] = [];
+  let closed = false;
+  for (const node of nodes) {
+    const properties = node.properties as Record<string, unknown> | undefined;
+    if (properties && typeof properties === "object") {
+      closed = true;
+      keys.push(...Object.keys(properties));
+    }
+    if (node.additionalProperties !== undefined && node.additionalProperties !== false) return null;
+    if (node.patternProperties !== undefined) return null;
+    // Tool schemas keep the first eight variants of a union; more may exist.
+    if (Array.isArray(node.anyOf) && node.anyOf.length >= 8) return null;
+  }
+  // A branch that is an object without listed properties is open.
+  if (nodes.some((node) => node.properties === undefined && (node.type === "object" || (Array.isArray(node.type) && node.type.includes("object"))))) return null;
+  return closed ? [...new Set(keys)] : null;
 }
 
 /** The error message: the call went through, and for each unmatched path,

@@ -58,7 +58,7 @@ export class DraftsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        target_id: params?.targetId,
+        target_id: params?.target_id,
         status: params?.status,
       },
       idempotent: true,
@@ -249,7 +249,7 @@ export interface DraftsListParams {
    */
   cursor?: string;
   /** Only Drafts of this Target. */
-  targetId?: TargetId;
+  target_id?: TargetId;
   /** Only Drafts with this status. */
   status?: DraftStatus;
 }

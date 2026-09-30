@@ -54,7 +54,7 @@ export class SpecRevisionsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        spec_id: params?.specId,
+        spec_id: params?.spec_id,
       },
       idempotent: true,
       schemaKey: "specRevisions.list",
@@ -151,7 +151,7 @@ export interface SpecRevisionsListParams {
    */
   cursor?: string;
   /** Only revisions of this Spec. */
-  specId?: SpecId;
+  spec_id?: SpecId;
 }
 
 /** Typed errors `list` can throw. */

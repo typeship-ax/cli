@@ -7,7 +7,7 @@ Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every selected CLI, MC
 ## Installation
 
 ```sh
-npm install --global @typeship-ax/cli@0.23.1
+npm install --global @typeship-ax/cli@0.24.0
 ```
 
 Requires Node.js 20+.
@@ -20,7 +20,7 @@ The package ships `typeship`, a command for every API operation. API commands wr
 typeship login # stores a credential (or set TYPESHIP_TOKEN)
 typeship organization get
 typeship projects list --all # every page, one item per line
-typeship help --json # command names, flags, and types
+typeship help --json # resources and command names; help <resource> <command> --json adds flags
 ```
 
 CLI conventions:

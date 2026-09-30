@@ -22,17 +22,19 @@ import { fileURLToPath } from "node:url";
 import { TypeshipClient, formatDebugEvent, type ClientOptions, type DebugEvent } from "./index.js";
 import { asApiResult, mediaTypeForPath, validateAgainstSchema, ValidationError, type Violation } from "./core/http.js";
 import { SCHEMAS, DEFS } from "./schemas.js";
-import { GLOBALS, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
+import { GLOBALS, INPUT_TYPES, OMITTED_OPS, OPS, buildArgs, findOp, missingRequired, type OmittedOpSpec, type OpSpec, type ParamSpec } from "./ops.js";
 import {
   MCP_CLIENTS, requiredScopes, agentGuide, agentBlock, agentInstructionsFile, agentMode, bundleProperty, claimProperty, classifyApiError, classifyAuthFailure, collectionProperty, detectHarness, envelope,
-  exitCodeFor, findMcpClient, installSkills, mcpConfigured, pendingClaims, recordClaim, summarizeDoctor, upsertAgentBlock, writeBundle, writeMcpConfig,
+  exitCodeFor, findMcpClient, formatRequestPreview, installSkills, mcpConfigured, pendingClaims, recordClaim, requestPreview, summarizeDoctor, upsertAgentBlock, writeBundle, writeMcpConfig,
   type AgentContext, type CommandSummary, type DoctorCheck, type EnvelopeInput, type IssueCode, type McpEntry, type McpWriteResult,
 } from "./cli-agent.js";
 import { relativeDate } from "./dates.js";
 import { checkValue, type ArgumentIssue } from "./arguments.js";
 import { docsReadCommand, docsReadTarget, fetchDocsText, resolveDocsContentUrl, searchConnectedGuides } from "./docs.js";
 import { projectFields, unmatchedFields, unmatchedFieldsMessage } from "./fields.js";
+import { renderTable } from "./table.js";
 import { SEARCH_PAGE_SIZE, rankOperations } from "./search.js";
+import { argumentPathText, findInputType, inputTypeText, namedTypesIn } from "./type-docs.js";
 
 
 const BIN = "typeship";
@@ -46,6 +48,8 @@ const AUTH_SCALARS: { option: string; flag: string; env: string }[] = [{"option"
 const HOSTED_MCP_HEADERS: Record<string, string> = {"Authorization":"Bearer ${TYPESHIP_TOKEN}"};
 const HOSTED_MCP_NOTE: string | null = null;
 const BASIC: { envUser: string; envPass: string } | null = null;
+/** Header and query names the API's key schemes use: --dry-run redacts them. */
+const CREDENTIAL_NAMES: string[] = [];
 /** The spec declares no security, so the token is offered, never required. */
 const AUTH_UNDECLARED = false;
 /** Repeated --header "Name: value" flags for this invocation. */
@@ -54,7 +58,7 @@ let HEADER_FLAGS: string[] = [];
 const EXCLUDED_OPS = 0;
 /** Generated CLI operations that are intentionally unavailable to MCP. */
 const MCP_EXCLUDED_OPS = 0;
-const VERSION = "0.23.1";
+const VERSION = "0.24.0";
 const API_VERSION = "1.0.0";
 const SPEC_FORMAT = "openapi";
 const IDENTITY_POLICY: IdentityPolicy = {};
@@ -109,7 +113,7 @@ interface Parsed {
  * API parameter with the same name (`accounts list --cursor <c>`) still
  * takes its value. Boolean API parameters are recognized once the command
  * is known. */
-const CORE_BOOLEAN_FLAGS = new Set(["all", "version", "non-interactive", "debug", "validate", "yes", "force", "json"]);
+const CORE_BOOLEAN_FLAGS = new Set(["all", "version", "non-interactive", "debug", "validate", "yes", "force", "json", "dry-run"]);
 const BUILTIN_BOOLEAN_FLAGS: Record<string, string[]> = {
   login: ["with-token", "no-browser", "device"],
   logout: ["local"],
@@ -240,28 +244,43 @@ function out(value: unknown): void {
 /** --fields a,b.c: the dotted paths to keep in API results (null = everything). Set in main(). */
 let FIELDS: string[][] | null = null;
 
+/** --format table: print API results as text for a person instead of JSON. Opt-in only; set in main(). */
+let TABLE = false;
+
+/** An API result on stdout: JSON, or the --format table view of the same value. */
+function printResult(value: unknown, resource: string, collectionField: string | null = null): void {
+  if (!TABLE) { out(value); return; }
+  process.stdout.write(renderTable(value, { width: process.stdout.columns || 120, heading: (text) => paintOut("bold", text), collectionField, resource }));
+}
+
 /** Whether the command being run writes: an --fields mistake on a write
  * must not tempt anyone into running it again. Set in main(). */
 let FIELDS_AFTER_WRITE = false;
 
 /** Keep only FIELDS of a result: arrays item by item, objects by dotted path;
  * scalars untouched. A path that matches nothing is an error naming the keys
- * that exist, never a silent {}. */
-function project(value: unknown, perItem: boolean): unknown {
+ * that exist, never a silent {}; one the response schema declares (an
+ * optional key no item has) is simply absent. */
+function project(value: unknown, perItem: boolean, schema: unknown): unknown {
   if (FIELDS === null) return value;
-  const unmatched = unmatchedFields(value, FIELDS);
+  const unmatched = unmatchedFields(value, FIELDS, schema);
   if (unmatched.length > 0) failUnmatchedFields(unmatched, perItem, value);
   return projectFields(value, FIELDS);
 }
 
+/** The declared schema of the list a result holds under `key`. */
+function listSchemaOf(schema: Record<string, unknown> | undefined, key: string): unknown {
+  return (schema?.properties as Record<string, unknown> | undefined)?.[key];
+}
+
 /** --fields over a stream (--all, events): paths no item has matched yet.
  * The stream is printed as it arrives, so the check fails at its end. */
-function streamFieldsCheck(): { item(value: unknown): unknown; finish(): void } {
+function streamFieldsCheck(schema: unknown): { item(value: unknown): unknown; finish(): void } {
   let pending: ReturnType<typeof unmatchedFields> | null = null;
   return {
     item(value: unknown): unknown {
       if (FIELDS === null) return value;
-      const unmatched = unmatchedFields(value, FIELDS);
+      const unmatched = unmatchedFields(value, FIELDS, schema);
       pending = pending === null ? unmatched : pending.filter((p) => unmatched.some((u) => u.path === p.path));
       return projectFields(value, FIELDS);
     },
@@ -275,10 +294,13 @@ function failUnmatchedFields(unmatched: ReturnType<typeof unmatchedFields>, perI
   return failWith({
     code: "FIELDS_UNMATCHED",
     message: unmatchedFieldsMessage(unmatched, perItem),
-    nextSteps: FIELDS_AFTER_WRITE
-      ? ["This command has already run; do not run it again to change --fields." + (result !== undefined ? " Its full result is in detail.result." : "")]
-      : ["Run the command again with --fields from the available keys" + (perItem ? " (fields apply to each item)" : "") + ", or without --fields for the whole result."],
-    detail: { unmatched, ...(FIELDS_AFTER_WRITE && result !== undefined ? { result } : {}) },
+    nextSteps: [
+      FIELDS_AFTER_WRITE
+        ? "This command has already run; do not run it again to change --fields." + (result !== undefined ? " Its full result is in detail.result." : "")
+        : result !== undefined ? "The full result is in detail.result; use it rather than running the command again." : "",
+      (FIELDS_AFTER_WRITE ? "Next time, use" : "To project a later run, use") + " --fields from the available keys" + (perItem ? " (fields apply to each item)" : "") + ", or omit --fields for the whole result.",
+    ].filter((step) => step !== ""),
+    detail: { unmatched, ...(result !== undefined ? { result } : {}) },
   });
 }
 
@@ -1139,59 +1161,171 @@ function commandSummaries(): CommandSummary[] {
 }
 
 /**
- * help --json: a compact command index. Full schemas live behind the
- * per-operation docs command so discovery does not spend an agent's context
- * window on every response shape before it has chosen an operation.
+ * help --json: discovery as data, bounded so one call cannot fill an agent's
+ * context window on a large API. The default is an index of resources and
+ * command names; "help <resource> --json" pages through one resource's
+ * commands with their methods, paths and summaries; "help <resource>
+ * <command> --json" is one command with its flags; "help --json --all" is
+ * every command with every flag. Full schemas stay behind the docs command.
  */
-function helpJson(): Record<string, unknown> {
-  const byResource = new Map<string, CommandSummary[]>();
-  for (const c of commandSummaries()) {
-    const list = byResource.get(c.resource) ?? [];
-    list.push(c);
-    byResource.set(c.resource, list);
-  }
+const HELP_INDEX_NAMES = 40;
+const HELP_INDEX_BYTES = 16_000;
+const HELP_PAGE_SIZE = 50;
+
+function helpHeader(detail: "index" | "resource" | "command" | "all"): Record<string, unknown> {
+  return { schema_version: "3", detail, name: BIN, version: VERSION, api: API_TITLE, api_version: API_VERSION, spec_format: SPEC_FORMAT };
+}
+
+function helpDiscovery(): Record<string, string> {
   return {
-    schema_version: "2",
-    name: BIN,
-    version: VERSION,
-    api: API_TITLE,
-    api_version: API_VERSION,
-    spec_format: SPEC_FORMAT,
+    resource: BIN + " help <resource> --json",
+    command: BIN + " help <resource> <command> --json",
+    search: BIN + " docs search <term> --json",
+    operation: BIN + " docs <resource> <command> --json",
+    all: BIN + " help --json --all",
+    note: "Find a command by resource or search, read its flags with help <resource> <command> --json, and its complete schemas with docs. --all prints every command with every flag at once.",
+  };
+}
+
+function helpCoverage(): Record<string, unknown> {
+  return EXCLUDED_OPS > 0 ? { coverage: { generated_operations: OPS.length, total_operations: OPS.length + EXCLUDED_OPS } } : {};
+}
+
+function opsByResource(): Map<string, OpSpec[]> {
+  const byResource = new Map<string, OpSpec[]>();
+  for (const op of OPS) {
+    const list = byResource.get(op.command[0]) ?? [];
+    list.push(op);
+    byResource.set(op.command[0], list);
+  }
+  return byResource;
+}
+
+/** One command with its flags: an entry of help --json --all. */
+function helpEntry(op: OpSpec, summary: CommandSummary): Record<string, unknown> {
+  return {
+    command: op.command[1],
+    method: summary.method,
+    path: summary.path,
+    ...(summary.summary ? { summary: summary.summary } : {}),
+    paginated: summary.paginated,
+    safety: op.safety,
+    destructive: summary.destructive,
+    auth: summary.auth,
+    positional: op.params.filter((p) => p.kind === "path").map((p) => p.name),
+    flags: summary.flags,
+    details_command: BIN + " docs " + op.command[0] + " " + op.command[1] + " --json",
+  };
+}
+
+function helpAll(): Record<string, unknown> {
+  const summaries = commandSummaries();
+  const byResource = opsByResource();
+  return {
+    ...helpHeader("all"),
     usage: BIN + " <resource> <command> [args] [--flags]",
-    resources: [...byResource.entries()].map(([resource, commands]) => ({
+    resources: [...byResource.entries()].map(([resource, ops]) => ({
       resource,
-      commands: commands.map((c) => {
-        const op = OPS.find((o) => o.command[0] === resource && o.command[1] === c.command)!;
-        return {
-          command: c.command,
-          method: c.method,
-          path: c.path,
-          ...(c.summary ? { summary: c.summary } : {}),
-          paginated: c.paginated,
-          safety: op.safety,
-          destructive: c.destructive,
-          auth: c.auth,
-          positional: op.params.filter((p) => p.kind === "path").map((p) => p.name),
-          flags: c.flags,
-          details_command: BIN + " docs " + resource + " " + c.command + " --json",
-        };
-      }),
+      commands: ops.map((op) => helpEntry(op, summaries[OPS.indexOf(op)]!)),
     })),
-    ...(EXCLUDED_OPS > 0 ? {
-      coverage: {
-        generated_operations: OPS.length,
-        total_operations: OPS.length + EXCLUDED_OPS,
-      },
-    } : {}),
-    discovery: {
-      search: BIN + " docs search <term> --json",
-      operation: BIN + " docs <resource> <command> --json",
-      note: "Choose an operation from this index, then read only that operation's complete schemas and example arguments.",
-    },
+    ...helpCoverage(),
+    discovery: helpDiscovery(),
     builtins: BUILTIN_COMMANDS,
-    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--header 'Name: value'", "--timeout <seconds>", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
+    global_flags: ["--help", "--version", "--debug", "--non-interactive", "--mode agent|human", "--yes", "--force", "--color on|off|auto", "--credentials @<JSON-file>|-", "--header 'Name: value'", "--timeout <seconds>", "--base-url <url>", "--profile <name>", "--data '<json>' | @<file> | -", "--fields <a,b.c>", "--all", "--validate", "--dry-run", "--out <dir>", ...AUTH_SCALARS.map((a) => "--" + a.flag + " <value>")],
     auth_env_vars: agentContext().authEnvVars,
   };
+}
+
+/** Resources and command names. Past HELP_INDEX_BYTES a resource keeps only its count. */
+function helpIndex(): Record<string, unknown> {
+  const all = helpAll();
+  let bytes = 0;
+  let overBudget = false;
+  let truncated = false;
+  const resources = [...opsByResource().entries()].map(([resource, ops]) => {
+    const names = ops.map((op) => op.command[1]);
+    const entry = { resource, command_count: names.length, commands: names.slice(0, HELP_INDEX_NAMES) };
+    const size = JSON.stringify(entry).length;
+    if (overBudget || bytes + size > HELP_INDEX_BYTES) { overBudget = truncated = true; return { resource, command_count: names.length }; }
+    bytes += size;
+    if (names.length > HELP_INDEX_NAMES) truncated = true;
+    return entry;
+  });
+  return {
+    ...helpHeader("index"),
+    usage: all.usage,
+    command_count: OPS.length,
+    resource_count: resources.length,
+    resources,
+    ...(truncated ? { truncated: "Some resources list only their first " + HELP_INDEX_NAMES + " command names or only a count. Run " + BIN + " help <resource> --json for a resource's commands." } : {}),
+    ...helpCoverage(),
+    discovery: all.discovery,
+    builtins: all.builtins,
+    global_flags: all.global_flags,
+    auth_env_vars: all.auth_env_vars,
+  };
+}
+
+function helpTarget(resource: string, method: string | undefined): OpSpec[] {
+  const ops = opsByResource().get(resource);
+  if (!ops) {
+    const omitted = omittedCommand(resource, method);
+    if (omitted) failOmitted(omitted);
+    const suggestion = didYouMean(resource, opsByResource().keys());
+    fail(2, "Unknown command: " + resource + "." + (suggestion ? " Did you mean '" + BIN + " help " + suggestion + " --json'?" : ""),
+      undefined, ["Run '" + BIN + " help --json' for the resources and their commands."]);
+  }
+  if (method === undefined) return ops!;
+  const op = findOp(resource, method);
+  if (!op) {
+    const omitted = omittedCommand(resource, method);
+    if (omitted) failOmitted(omitted);
+    const suggestion = didYouMean(method, ops!.map((o) => o.command[1]));
+    fail(2, "Unknown command: " + resource + " " + method + "." + (suggestion ? " Did you mean '" + BIN + " help " + resource + " " + suggestion + " --json'?" : ""),
+      undefined, ["Run '" + BIN + " help " + resource + " --json' for its commands."]);
+  }
+  return [op!];
+}
+
+async function cmdHelpJson(parsed: Parsed): Promise<void> {
+  const [, resource, method, extra] = parsed.positionals;
+  if (extra !== undefined) fail(2, "help --json takes at most a resource and a command.", undefined, ["Run '" + BIN + " help --json' for the index."]);
+  const all = parsed.flags.get("all") === true;
+  const pageFlag = parsed.flags.get("page");
+  const page = pageFlag === undefined ? 1 : Number(pageFlag);
+  if (!Number.isInteger(page) || page < 1) fail(2, "--page expects a whole number from 1.");
+  if (resource === undefined) {
+    if (pageFlag !== undefined) fail(2, "--page applies to help <resource> --json.");
+    out(all ? helpAll() : helpIndex());
+    await flushExit(0);
+  }
+  const ops = helpTarget(resource!, method);
+  const summaries = commandSummaries();
+  if (method !== undefined) {
+    out({ ...helpHeader("command"), resource, ...helpEntry(ops[0]!, summaries[OPS.indexOf(ops[0]!)]!) });
+    await flushExit(0);
+  }
+  if (all) {
+    out({ ...helpHeader("resource"), resource, command_count: ops.length, commands: ops.map((op) => helpEntry(op, summaries[OPS.indexOf(op)]!)) });
+    await flushExit(0);
+  }
+  const pages = Math.max(1, Math.ceil(ops.length / HELP_PAGE_SIZE));
+  if (page > pages) fail(2, "--page " + page + " is past the last page (" + pages + ") of " + resource + ".", undefined, ["Run '" + BIN + " help " + resource + " --json' for the first page."]);
+  const commands = ops.slice((page - 1) * HELP_PAGE_SIZE, page * HELP_PAGE_SIZE).map((op) => {
+    const s = summaries[OPS.indexOf(op)]!;
+    return { command: op.command[1], method: s.method, path: s.path, ...(s.summary ? { summary: s.summary } : {}), paginated: s.paginated, safety: op.safety, positional: op.params.filter((p) => p.kind === "path").map((p) => p.name) };
+  });
+  out({
+    ...helpHeader("resource"),
+    resource,
+    command_count: ops.length,
+    page,
+    pages,
+    commands,
+    ...(page < pages ? { next_command: BIN + " help " + resource + " --json --page " + (page + 1) } : {}),
+    discovery: { command: BIN + " help " + resource + " <command> --json", operation: BIN + " docs " + resource + " <command> --json", all: BIN + " help " + resource + " --json --all" },
+  });
+  await flushExit(0);
 }
 
 async function cmdAgentGuide(parsed: Parsed): Promise<void> {
@@ -1543,7 +1677,7 @@ function completionFlagsFor(op: OpSpec): { flags: string[]; values: Record<strin
   return { flags, values };
 }
 
-const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--header", "--timeout", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
+const COMPLETION_GLOBAL_FLAGS = ["--help", "--version", "--non-interactive", "--color", "--credentials", "--header", "--timeout", "--base-url", "--profile", "--data", "--fields", "--all", "--validate", "--dry-run", "--debug", "--mode", "--yes", "--force", "--out", ...AUTH_SCALARS.map((a) => "--" + a.flag)];
 const BUILTIN_WORDS: Record<string, string[]> = {
   config: ["list", "get", "set", "unset", "path"],
   completion: ["bash", "zsh", "fish"],
@@ -1701,7 +1835,9 @@ function referenceFor(op: OpSpec, includeSchemas = false): string {
     lines.push("", paintOut("bold", label + ":"));
     for (const p of params) {
       const name = p.kind === "path" ? "<" + p.name + ">" : "--" + p.flag;
-      lines.push("  " + padPaint("cyan", name, 30) + typeLabel(p) + (p.required ? " " + paintOut("yellow", "(required)") : ""));
+      // An object flag reads as its named type, which docs read explains.
+      const named = objectTypeName(op, p);
+      lines.push("  " + padPaint("cyan", name, 30) + (named ? INPUT_TYPES.args[op.tool]![p.name] : typeLabel(p)) + (p.required ? " " + paintOut("yellow", "(required)") : ""));
       const values = p.type === "array" ? p.items?.enum : p.enum;
       if (values && values.join("|").length > 24) lines.push("      one of: " + values.join(", "));
       if (p.description) {
@@ -1720,9 +1856,32 @@ function referenceFor(op: OpSpec, includeSchemas = false): string {
     lines.push("", paintOut("bold", "Wire arguments:"), JSON.stringify(op.exampleArguments, null, 2));
     if (op.outputSchema) lines.push("", paintOut("bold", "Output schema:"), JSON.stringify(op.outputSchema, null, 2));
   } else {
+    const nested = op.params.find((p) => objectTypeName(op, p) || p.type === "object" || (p.type === "array" && p.items?.type === "object"));
+    if (nested) {
+      const named = objectTypeName(op, nested);
+      lines.push("", "Nested fields: " + BIN + " docs " + op.command.join(" ") + " --path " + nested.name + " gives a flag's type and all its fields; extend the path (" + nested.name + ".<field>) to go deeper."
+        + (named ? " Named types: " + BIN + " docs read " + named + "." : ""));
+    }
     lines.push("", "Add --schema for the complete input/output schemas, or --json for the machine contract.");
   }
   return lines.join("\n");
+}
+
+/** The named input object a flag takes (IssueFilter), when it has one. */
+function objectTypeName(op: OpSpec, p: ParamSpec): string | undefined {
+  return namedTypesIn(INPUT_TYPES, INPUT_TYPES.args[op.tool]?.[p.name]).find((name) => INPUT_TYPES.types[name]!.fields);
+}
+
+function docsTypeHint(name: string): string {
+  return BIN + " docs read " + name;
+}
+
+/** docs --path: one nested argument, or a usage error naming the fields. */
+async function docsPathExit(root: { tool: string; inputSchema: Record<string, unknown>; label: string } | { type: string }, path: string): Promise<never> {
+  const found = argumentPathText(INPUT_TYPES, root, path, docsTypeHint);
+  if (!found.ok) fail(2, found.message + (found.available.length > 0 ? " Fields: " + found.available.join(", ") + "." : ""));
+  process.stdout.write((found as { text: string }).text + "\n");
+  return flushExit(0);
 }
 
 /** Opens a browser for a person; under an agent it prints the URL instead of opening anything. */
@@ -1744,11 +1903,12 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
       "",
       "  " + BIN + " docs                          overview",
       "  " + BIN + " docs <resource> <command>     operation contract and example",
+      "      --path <a.b>                          one nested argument's type and fields",
       "      --schema                              include input/output JSON Schema",
       "      --json                                print the machine contract as JSON",
       "  " + BIN + " docs search <term>            search reference and guides",
       "      --json / --format json                 print structured matches and availability",
-      "  " + BIN + " docs read <page>              print a docs-site page in the terminal",
+      "  " + BIN + " docs read <page>              print a named input type or a docs-site page",
       "  " + BIN + " docs --web                    open the docs site in a browser",
       "",
       "Guides come from the docs site's llms.txt (set with '" + BIN + " config set docs-url <url>').",
@@ -1815,6 +1975,13 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
   if (sub === "read") {
     const page = parsed.positionals[2];
     if (page === undefined) fail(2, "docs read expects a page path or URL");
+    const typeName = findInputType(INPUT_TYPES, page!);
+    if (typeName) {
+      const path = parsed.flags.get("path");
+      if (typeof path === "string" && path.trim()) await docsPathExit({ type: typeName }, path);
+      process.stdout.write(inputTypeText(INPUT_TYPES, typeName, docsTypeHint) + "\n");
+      await flushExit(0);
+    }
     let target = page!;
     if (!/^https?:\/\//.test(target)) {
       const index = await fetchDocs("llms.txt");
@@ -1853,6 +2020,8 @@ async function cmdDocs(parsed: Parsed): Promise<void> {
       }, null, 2) + "\n");
       await flushExit(0);
     }
+    const path = parsed.flags.get("path");
+    if (typeof path === "string" && path.trim()) await docsPathExit({ tool: op!.tool, inputSchema: op!.inputSchema, label: op!.command.join(" ") }, path);
     process.stdout.write(referenceFor(op!, parsed.flags.get("schema") === true) + "\n");
     await flushExit(0);
   }
@@ -2037,7 +2206,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
   }
   const width = termWidth();
   const lines: string[] = [];
-  lines.push(paintOut("bold", BIN) + ": " + "Typeship API" + " (v" + "1.0.0" + "), package " + "0.23.1");
+  lines.push(paintOut("bold", BIN) + ": " + "Typeship API" + " (v" + "1.0.0" + "), package " + "0.24.0");
   lines.push("");
   lines.push(paintOut("bold", "Usage:") + " " + BIN + " <resource> <command> [args] [--flags]");
   lines.push("");
@@ -2059,7 +2228,7 @@ function printRoot(stream: NodeJS.WriteStream = process.stdout): void {
     lines.push(...labeled(paintOut("yellow", "Coverage:") + " ", "this build includes " + OPS.length + " of " + (OPS.length + EXCLUDED_OPS) + " operations; api.json lists the rest", width, 14));
   }
   lines.push("");
-  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --timeout <seconds>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --validate (schema-check parameters and JSON bodies)" +
+  const flagsText = "-v/--version, -h/--help, --debug, --non-interactive, --color on|off|auto, --base-url <url>, --profile <name>, --credentials @<file>|-, --header \"Name: value\", --timeout <seconds>, --data '<json>', --fields <a,b.c>, --all (paginated lists), --format table (results as text), --validate (schema-check parameters and JSON bodies), --dry-run (print the request, send nothing)" +
     (AUTH_SCALARS.length > 0 ? ", " + AUTH_SCALARS.map((a) => "--" + a.flag + " <value>").join(", ") : "");
   lines.push(...labeled(paintOut("bold", "Global flags:") + " ", flagsText, width, 14).map((l, i) => (i === 0 ? l : l)));
   lines.push(...labeled("Credential env vars: ", [
@@ -2117,6 +2286,8 @@ function commandExtras(op: OpSpec): [string, string][] {
   const collectionField = collectionProperty(op.outputSchema);
   extras.push(["--fields <a,b.c>", "keep only these fields of the result" + (op.paginated ? " (per item)" : collectionField ? " (per item in " + collectionField + ")" : "")]);
   if ((op.fileBundleProperty ?? bundleProperty(op.outputSchema)) !== null) extras.push(["--out <dir>", "write the response's files ({path, content}) into a directory"]);
+  extras.push(["--dry-run", "print the resolved request (method, URL, headers, body) with credentials redacted; nothing is sent" + (op.safety === "destructive" ? ", so no --force is needed" : "")]);
+  if (!op.rawResponse && !op.sse) extras.push(["--format table", "print the result as a table for reading instead of JSON"]);
   if (op.safety === "destructive") extras.push(["--force, -y", "destructive: required without a terminal, skips the prompt with one"]);
   return extras;
 }
@@ -2341,6 +2512,65 @@ let LAST_CLIENT_HAD_CREDENTIAL = false;
 /** The last client's Basic credentials, for path arguments that default to the username. */
 let LAST_CLIENT_BASIC: { basicAuth?: unknown; credentials?: unknown } = {};
 
+/** --dry-run: the client's fetch records the first request and sends
+ * nothing. Set before makeClient; secrets are the credential values it
+ * resolved, redacted wherever they appear in the preview. */
+let DRY_RUN: { fetch: typeof fetch; request?: { method: string; url: string; headers: Record<string, string>; body?: unknown }; secrets: string[] } | null = null;
+
+class DryRunStop extends Error {}
+
+function dryRunCapture(): NonNullable<typeof DRY_RUN> {
+  const capture: NonNullable<typeof DRY_RUN> = {
+    secrets: [],
+    fetch: async (input, init) => {
+      if (!capture.request) {
+        const headers: Record<string, string> = {};
+        new Headers(init?.headers).forEach((value, name) => { headers[name] = value; });
+        capture.request = { method: init?.method ?? "GET", url: typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url, headers, body: init?.body ?? undefined };
+      }
+      throw new DryRunStop("dry run: not sent");
+    },
+  };
+  return capture;
+}
+
+/** Every credential value a client was built with (not a Basic username,
+ * which is an account identifier such as Twilio's AccountSid). */
+function credentialSecrets(options: Record<string, unknown>): string[] {
+  const found: string[] = [];
+  const walk = (value: unknown, key: string) => {
+    if (typeof value === "string") { if (key !== "username") found.push(value); return; }
+    if (value && typeof value === "object") for (const [k, v] of Object.entries(value as Record<string, unknown>)) walk(v, k);
+  };
+  for (const a of AUTH_SCALARS) walk(options[a.option], a.option);
+  walk(options.basicAuth, "basicAuth");
+  walk(options.credentials, "credentials");
+  walk(options.bearerToken, "bearerToken");
+  return found;
+}
+
+/** Drive the command's call until its request reaches the dry-run fetch,
+ * then print that request (JSON in agent mode, text for a person) and exit.
+ * A failure before any request (a --validate violation) is reported as usual. */
+async function printDryRun(parsed: Parsed, callResult: unknown): Promise<never> {
+  let failure: unknown;
+  try {
+    const pending = callResult as { then?: unknown; [Symbol.asyncIterator]?: () => AsyncIterator<unknown> };
+    if (typeof pending.then === "function") await (callResult as Promise<unknown>);
+    else if (typeof pending[Symbol.asyncIterator] === "function") await pending[Symbol.asyncIterator]!().next();
+  } catch (e) {
+    failure = e;
+  }
+  const request = DRY_RUN?.request;
+  if (!request) {
+    failApi(failure ?? new Error("--dry-run: the command made no request"), LAST_CLIENT_HAD_CREDENTIAL);
+  }
+  const preview = await requestPreview(request!, { sensitiveNames: CREDENTIAL_NAMES, secrets: DRY_RUN!.secrets });
+  if (isAgentMode(parsed)) out(preview);
+  else process.stdout.write(formatRequestPreview(preview));
+  return await flushExit(0);
+}
+
 /** The configured Basic-auth username: the named scheme's, else basicAuth's. */
 function credentialUsername(scheme: string): string | undefined {
   const named = (LAST_CLIENT_BASIC.credentials as Record<string, unknown> | undefined)?.[scheme];
@@ -2539,6 +2769,12 @@ async function makeClient(flags: Map<string, string | boolean>, op: OpSpec, cand
   if (forIdentity) { options.fetch = identityFetch(baseUrl); options.maxRetries = 0; options.timeoutMs = 10_000; }
   const extraHeaders = extraRequestHeaders();
   if (Object.keys(extraHeaders).length) options.onRequest = (context) => { applyExtraHeaders(context.headers, extraHeaders); };
+  // --dry-run swaps fetch on this client only: an OAuth refresh (and its
+  // identity check) still uses the real transport, the command does not.
+  if (DRY_RUN && !forIdentity) {
+    DRY_RUN.secrets = credentialSecrets(options);
+    return new TypeshipClient({ ...options, fetch: DRY_RUN.fetch, maxRetries: 0 });
+  }
   return new TypeshipClient(options);
 }
 
@@ -2596,12 +2832,17 @@ async function main(): Promise<void> {
   PROFILE = resolveProfile(configRoot(), { flag: profileFlag as string | undefined, environment: process.env["TYPESHIP_PROFILE"], allowMissing: ["login", "config", "auth", "init", "help"].includes(parsed.positionals[0] ?? "") || parsed.help });
   if (!parsed.help && ["login", "init"].includes(parsed.positionals[0] ?? "")) expectedLoginIdentity(parsed.flags);
   if (parsed.positionals[0] === "help") {
-    // help --json: the command surface as data (agents read this once).
-    if (parsed.flags.get("json") === true || parsed.flags.get("format") === "json") { out(helpJson()); await flushExit(0); }
+    // help [<resource> [<command>]] --json: bounded discovery as data; --all is exhaustive.
+    if (parsed.flags.get("json") === true || parsed.flags.get("format") === "json") { await cmdHelpJson(parsed); }
     parsed.positionals.shift(); parsed.help = true;
   }
-  if (parsed.flags.get("format") !== undefined && parsed.flags.get("format") !== "json") {
-    fail(2, "--format json is the only format; output is always JSON.");
+  const formatFlag = parsed.flags.get("format");
+  if (formatFlag !== undefined && formatFlag !== "json" && formatFlag !== "table") {
+    fail(2, "--format takes json (the default) or table.");
+  }
+  TABLE = formatFlag === "table";
+  if (TABLE && !parsed.help && (BUILTIN_COMMANDS.includes(parsed.positionals[0] ?? "") || parsed.positionals.length === 0)) {
+    fail(2, "--format table applies to API commands; " + (parsed.positionals[0] ? BIN + " " + parsed.positionals[0] : BIN) + " prints JSON.");
   }
   if (parsed.flags.has("version") || parsed.positionals[0] === "version") {
     // "acme 1.0.0 (acme 1.0.0)" would say the name twice; when the API's
@@ -2704,7 +2945,7 @@ async function main(): Promise<void> {
   // Mirrors opReservedFlags() in the generator: API parameters never use these
   // names (colliding ones are emitted as --<kind>-<name>), so an unknown flag
   // check can be exact.
-  const RESERVED_FLAGS = new Set(["data", "credentials", "header", "timeout", "all", "select", "base-url", "profile", "debug", "validate", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
+  const RESERVED_FLAGS = new Set(["data", "credentials", "header", "timeout", "all", "select", "base-url", "profile", "debug", "validate", "dry-run", "non-interactive", "color", "version", "help", "yes", "force", "mode", "format", "json", "out", "fields", ...AUTH_SCALARS.map((a) => a.flag), ...(BASIC ? ["username", "password"] : []), ...GLOBALS.map((g) => g.flag)]);
   for (const spec of op.params) {
     if (spec.kind === "path") continue;
     const raw = parsed.flags.get(spec.flag);
@@ -2798,6 +3039,18 @@ async function main(): Promise<void> {
   if (!op.paginated && parsed.flags.get("all") === true) {
     fail(2, op.command.join(" ") + " does not paginate, so --all has nothing to walk. Run it without --all; it returns the whole response.");
   }
+  // --dry-run resolves everything a real call would (arguments, defaults,
+  // credentials, the body encoding) and prints the request instead of
+  // sending it. A destructive command needs no --force: nothing runs.
+  if (parsed.flags.get("dry-run") === true) {
+    if (op.paginated && parsed.flags.get("all") === true) fail(2, "--dry-run previews one request; run it without --all to see the first page's.");
+    DRY_RUN = dryRunCapture();
+  }
+  // A table needs the whole result: streams (--all, events) and raw bodies stay as they are.
+  if (TABLE) {
+    const streams = parsed.flags.get("all") === true || op.sse || (op.streamMethod !== undefined && values[op.streamMethod.flag] === op.streamMethod.value);
+    if (streams || op.rawResponse) fail(2, "--format table needs one complete JSON result; " + op.command.join(" ") + (op.rawResponse ? " returns a raw body." : " streams NDJSON here.") + " Drop --format table" + (parsed.flags.get("all") === true ? " or --all." : "."));
+  }
   const client = await makeClient(parsed.flags, op);
   for (const spec of pathSpecs) {
     if (!spec.credential || values[spec.name] !== undefined) continue;
@@ -2812,7 +3065,7 @@ async function main(): Promise<void> {
   // Destructive commands need --force. A person gets asked; an agent gets
   // an action_required envelope with the exact command to run, so nothing
   // is deleted on a guess.
-  if (op.safety === "destructive" && !assumeYes(parsed)) {
+  if (op.safety === "destructive" && !assumeYes(parsed) && !DRY_RUN) {
     // Credential flags are replaced by placeholders: the rerun is shown to
     // agents and logged, so it must never repeat a key.
     const secretFlags = new Set([...AUTH_SCALARS.map((a) => "--" + a.flag), "--header"]);
@@ -2842,9 +3095,10 @@ async function main(): Promise<void> {
   // as NDJSON as they arrive, instead of failing on the event stream.
   const streaming = op.streamMethod !== undefined && values[op.streamMethod.flag] === op.streamMethod.value;
   const callResult = target[streaming ? op.streamMethod!.method : op.method]!(...args);
+  if (DRY_RUN) await printDryRun(parsed, callResult);
 
   if (op.paginated && parsed.flags.get("all") === true) {
-    const fieldsCheck = streamFieldsCheck();
+    const fieldsCheck = streamFieldsCheck((listSchemaOf(op.outputSchema, "items") as { items?: unknown } | undefined)?.items);
     try {
       for await (const item of callResult as AsyncIterable<unknown>) {
         process.stdout.write(JSON.stringify(fieldsCheck.item(item)) + "\n");
@@ -2875,7 +3129,7 @@ async function main(): Promise<void> {
   if (result.ok) {
     if (op.sse || streaming) {
       // Server-sent events as NDJSON, one line per event, until the stream ends.
-      const fieldsCheck = streamFieldsCheck();
+      const fieldsCheck = streamFieldsCheck(undefined);
       try {
         for await (const event of result.data as AsyncIterable<{ event?: string; id?: string; data: string }>) {
           process.stdout.write(JSON.stringify(fieldsCheck.item(event)) + "\n");
@@ -2917,17 +3171,17 @@ async function main(): Promise<void> {
       // agent never has to reconstruct the cursor flag.
       const page = result.data as { items: unknown[]; hasNextPage(): boolean; nextPageParams(): Record<string, unknown> | null; response: { requestId?: string } };
       const next = page.nextPageParams();
-      out({
-        items: project(page.items, true),
+      printResult({
+        items: project(page.items, true, listSchemaOf(op.outputSchema, "items")),
         hasMore: next !== null,
         ...(next !== null ? { nextPage: next, nextCommand: nextCommandFor(op, pathValues, next) } : {}),
         ...(page.response.requestId ? { request_id: page.response.requestId } : {}),
-      });
+      }, op.command[0]);
     } else if (FIELDS !== null && collectionField !== null && result.data !== null && typeof result.data === "object" && !Array.isArray(result.data) && Array.isArray((result.data as Record<string, unknown>)[collectionField])) {
       // Batch-style collection envelopes ({data: [...]}) use item-relative
       // fields, matching paginated results, while retaining envelope metadata.
       const data = result.data as Record<string, unknown>;
-      out({ ...data, [collectionField]: project(data[collectionField], true) });
+      printResult({ ...data, [collectionField]: project(data[collectionField], true, listSchemaOf(op.outputSchema, collectionField)) }, op.command[0], collectionField);
     } else if (outDir !== undefined && bundleField !== null) {
       // --out: a file-shaped response (an array of {path, content}) lands
       // on disk; stdout gets the rest of the response plus a summary.
@@ -2935,9 +3189,9 @@ async function main(): Promise<void> {
       const files = (data[bundleField] as { path: string; content: string }[] | undefined) ?? [];
       const written = writeBundle(outDir, files);
       const { [bundleField]: _omitted, ...rest } = data;
-      out({ ...(project(rest, false) as Record<string, unknown>), out: written });
+      printResult({ ...(project(rest, false, op.outputSchema) as Record<string, unknown>), out: written }, op.command[0]);
     } else {
-      out(result.data === undefined || result.data === null ? { ok: true } : project(result.data, Array.isArray(result.data)));
+      printResult(result.data === undefined || result.data === null ? { ok: true } : project(result.data, Array.isArray(result.data), op.outputSchema), op.command[0], collectionField);
     }
     await flushExit(0);
   }

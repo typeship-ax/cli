@@ -72,8 +72,8 @@ export class GenerationsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        project_id: params?.projectId,
-        target_id: params?.targetId,
+        project_id: params?.project_id,
+        target_id: params?.target_id,
         status: params?.status,
       },
       idempotent: true,
@@ -173,9 +173,9 @@ export interface GenerationsListParams {
    */
   cursor?: string;
   /** Only Generations in this Project. */
-  projectId?: ProjectId;
+  project_id?: ProjectId;
   /** Only Generations of this Target. */
-  targetId?: TargetId;
+  target_id?: TargetId;
   /** Only Generations with this status. */
   status?: GenerationStatus;
 }

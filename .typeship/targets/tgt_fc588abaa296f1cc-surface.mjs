@@ -73,8 +73,8 @@ if (expected.output === "cli" || expected.output === "mcp") {
     const pkg = JSON.parse(readFileSync("package.json", "utf8"));
     const binary = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.[expected.executableName];
     assert.equal(typeof binary, "string", "Missing CLI executable");
-    // Load the public command table once, regardless of operation count.
-    const result = spawnSync(process.execPath, [resolve(binary), "help", "--json"], { encoding: "utf8", timeout: 15000, maxBuffer: 8 * 1024 * 1024 });
+    // Load the full public command table once, regardless of operation count.
+    const result = spawnSync(process.execPath, [resolve(binary), "help", "--json", "--all"], { encoding: "utf8", timeout: 15000, maxBuffer: 8 * 1024 * 1024 });
     assert.equal(result.status, 0, "Missing public command discovery: " + result.stderr);
     const help = JSON.parse(result.stdout);
     const commands = new Map((help.resources || []).flatMap((resource) => (resource.commands || []).map((command) => [JSON.stringify([resource.resource, command.command]), command])));

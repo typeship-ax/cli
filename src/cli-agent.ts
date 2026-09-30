@@ -131,7 +131,9 @@ export function classifyApiError(
     ? (e.body as Record<string, unknown>).request_id ?? (e.body as Record<string, unknown>).requestId
     : undefined;
   const requestId = e.response?.requestId ?? (typeof bodyRequestId === "string" ? bodyRequestId : undefined);
-  const detail = { status, ...(e.name ? { error: e.name } : {}), ...(requestId ? { request_id: requestId } : {}), ...(e.body !== undefined ? { body: e.body } : {}) };
+  // An in-band GraphQL error keeps the vendor's code next to the normalized one.
+  const vendorCode = e.name === "GraphQLRequestError" ? graphqlVendorCode(error) : undefined;
+  const detail = { status, ...(e.name ? { error: e.name } : {}), ...(vendorCode ? { vendor_code: vendorCode } : {}), ...(requestId ? { request_id: requestId } : {}), ...(e.body !== undefined ? { body: e.body } : {}) };
   const same = apiMessage !== undefined && (apiMessage.toLowerCase() === base.toLowerCase() || base.toLowerCase().includes(apiMessage.toLowerCase()) || apiMessage.toLowerCase().includes(base.toLowerCase()));
   const message = apiMessage === undefined ? base : same ? apiMessage : apiMessage + " (" + base + ")";
   const upgradeUrl = extractUrl(e.body, ["upgrade_url", "upgradeUrl", "signup_url", "claim_url"]);
@@ -152,13 +154,23 @@ export function classifyApiError(
     if (reported === "RATE_LIMITED") return { status: "action_required", code: "RATE_LIMITED", message, detail, nextSteps: ["Wait, then run the same command again."] };
     return { code: "CALL_FAILED", message, detail, nextSteps: ["The API reported a failure in a successful response; detail.body says why."] };
   }
-  if (status === 401) {
-    return context.hadCredential
-      ? { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential was rejected. Check it is current: '" + context.bin + " auth check', then '" + context.bin + " login --help' to store a new one."] }
-      : { status: "action_required", code: "NO_AUTH", message, detail, nextSteps: ["No credential was sent. Set the auth env var, pass --token, or run '" + context.bin + " login'.", "'" + context.bin + " auth check' shows what the CLI would send."] };
+  const unauthenticated = (): EnvelopeInput => context.hadCredential
+    ? { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential was rejected. Check it is current: '" + context.bin + " auth check', then '" + context.bin + " login --help' to store a new one."] }
+    : { status: "action_required", code: "NO_AUTH", message, detail, nextSteps: ["No credential was sent. Set the auth env var, pass --token, or run '" + context.bin + " login'.", "'" + context.bin + " auth check' shows what the CLI would send."] };
+  const forbidden = (): EnvelopeInput => scopes.length ? scopeFailure() : { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential lacks access to this operation."] };
+  // An in-band GraphQL error (HTTP 200): classified by the vendor's code.
+  if (e.name === "GraphQLRequestError") {
+    switch (vendorCode === undefined ? undefined : graphqlErrorClass(vendorCode)) {
+      case "not_found": return { code: "NOT_FOUND", message, detail, nextSteps: ["Check the id in the arguments; list the resource first to find the right one."] };
+      case "unauthenticated": return unauthenticated();
+      case "forbidden": return forbidden();
+      case "bad_input": return { code: "INVALID_REQUEST", message, detail, nextSteps: ["The API rejected an argument or the selection; the errors in detail.body name it (message, path). Fix that and run the command again."] };
+      case "rate_limited": return { status: "action_required", code: "RATE_LIMITED", message, detail, nextSteps: [rateLimitNextStep(undefined, "run the same command again")] };
+      default: return { code: "CALL_FAILED", message, detail };
+    }
   }
-  if (status === 403 && scopes.length) return scopeFailure();
-  if (status === 403) return { code: "AUTH_INVALID", message, detail, nextSteps: ["The credential lacks access to this operation."] };
+  if (status === 401) return unauthenticated();
+  if (status === 403) return forbidden();
   if (status === 402) {
     return { status: "action_required", code: "PLAN_LIMIT", message, detail, nextSteps: [upgradeUrl ? "Lift the limit at " + upgradeUrl + ", then run the same command again." : "The account's plan stops here; upgrade it, then run the same command again.", "Do not retry the same call as is."] };
   }
@@ -240,6 +252,28 @@ export function rateLimitNextStep(retryAt: Date | undefined, then: string): stri
   return retryAt instanceof Date && !Number.isNaN(retryAt.getTime())
     ? "Rate limited: wait until " + isoSeconds(retryAt) + ", then " + then + "."
     : "Rate limited: back off, then " + then + "; the SDK already honored any Retry-After within its ceiling.";
+}
+
+/** The vendor's own code on an in-band GraphQL error: the first error's
+ * extensions.code, or its type (GitHub). */
+function graphqlVendorCode(error: unknown): string | undefined {
+  const first = (error as { errors?: { extensions?: { code?: unknown }; type?: unknown }[] } | null)?.errors?.[0];
+  const code = first?.extensions?.code ?? first?.type;
+  return typeof code === "string" && code !== "" ? code : undefined;
+}
+
+/** GraphQL error codes whose meaning is settled (Apollo's standard codes,
+ * GitHub's types, Linear's codes), by recovery class. Any other code is
+ * passed through as is, with no guessed next step. The MCP server's
+ * classification uses the same table. */
+function graphqlErrorClass(code: string): "not_found" | "unauthenticated" | "forbidden" | "bad_input" | "rate_limited" | undefined {
+  const c = code.toUpperCase();
+  if (c === "NOT_FOUND") return "not_found";
+  if (c === "UNAUTHENTICATED" || c === "AUTHENTICATION_ERROR") return "unauthenticated";
+  if (c === "FORBIDDEN") return "forbidden";
+  if (c === "BAD_USER_INPUT" || c === "GRAPHQL_VALIDATION_FAILED" || c === "GRAPHQL_PARSE_FAILED" || c === "INPUT_ERROR") return "bad_input";
+  if (c === "RATE_LIMITED" || c === "RATELIMITED") return "rate_limited";
+  return undefined;
 }
 
 /** Error codes APIs report inside a 2xx body (Slack's `error`), mapped to
@@ -600,7 +634,6 @@ export interface AgentContext {
   builtins: string[];
 }
 
-/** One line per command, pipe-delimited: the compact index that goes into AGENTS.md. */
 /** string, number, usd|eur, string[], usd|eur[], object, json — the type as a reader expects it. */
 export function flagTypeLabel(f: CommandFlagSummary): string {
   const inline = (values: string[] | undefined) => values && values.join("|").length <= 24 ? values.join("|") : values ? "enum" : undefined;
@@ -608,6 +641,7 @@ export function flagTypeLabel(f: CommandFlagSummary): string {
   return inline(f.enum) ?? f.type;
 }
 
+/** One line per command, pipe-delimited: the compact index that goes into AGENTS.md. */
 export function compactIndex(commands: CommandSummary[]): string {
   return commands
     .map((c) => {
@@ -617,10 +651,38 @@ export function compactIndex(commands: CommandSummary[]): string {
     .join("\n");
 }
 
+/** Bytes of command index the guide and AGENTS.md carry before they switch to one line per resource. */
+export const COMMAND_INDEX_BUDGET = 8_000;
+const RESOURCE_INDEX_NAMES = 12;
+
+/**
+ * One line per resource with its first command names, for an API whose
+ * per-command index would not fit COMMAND_INDEX_BUDGET. Resources past the
+ * budget are counted, not listed; help --json has them all.
+ */
+export function resourceIndex(bin: string, commands: CommandSummary[]): string {
+  const byResource = new Map<string, string[]>();
+  for (const c of commands) byResource.set(c.resource, [...(byResource.get(c.resource) ?? []), c.command]);
+  const lines: string[] = [];
+  let bytes = 0;
+  let listed = 0;
+  for (const [resource, names] of byResource) {
+    const more = names.length - RESOURCE_INDEX_NAMES;
+    const line = resource + ": " + names.slice(0, RESOURCE_INDEX_NAMES).join(", ") + (more > 0 ? ", … +" + more + " more" : "");
+    if (bytes + line.length + 1 > COMMAND_INDEX_BUDGET) break;
+    lines.push(line);
+    bytes += line.length + 1;
+    listed++;
+  }
+  if (listed < byResource.size) lines.push("… " + (byResource.size - listed) + " more resources: " + bin + " help --json");
+  return lines.join("\n");
+}
+
 /** The AGENTS.md block body. */
 export function agentBlock(ctx: AgentContext, commands: CommandSummary[]): string {
   const auth = ctx.authEnvVars.length ? ctx.authEnvVars.join(", ") : "(none)";
-  const index = ctx.docsIndexUrl ?? (ctx.docsUrl ? ctx.docsUrl.replace(/\/+$/, "") + "/llms.txt" : null);
+  const docsIndex = ctx.docsIndexUrl ?? (ctx.docsUrl ? ctx.docsUrl.replace(/\/+$/, "") + "/llms.txt" : null);
+  const index = compactIndex(commands);
   return [
     "## " + ctx.bin + " CLI (" + ctx.apiTitle + ")",
     "",
@@ -630,16 +692,14 @@ export function agentBlock(ctx: AgentContext, commands: CommandSummary[]): strin
     ctx.authNotDeclared
       ? "- Auth: not declared by the API Spec. If the API needs a token, set " + auth + " or run `" + ctx.bin + " login`; other headers go in `--header \"Name: value\"` or " + ctx.envPrefix + "_HEADERS. Never write a key into a file in this repo."
       : "- Auth: " + auth + " in the environment, or `" + ctx.bin + " login`. Never write a key into a file in this repo.",
-    "- Discover: `" + ctx.bin + " --help`, `" + ctx.bin + " <resource> <command> --help`, `" + ctx.bin + " help --json` (machine-readable), `" + ctx.bin + " agent-guide --format json`.",
-    "- Docs: " + (index ? "`" + ctx.bin + " docs search <term> --json`; " + index : "`" + ctx.bin + " docs <resource> <command> --json` (a docs URL was not provided at generate time)") + ".",
+    "- Discover: `" + ctx.bin + " help --json` indexes resources and command names; `" + ctx.bin + " help <resource> --json` lists a resource's commands; `" + ctx.bin + " help <resource> <command> --json` gives one command's flags. `" + ctx.bin + " help --json --all` prints every command with every flag at once. Humans: `" + ctx.bin + " --help`, `" + ctx.bin + " <resource> <command> --help`.",
+    "- Docs: " + (docsIndex ? "`" + ctx.bin + " docs search <term> --json`; " + docsIndex : "`" + ctx.bin + " docs <resource> <command> --json` (a docs URL was not provided at generate time)") + ".",
     "- Lists: `--all` streams every page as NDJSON. Destructive commands need `--force`.",
     ...(ctx.hasMcp ? ["- MCP: `" + ctx.bin + " mcp install --all` registers this API's MCP server with the agent clients on this machine" + (ctx.mcpUrl ? " (hosted: " + ctx.mcpUrl + ")" : "") + "."] : []),
     "",
-    "Commands (resource command | METHOD path | required flags | summary):",
-    "",
-    "```",
-    compactIndex(commands),
-    "```",
+    ...(Buffer.byteLength(index) <= COMMAND_INDEX_BUDGET
+      ? ["Commands (resource command | METHOD path | required flags | summary):", "", "```", index, "```"]
+      : ["Commands by resource (" + commands.length + " commands; `" + ctx.bin + " help <resource> --json` lists a resource's commands with summaries):", "", "```", resourceIndex(ctx.bin, commands), "```"]),
   ].join("\n");
 }
 
@@ -674,12 +734,13 @@ export function agentGuide(ctx: AgentContext, commands: CommandSummary[]): Recor
       destructive: "Commands classified as destructive need --force (or --yes); without it they return CONFIRMATION_REQUIRED with the exact command to run.",
       flags: "Positional path arguments first, then --flags. Array flags take a comma list, the flag repeated, or a JSON array; object flags take JSON. --data '<json>' merges under field flags (@<file> reads a file, - reads stdin).",
       pagination: "Paginated commands return {items, hasMore, nextPage, nextCommand}: run nextCommand for the next page, or --all walks every page.",
+      discovery: "help --json is a bounded index of resources and command names. help <resource> --json pages through one resource's commands (next_command), help <resource> <command> --json is one command's flags, docs <resource> <command> --json its complete schemas, and docs search <term> --json finds commands by topic. help --json --all prints every command with every flag; on a large API it is large.",
     },
     builtins: ctx.builtins,
     next_steps: [
       ...(ctx.authEnvVars.length ? ["Set " + ctx.authEnvVars[0] + " in the environment or run '" + ctx.bin + " login'."] : []),
       "Run '" + ctx.bin + " auth check'.",
-      "Run '" + ctx.bin + " help --json' for the command index, or read the AGENTS.md block '" + ctx.bin + " init' writes.",
+      "Run '" + ctx.bin + " help --json' for the command index, then '" + ctx.bin + " help <resource> <command> --json' for the command you need.",
       ...(ctx.hasMcp ? ["Run '" + ctx.bin + " mcp install --all' if this session has an MCP-capable client."] : []),
     ],
   };
@@ -829,4 +890,122 @@ export function summarizeDoctor(checks: DoctorCheck[]): { status: "ok" | "action
 /** Every OAuth scope an operation's security requirements name, in order. */
 export function requiredScopes(security: Record<string, string[]>[] | undefined): string[] {
   return [...new Set((security ?? []).flatMap((requirement) => Object.values(requirement).flat()))];
+}
+
+// ---- request preview (--dry-run) ----------------------------------------------
+
+/** What --dry-run prints: the request an API command would send, with
+ * every credential replaced by "<redacted>". Nothing in it was sent. */
+export interface RequestPreview {
+  dry_run: true;
+  sent: false;
+  message: string;
+  request: {
+    method: string;
+    url: string;
+    path: string;
+    query: Record<string, string | string[]>;
+    headers: Record<string, string>;
+    body?: unknown;
+  };
+}
+
+export const REDACTED = "<redacted>";
+
+/** Header and query names that carry credentials, whatever the API calls
+ * them: Authorization, Cookie, X-Api-Key, api_key, access_token, a session
+ * or signature. */
+const SENSITIVE_NAME = /^(authorization|proxy-authorization|cookie|cookie2|set-cookie)$|api[-_]?key|apikey|token|secret|password|passwd|session|signature|credential|^key$|^auth$/i;
+
+function redactText(text: string, secrets: string[]): string {
+  let out = text;
+  for (const secret of secrets) if (secret.length >= 4) out = out.split(secret).join(REDACTED);
+  return out;
+}
+
+/**
+ * The request a dry run captured, as --dry-run shows it. `sensitiveNames`
+ * are the header and query names the API's security schemes bind; `secrets`
+ * are the resolved credential values, redacted wherever they appear (a
+ * token pasted into a body field, a key in a URL).
+ */
+export async function requestPreview(
+  input: { method: string; url: string; headers: Record<string, string>; body?: unknown },
+  options: { sensitiveNames?: string[]; secrets?: string[] } = {},
+): Promise<RequestPreview> {
+  const secrets = [...new Set((options.secrets ?? []).filter((s) => typeof s === "string" && s.length >= 4))].sort((a, b) => b.length - a.length);
+  const named = new Set((options.sensitiveNames ?? []).map((n) => n.toLowerCase()));
+  const sensitive = (name: string) => named.has(name.toLowerCase()) || SENSITIVE_NAME.test(name);
+  const url = new URL(input.url);
+  const query: Record<string, string | string[]> = {};
+  for (const [name, raw] of url.searchParams) {
+    const value = sensitive(name) ? REDACTED : redactText(raw, secrets);
+    const previous = query[name];
+    query[name] = previous === undefined ? value : Array.isArray(previous) ? [...previous, value] : [previous, value];
+  }
+  const encodedSecrets = [...secrets, ...secrets.map(encodeURIComponent)];
+  const search = [...url.searchParams].map(([name, raw]) => encodeURIComponent(name) + "=" + (sensitive(name) ? REDACTED : redactText(encodeURIComponent(raw), encodedSecrets))).join("&");
+  const shownUrl = url.origin + redactText(url.pathname, encodedSecrets) + (search ? "?" + search : "");
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(input.headers)) {
+    headers[name] = sensitive(name) ? REDACTED : redactText(value, secrets);
+  }
+  const contentType = Object.entries(input.headers).find(([name]) => name.toLowerCase() === "content-type")?.[1] ?? "";
+  const body = await previewBody(input.body, contentType, secrets);
+  return {
+    dry_run: true,
+    sent: false,
+    message: "Dry run: nothing was sent to the API. This is the request the command would send, with credentials redacted.",
+    request: {
+      method: input.method,
+      url: shownUrl,
+      path: redactText(url.pathname, encodedSecrets),
+      query,
+      headers,
+      ...(body !== undefined ? { body } : {}),
+    },
+  };
+}
+
+async function previewBody(body: unknown, contentType: string, secrets: string[]): Promise<unknown> {
+  if (body === undefined || body === null) return undefined;
+  const redactValue = (value: unknown): unknown => {
+    if (typeof value === "string") return redactText(value, secrets);
+    if (Array.isArray(value)) return value.map(redactValue);
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, SENSITIVE_NAME.test(k) && typeof v === "string" && secrets.some((s) => v.includes(s)) ? REDACTED : redactValue(v)]));
+    return value;
+  };
+  if (typeof body === "string") {
+    if (/json/i.test(contentType)) {
+      try { return redactValue(JSON.parse(body)); } catch { /* shown as text */ }
+    }
+    return redactText(body, secrets);
+  }
+  if (typeof FormData !== "undefined" && body instanceof FormData) {
+    const parts: Record<string, unknown>[] = [];
+    for (const [name, value] of body.entries()) {
+      parts.push(typeof value === "string"
+        ? { name, value: redactText(value, secrets) }
+        : { name, filename: (value as File).name, ...((value as Blob).type ? { type: (value as Blob).type } : {}), bytes: (value as Blob).size });
+    }
+    return { multipart: parts };
+  }
+  if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams) return redactText(body.toString(), secrets);
+  if (typeof Blob !== "undefined" && body instanceof Blob) return { binary: true, bytes: body.size, ...(body.type ? { type: body.type } : {}) };
+  if (body instanceof Uint8Array || body instanceof ArrayBuffer) return { binary: true, bytes: body.byteLength };
+  return { stream: true };
+}
+
+/** --dry-run for a person: the request line, then query, headers and body. */
+export function formatRequestPreview(preview: RequestPreview): string {
+  const { request } = preview;
+  const lines = ["Dry run: nothing was sent. Credentials are redacted.", "", request.method + " " + request.url];
+  const headers = Object.entries(request.headers);
+  if (headers.length) lines.push("", "Headers:", ...headers.map(([name, value]) => "  " + name + ": " + value));
+  if (request.body !== undefined) {
+    lines.push("", "Body:");
+    const text = typeof request.body === "string" ? request.body : JSON.stringify(request.body, null, 2);
+    lines.push(...text.split("\n").map((line) => "  " + line));
+  }
+  return lines.join("\n") + "\n";
 }

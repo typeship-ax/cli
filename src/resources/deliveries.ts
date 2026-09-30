@@ -90,7 +90,7 @@ export class DeliveriesResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        target_id: params?.targetId,
+        target_id: params?.target_id,
       },
       idempotent: true,
       schemaKey: "deliveries.list",
@@ -239,7 +239,7 @@ export interface DeliveriesListParams {
    */
   cursor?: string;
   /** Only Deliveries of this Target. */
-  targetId?: TargetId;
+  target_id?: TargetId;
 }
 
 /** Typed errors `list` can throw. */

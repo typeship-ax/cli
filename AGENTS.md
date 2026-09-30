@@ -1,6 +1,6 @@
 # Typeship: agent guide
 
-Instructions for coding agents that call the Typeship API through this CLI (API version 1.0.0, package version 0.23.1).
+Instructions for coding agents that call the Typeship API through this CLI (API version 1.0.0, package version 0.23.2).
 
 Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
 selected CLI, MCP, and SDK Target current.
@@ -27,7 +27,7 @@ petstore Spec is a runnable sample.
 ## Using the CLI
 - `typeship <resource> <command>` calls an API operation; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).
 - Path parameters are positional; other inputs are flags. JSON goes to stdout and exit codes are 0/1/2. Errors are one JSON envelope on stderr: `{status, issues: [{code, message}], next_steps, detail}`; branch on `issues[].code`. Every operation classified as destructive requires `--force` (or `--yes`).
-- `typeship agent-guide --format json` explains the conventions; `typeship help --json` is the command surface as data; `typeship doctor` checks the setup. Read `typeship init --help` before setup: it can store credentials and update agent instructions. Choose the scope the task requires.
+- `typeship agent-guide --format json` explains the conventions; `typeship help --json` indexes the commands and `typeship help <resource> <command> --json` gives one command's flags; `typeship doctor` checks the setup. Read `typeship init --help` before setup: it can store credentials and update agent instructions. Choose the scope the task requires.
 
 ## Safety
 - Read credentials from the environment or a secret store. Never hard-code them, print them, or put them in URLs or command arguments.

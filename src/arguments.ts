@@ -157,7 +157,7 @@ export function checkValue(
   schema: Record<string, unknown>,
   path: string,
   issues: ArgumentIssue[],
-  options: { skipPattern?: boolean; depth?: number } = {},
+  options: { skipPattern?: boolean; depth?: number; meName?: string } = {},
 ): unknown {
   const depth = options.depth ?? 0;
   const at = (suffix: string) => path === "" ? suffix : path + ": " + suffix;
@@ -173,7 +173,10 @@ export function checkValue(
   let out = shallow.value;
   if (depth >= MAX_CHECK_DEPTH) return out;
 
-  if (typeof out === "string" && typeof schema.pattern === "string" && !options.skipPattern) {
+  // "me" for a user-shaped property (or an item of one) is resolved to an
+  // ID or login later, so it skips the pattern the resolved value must meet.
+  const skipPattern = options.skipPattern || (typeof out === "string" && options.meName !== undefined && isMeReference(options.meName, out));
+  if (typeof out === "string" && typeof schema.pattern === "string" && !skipPattern) {
     let pattern: RegExp | undefined;
     try { pattern = new RegExp(schema.pattern, "u"); } catch {
       try { pattern = new RegExp(schema.pattern); } catch { /* not an ECMAScript pattern: never false-alarm */ }
@@ -186,7 +189,7 @@ export function checkValue(
   // Array items: check each against the items schema when it has one.
   if (Array.isArray(out) && schema.items && typeof schema.items === "object" && !Array.isArray(schema.items)) {
     const itemSchema = schema.items as Record<string, unknown>;
-    out = out.map((item, i) => checkValue(item, itemSchema, path + "[" + i + "]", issues, { depth: depth + 1 }));
+    out = out.map((item, i) => checkValue(item, itemSchema, path + "[" + i + "]", issues, { depth: depth + 1, meName: options.meName }));
   }
 
   // Object properties: the same checks one level down, keyed by dotted path.
@@ -216,7 +219,7 @@ export function checkValue(
       }
       const propSchema = properties[name];
       next[name] = propSchema && typeof propSchema === "object"
-        ? checkValue(entry, propSchema, child(name), issues, { depth: depth + 1, skipPattern: typeof entry === "string" && isMeReference(name, entry) })
+        ? checkValue(entry, propSchema, child(name), issues, { depth: depth + 1, meName: name })
         : entry;
     }
     for (const name of Array.isArray(schema.required) ? schema.required as string[] : []) {
@@ -230,13 +233,22 @@ export function checkValue(
   return out;
 }
 
+/** A name that holds one user or a list of them: assignee, assigneeId,
+ * assignees, subscriberIds, owner, user_id. */
 export function userShapedReference(name: string): boolean {
-  const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/ids?$/, "");
+  const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/ids?$/, "").replace(/s$/, "");
   return ["user", "assignee", "owner", "member", "actor", "creator", "account", "profile", "subscriber"].includes(normalized);
 }
 
-/** "me" given for a user-shaped argument or property, resolved to the
- * caller's ID through the identity tool. */
+/** "me" given for a user-shaped argument or property, resolved through the
+ * identity tool. */
 export function isMeReference(name: string, value: string): boolean {
   return value.trim().toLowerCase() === "me" && userShapedReference(name);
+}
+
+/** What "me" becomes for a user-shaped name: the caller's id for an ID
+ * name (assigneeId, subscriberIds, user_id), otherwise their login
+ * (GitHub's owner and assignees take logins). */
+export function meIdentityField(name: string): "id" | "login" {
+  return /ids?$/i.test(name.replace(/[^A-Za-z0-9]/g, "")) ? "id" : "login";
 }

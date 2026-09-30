@@ -84,7 +84,7 @@ export class TargetsResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        project_id: params?.projectId,
+        project_id: params?.project_id,
       },
       idempotent: true,
       schemaKey: "targets.list",
@@ -260,7 +260,7 @@ export interface TargetsListParams {
    */
   cursor?: string;
   /** Only Targets in this Project. */
-  projectId?: ProjectId;
+  project_id?: ProjectId;
 }
 
 /** Typed errors `list` can throw. */

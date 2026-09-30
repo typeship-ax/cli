@@ -45,7 +45,7 @@ export class ReleasesResource {
       query: {
         limit: params?.limit,
         cursor: params?.cursor,
-        target_id: params?.targetId,
+        target_id: params?.target_id,
       },
       idempotent: true,
       schemaKey: "releases.list",
@@ -128,7 +128,7 @@ export interface ReleasesListParams {
    */
   cursor?: string;
   /** Only releases of this Target. */
-  targetId?: TargetId;
+  target_id?: TargetId;
 }
 
 /** Typed errors `list` can throw. */

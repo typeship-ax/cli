@@ -25,8 +25,8 @@ import { OrganizationResource } from "./resources/organization.js";
 import { ApiKeysResource } from "./resources/api-keys.js";
 
 /** This package's version, also sent as the `User-Agent`. */
-export const VERSION = "0.23.1";
-const USER_AGENT = "@typeship-ax/cli/0.23.1";
+export const VERSION = "0.23.2";
+const USER_AGENT = "@typeship-ax/cli/0.23.2";
 
 export interface ClientOptions {
   /** Override the server URL. Default: `https://typeship.dev/api/v1` */
@@ -87,7 +87,7 @@ export interface ClientOptions {
 }
 
 /**
- * Typeship — v0.23.1
+ * Typeship — v0.23.2
  *
  * Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every
  * selected CLI, MCP, and SDK Target current.

@@ -6,6 +6,22 @@
 
 
 
+
+## 0.25.0 (2026-10-03)
+
+### Changed
+- `projects.create()`
+  - `body-field-type-changed`: request body.targets\[\].config.cli.unit\_tests added: boolean \(optional\)
+- `targets.create()`
+  - `body-field-type-changed`: request body.config.cli.unit\_tests added: boolean \(optional\)
+  - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
+- `targets.list()`
+  - `return-type-changed`: response.data\[\].config.cli.unit\_tests added: boolean \(optional\)
+- `targets.get()`
+  - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
+- `targets.update()`
+  - `body-field-type-changed`: request body.config.cli.unit\_tests added: boolean \(optional\)
+  - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
 ## 0.24.0 (2026-09-30)
 
 Release 0.24.0.

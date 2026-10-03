@@ -2487,6 +2487,12 @@ export interface TargetCliBehavior {
    * sessions.
    */
   relay?: boolean;
+  /**
+   * Also generate unit tests for the helper code a native Go CLI shares, such as raw API path
+   * checks, saved credentials, and MCP client configuration. Applies to go_cli Targets. Off by
+   * default; tests for the generated commands are always included.
+   */
+  unit_tests?: boolean;
 }
 
 /** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */
@@ -4036,6 +4042,12 @@ export interface TargetCliBehaviorResponse {
    * sessions.
    */
   relay?: boolean;
+  /**
+   * Also generate unit tests for the helper code a native Go CLI shares, such as raw API path
+   * checks, saved credentials, and MCP client configuration. Applies to go_cli Targets. Off by
+   * default; tests for the generated commands are always included.
+   */
+  unit_tests?: boolean;
 }
 
 /** How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config. */

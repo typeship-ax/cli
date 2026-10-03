@@ -155,10 +155,32 @@ export async function oauthBrowserLogin(config: OAuthLoginConfig, interaction: O
   const aborted = () => rejectCode(new OAuthLoginError("Browser login timed out or was cancelled. Run login again to retry."));
   signal.addEventListener("abort", aborted, { once: true });
   try {
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(Number(redirect.port) || 0, redirect.hostname === "[::1]" ? "::1" : "127.0.0.1", () => { server.off("error", reject); resolve(); });
+    // The callback port is fixed so the redirect URI can be registered with
+    // the provider, but it sits inside the operating system's ephemeral
+    // source-port range, where a concurrent local connection can hold it for
+    // milliseconds. Retry a busy port briefly before failing the login; a port
+    // that stays taken still fails, and the exchange always starts on the
+    // port that was actually bound.
+    const port = Number(redirect.port) || 0;
+    const bind = () => new Promise<NodeJS.ErrnoException | null>((resolve) => {
+      const settled = (error: NodeJS.ErrnoException | null) => { server.off("error", settled); server.off("listening", listening); resolve(error); };
+      const listening = () => settled(null);
+      server.once("error", settled);
+      server.once("listening", listening);
+      server.listen(port, redirect.hostname === "[::1]" ? "::1" : "127.0.0.1");
     });
+    for (let attempt = 0; ; attempt++) {
+      const bindError = await bind();
+      if (!bindError) break;
+      if (bindError.code !== "EADDRINUSE" || attempt === 20) throw bindError;
+      // Cancellation and the login timeout must not wait out a busy port:
+      // the retry delay races the callback result, so an abort fails the
+      // login at once instead of surfacing EADDRINUSE after the retries.
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, 100);
+        codeResult.catch((error: Error) => { clearTimeout(timer); reject(error); });
+      });
+    }
     const address = server.address();
     if (!address || typeof address === "string") throw new OAuthLoginError("Could not start the OAuth callback listener.");
     redirect.port = String(address.port);

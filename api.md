@@ -37,7 +37,7 @@ Free includes one saved Project, all selected Targets, and the first 25 operatio
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship projects create --name 'Parcel API' --spec '{"source":{"type":"url","url":{"url":"https://api.parcel.example/openapi.json"}}}' --targets '[{"name":"Parcel CLI","type":"cli","deliveries":[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}]}]'
+typeship projects create --name 'Parcel API' --spec '{"source":{"type":"url","url":{"url":"https://api.parcel.example/openapi.json"}}}' --targets '[{"name":"Parcel CLI","type":"cli","deliveries":[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","module_path":"github.com/parcel-example/parcel-client","publish_on_merge":false}}]}]'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -343,7 +343,7 @@ Creates a Target with its own configuration, Deliveries, and release history. Mu
 | --- | --- | --- | --- | --- |
 | `--project-id` | body | `string` | yes | Unique identifier for a project. Accepts an ID or an exact name (resolved via projects_list). IDs come from projects_list. |
 | `--name` | body | `string` | yes | — |
-| `--type` | body | `string` | yes | Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own. |
+| `--type` | body | `string` | yes | Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target. |
 | `--status` | body | `string` | no | Default: "active". |
 | `--release-channel` | body | `string` | no | Default: "stable". |
 | `--checks` | body | `object` | no | Required checks run against the code in the Draft. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list. |
@@ -354,7 +354,7 @@ Creates a Target with its own configuration, Deliveries, and release history. Mu
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{"cli":{"command_name":"parcel"}}' --deliveries '[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}]'
+typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{"cli":{"command_name":"parcel"}}' --deliveries '[{"type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","module_path":"github.com/parcel-example/parcel-client","publish_on_merge":false}}]'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -515,7 +515,7 @@ A `502 follow_up_failed` means the Delivery was saved, but retiring an obsolete 
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship deliveries create --data '{"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":false}}'
+typeship deliveries create --data '{"target_id":"tgt_5m8q2v7k1p9d4h6c","type":"repository","repository":{"provider":"github","identifier":"parcel-example/parcel-client","module_path":"github.com/parcel-example/parcel-client","publish_on_merge":false}}'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -591,7 +591,7 @@ See [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writ
 Use `--data '<json>'`, `--data @body.json`, or `--data -` to supply the request body. Field flags override matching body fields.
 
 ```sh
-typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"github","identifier":"parcel-example/parcel-client","package_name":"parcel-client","publish_on_merge":true}'
+typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{"provider":"github","identifier":"parcel-example/parcel-client","module_path":"github.com/parcel-example/parcel-client","publish_on_merge":true}'
 ```
 
 Output: the response payload as JSON on stdout. A successful response without a body produces `{"ok": true}`.
@@ -979,8 +979,7 @@ An anonymous URL request without source headers may return `claim.url`. Sign in 
 | `--spec` | body | `json` | yes | A Spec for one-shot generation, provided as exactly one URL or inline entrypoint. |
 | `--target` | body | `object` | yes | One-shot generator descriptor; no persisted Target is created. |
 | `--package-name` | body | `string` | no | npm package or Python distribution override. Valid only for the TypeScript and Python SDK targets. |
-| `--module-path` | body | `string` | no | Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI Targets. Projects derive this from the Go destination repository by default. |
-| `--go-sdk` | body | `object` | no | The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing. |
+| `--module-path` | body | `string` | no | Go module path override for the generated artifact's own module. Valid only for the Go SDK and CLI Targets. Projects derive this from the Go destination repository by default. |
 | `--config` | body | `object` | no | Everything Typeship needs beyond the Spec, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Spec. |
 | `--idempotency-key` | header | `string` | no | Identifies one logical write for 24 hours. The key is scoped to the authenticated organization and operation; generation without an organization uses a hashed network identity. Retrying the same method, path, query, If-Match header, and JSON body replays the original response. Reusing the key with changed intent returns 409. After expiry the key starts a new write. |
 

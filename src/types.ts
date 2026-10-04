@@ -46,13 +46,11 @@ export type DraftId = string;
 export type ReleaseId = string;
 
 /**
- * Generator implementation selected by a Target. This is configuration, not identity; several
- * Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a
- * distinct product that imports one exact paired Go SDK module rather than a client of its own.
+ * Package type selected by a Target. Several Targets may use the same type. The CLI is a
+ * self-contained command-line package and requires no SDK Target.
  */
 export const GeneratorKind = {
   CLI: "cli",
-  GO_CLI: "go_cli",
   MCP: "mcp",
   TYPESCRIPT_SDK: "typescript_sdk",
   PYTHON_SDK: "python_sdk",
@@ -98,35 +96,6 @@ export type SpecInput = UrlSpecInput | InlineSpecInput;
 /** Response shape for SpecInput. */
 export type SpecInputRead = UrlSpecInputRead | InlineSpecInput;
 
-/**
- * The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and
- * rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a
- * branch pins nothing.
- */
-export interface GoSdkDescriptor {
-  /**
-   * Go module path of the SDK the CLI imports, for example github.com/acme/payments-go. Must be a
-   * valid Go module path.
-   */
-  module_path: string;
-  /**
-   * Exact SDK module version the CLI requires: v-prefixed SemVer such as v1.2.3, or an immutable Go
-   * pseudo-version naming a commit such as v0.0.0-20240824120000-abcdef123456. Ranges, branches,
-   * and "latest" are rejected.
-   */
-  version: string;
-  /**
-   * SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the
-   * request fails with spec_invalid.
-   */
-  spec_digest: string;
-  /**
-   * Go package identifier of the SDK, when the module path's last element does not imply it.
-   * Optional.
-   */
-  package_name?: string;
-}
-
 export interface GenerateRequest {
   spec: SpecInput;
   /** One-shot generator descriptor; no persisted Target is created. */
@@ -140,10 +109,9 @@ export interface GenerateRequest {
   package_name?: string;
   /**
    * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
-   * Go CLI Targets. Projects derive this from the Go destination repository by default.
+   * CLI Targets. Projects derive this from the Go destination repository by default.
    */
   module_path?: string;
-  go_sdk?: GoSdkDescriptor;
   config?: Config;
 }
 
@@ -161,10 +129,9 @@ export interface GenerateRequestRead {
   package_name?: string;
   /**
    * Go module path override for the generated artifact's own module. Valid only for the Go SDK and
-   * Go CLI Targets. Projects derive this from the Go destination repository by default.
+   * CLI Targets. Projects derive this from the Go destination repository by default.
    */
   module_path?: string;
-  go_sdk?: GoSdkDescriptor;
   config?: ConfigRead;
 }
 
@@ -869,7 +836,7 @@ export interface RepositoryDeliverySettingsInput {
   directory?: string | null;
   /** npm or Python registry identity where applicable. */
   package_name?: string | null;
-  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
+  /** Go module identity for the Go SDK or CLI Target where applicable. */
   module_path?: string | null;
   /**
    * Commit repository-owned registry automation and report publication after the Draft merges.
@@ -885,7 +852,7 @@ export interface RepositoryDeliverySettingsInputRead {
   directory?: string | null;
   /** npm or Python registry identity where applicable. */
   package_name?: string | null;
-  /** Go module identity for the Go SDK or Go CLI Target where applicable. */
+  /** Go module identity for the Go SDK or CLI Target where applicable. */
   module_path?: string | null;
   /**
    * Commit repository-owned registry automation and report publication after the Draft merges.
@@ -1177,21 +1144,6 @@ export interface DeliveryResponseRead {
 }
 
 /**
- * One Target generated from a sibling Target. A go_cli Target carries type go_sdk_module, naming
- * the Go SDK Target it is generated against.
- */
-export interface TargetDependency {
-  type: "go_sdk_module";
-  target_id: TargetId;
-}
-
-/** Response shape for TargetDependency. */
-export interface TargetDependencyRead {
-  type: "go_sdk_module" | (string & {});
-  target_id: TargetId;
-}
-
-/**
  * Required checks run against the code in the Draft. Generated checks and customer commands share
  * one reproducible workflow; repository_required names existing repository checks. Supplying checks
  * replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted
@@ -1323,11 +1275,6 @@ export interface Target {
   spec_id: SpecId;
   name: string;
   type: GeneratorKind;
-  /**
-   * Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.
-   * Every other Target type reports null.
-   */
-  dependency: TargetDependency | null;
   status: "active" | "disabled";
   release_channel: "stable" | "prerelease";
   /**
@@ -1385,11 +1332,6 @@ export interface TargetRead {
   spec_id: SpecId;
   name: string;
   type: GeneratorKind | (string & {});
-  /**
-   * Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.
-   * Every other Target type reports null.
-   */
-  dependency: TargetDependencyRead | null;
   status: ("active" | "disabled") | (string & {});
   release_channel: ("stable" | "prerelease") | (string & {});
   /**
@@ -2488,9 +2430,9 @@ export interface TargetCliBehavior {
    */
   relay?: boolean;
   /**
-   * Also generate unit tests for the helper code a native Go CLI shares, such as raw API path
-   * checks, saved credentials, and MCP client configuration. Applies to go_cli Targets. Off by
-   * default; tests for the generated commands are always included.
+   * Also generate unit tests for the helper code a CLI shares, such as raw API path checks, saved
+   * credentials, and MCP client configuration. Applies to cli Targets. Off by default; tests for
+   * the generated commands are always included.
    */
   unit_tests?: boolean;
 }
@@ -3606,17 +3548,6 @@ export const ErrorCode = {
   DRAFT_TITLE_INVALID: "draft_title_invalid",
   HISTORY_RECOVERY_REQUIRED: "history_recovery_required",
   CHECKS_UNAVAILABLE: "checks_unavailable",
-  DEPENDENCY_MISSING: "dependency_missing",
-  DEPENDENCY_NOT_FOUND: "dependency_not_found",
-  DEPENDENCY_SELF: "dependency_self",
-  DEPENDENCY_CYCLE: "dependency_cycle",
-  DEPENDENCY_CROSS_PROJECT: "dependency_cross_project",
-  DEPENDENCY_CROSS_LINEAGE: "dependency_cross_lineage",
-  DEPENDENCY_WRONG_GENERATOR: "dependency_wrong_generator",
-  DEPENDENCY_DISABLED: "dependency_disabled",
-  DEPENDENCY_MODULE_PATH_MISSING: "dependency_module_path_missing",
-  DEPENDENCY_UNRELEASED: "dependency_unreleased",
-  DEPENDENCY_REVISION_MISMATCH: "dependency_revision_mismatch",
   REGENERATION_FAILED: "regeneration_failed",
   FOLLOW_UP_FAILED: "follow_up_failed",
   API_ERROR: "api_error",
@@ -4043,9 +3974,9 @@ export interface TargetCliBehaviorResponse {
    */
   relay?: boolean;
   /**
-   * Also generate unit tests for the helper code a native Go CLI shares, such as raw API path
-   * checks, saved credentials, and MCP client configuration. Applies to go_cli Targets. Off by
-   * default; tests for the generated commands are always included.
+   * Also generate unit tests for the helper code a CLI shares, such as raw API path checks, saved
+   * credentials, and MCP client configuration. Applies to cli Targets. Off by default; tests for
+   * the generated commands are always included.
    */
   unit_tests?: boolean;
 }

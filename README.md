@@ -1,44 +1,77 @@
-# @typeship-ax/cli
+# Typeship CLI
 
-CLI for the Typeship API. [API reference](./api.md)
+CLI for the Typeship API. [Command reference](./api.md)
 
 Resolve an OpenAPI or GraphQL Spec, diagnose it, and keep every selected CLI, MCP, and SDK Target current.
 
 ## Installation
 
-```sh
-npm install --global @typeship-ax/cli@0.25.0
-```
+When executable archives are published, download the archive for your operating system and architecture, verify it against `checksums.txt`, and put `typeship` on your PATH (`typeship.exe` on Windows).
 
-Requires Node.js 20+.
+Running a release executable needs no language runtime.
+
+To build this source package, install Go 1.21 or later and run `go build -o typeship .` from this directory.
 
 ## Usage
 
-The package ships `typeship`, a command for every API operation. API commands write JSON to stdout; discovery commands offer `--json`. Exit codes 0/1/2 mean success, request failure, and invalid usage.
-
 ```sh
-typeship login # stores a credential (or set TYPESHIP_TOKEN)
-typeship organization get
-typeship projects list --all # every page, one item per line
-typeship help --json # resources and command names; help <resource> <command> --json adds flags
+typeship --help
+typeship help --json
 ```
 
-CLI conventions:
+This CLI has 42 commands across 12 resources.
+Use `typeship <resource> <command> --help` to discover the inputs
+for an operation. Commands print JSON to stdout; errors use stderr and a nonzero exit code.
+Exit codes are 0 for success, 1 for API or runtime failures, and 2 for invalid usage.
 
-- Path parameters are positional; query and body fields are flags named after their wire fields.
-- Arrays accept a comma list or repeated flags. Objects accept JSON; `--data @file` and `--data -` read a full body.
-- `--fields id,name` projects results. `--all` streams paginated results as NDJSON.
-- Destructive commands require confirmation or `--force`. Piped errors are stable JSON on stderr.
+`--data` accepts inline JSON, `@path` for a file, or `-` for stdin.
+Field flags override the corresponding `--data` values. Unsupported fields
+and invalid integer or numeric bounds fail locally with exit code 2 and no API request.
+Additional fields are preserved when the schema explicitly permits them.
 
-Auth: `typeship login` stores a credential under `~/.config/typeship/profiles/default/`; the environment (`TYPESHIP_TOKEN`) and flags (`--token`) win over it. `TYPESHIP_BASE_URL` / `--base-url` pick the endpoint.
+Use `--read-only` or `TYPESHIP_MCP_READ_ONLY=1` to restrict command execution to reads.
+Use `--tools <list>` or `TYPESHIP_MCP_TOOLS=<list>` to restrict command execution to resources, MCP tool names, or resource.method names.
 
-Headers the spec does not declare: `--header "Name: value"` (repeatable) or `TYPESHIP_HEADERS` (a JSON object, or one `Name: value` per line). They are sent on every request and replace any header of the same name the CLI would send.
+## Authentication
 
-Use `typeship login --profile work` for a separate login, `typeship auth use work` to select it, and `typeship auth profiles` to list profiles without exposing tokens. Selection follows `--profile`, then `TYPESHIP_PROFILE`, then the saved selection, then `default`. Profiles isolate saved settings and credentials; an API or environment change requires another login before using the saved credential.
+Run `typeship login --help` for the credential inputs this API declares,
+or set the authentication environment variables listed in [AGENTS.md](AGENTS.md).
 
-Useful commands:
+## Upgrade
 
-- `typeship init` configures credentials and repository agent instructions.
-- `typeship docs search <term> --json`, `typeship doctor`, and `typeship help --json` cover discovery and diagnostics.
+`typeship upgrade --check` reports current vs latest without installing.
+A Go-installed CLI checks module versions through the Go module proxy (`GOPROXY`);
+Executable archives check GitHub releases for a matching platform archive
+and `checksums.txt`. Replace archive installs
+manually after verifying the checksum. Unix Go-installed binaries update in place
+when writable, preserving their installed filename. Windows and source builds
+require manual replacement or rebuilding. Only `upgrade` checks versions; this
+CLI does not send automatic update notices.
+
+## Tests
+
+`cli_test.go` checks the generated command surface offline: help and version
+output, command routing, flag parsing, and the usage and confirmation errors
+that stop a command before it sends a request.
+Run the tests from this directory:
+
+```sh
+go test ./...
+```
+
+The tests need no credentials and make no network requests.
+
+## Supported platforms
+
+| OS | Architectures | Binary name |
+| --- | --- | --- |
+| Linux | amd64, arm64 | `typeship` |
+| macOS | amd64, arm64 | `typeship` |
+| Windows | amd64, arm64 | `typeship.exe` |
+
+Every binary is a static native executable with no language runtime
+dependencies.
+
+[Command reference](api.md) · [Machine-readable contract](api.json) · [Agent instructions](AGENTS.md)
 
 Generated from the OpenAPI spec by [Typeship](https://typeship.dev).

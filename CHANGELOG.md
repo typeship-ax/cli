@@ -7,12 +7,15 @@
 
 
 
-## 0.25.0 (2026-10-04) (6 breaking)
+## 0.25.0 (2026-10-13) (11 breaking)
 
 ### Changed
 - `projects.create()`
+  - **breaking** `body-field-type-changed`: request body.targets\[\].config.cli.update\_notice removed \(was boolean\)
   - `body-field-type-changed`: request body.targets\[\].config.cli.unit\_tests added: boolean \(optional\)
   - **breaking** `body-field-type-changed`: request body.targets\[\].type enum value removed: "go\_cli"
+  - **breaking** `body-field-type-changed`: request body.config.cli.update\_notice removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 402.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
@@ -22,18 +25,22 @@
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `projects.list()`
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.update\_notice removed \(was boolean\)
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 403.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `projects.get()`
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 403.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 404.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `projects.update()`
+  - **breaking** `body-field-type-changed`: request body.config.cli.update\_notice removed \(was boolean\)
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 402.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
@@ -117,7 +124,9 @@
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `targets.create()`
   - **breaking** `body-field-type-changed`: request body.type enum value removed: "go\_cli"
+  - **breaking** `body-field-type-changed`: request body.config.cli.update\_notice removed \(was boolean\)
   - `body-field-type-changed`: request body.config.cli.unit\_tests added: boolean \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
   - **breaking** `return-type-changed`: response.dependency removed \(was TargetDependency \| null\)
   - `return-type-changed`: response.type enum value removed: "go\_cli"
@@ -131,6 +140,7 @@
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `targets.list()`
+  - **breaking** `return-type-changed`: response.data\[\].config.cli.update\_notice removed \(was boolean\)
   - `return-type-changed`: response.data\[\].config.cli.unit\_tests added: boolean \(optional\)
   - **breaking** `return-type-changed`: response.data\[\].dependency removed \(was TargetDependency \| null\)
   - `return-type-changed`: response.data\[\].type enum value removed: "go\_cli"
@@ -141,6 +151,7 @@
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `targets.get()`
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
   - **breaking** `return-type-changed`: response.dependency removed \(was TargetDependency \| null\)
   - `return-type-changed`: response.type enum value removed: "go\_cli"
@@ -150,7 +161,9 @@
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `targets.update()`
+  - **breaking** `body-field-type-changed`: request body.config.cli.update\_notice removed \(was boolean\)
   - `body-field-type-changed`: request body.config.cli.unit\_tests added: boolean \(optional\)
+  - **breaking** `return-type-changed`: response.config.cli.update\_notice removed \(was boolean\)
   - `return-type-changed`: response.config.cli.unit\_tests added: boolean \(optional\)
   - **breaking** `return-type-changed`: response.dependency removed \(was TargetDependency \| null\)
   - `return-type-changed`: response.type enum value removed: "go\_cli"
@@ -339,6 +352,7 @@
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `packages.generate()`
   - **breaking** `body-field-type-changed`: request body.target.type enum value removed: "go\_cli"
+  - **breaking** `body-field-type-changed`: request body.config.cli.update\_notice removed \(was boolean\)
   - **breaking** `body-field-removed`: request body.go\_sdk removed \(was GoSdkDescriptor\)
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
@@ -379,6 +393,11 @@
   - `error-schema-changed`: error 412.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
+
+### Package contract (breaking)
+- **Breaking:** Package name changed: `@​typeship-ax/cli -> github.com/typeship-ax/cli`
+- Entry point `module` added as `github.com/typeship-ax/cli`
+- **Breaking:** Executable `typeship` removed (was `dist/cli.js`)
 ## 0.24.0 (2026-09-30)
 
 Release 0.24.0.

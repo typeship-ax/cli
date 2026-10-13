@@ -1,28 +1,46 @@
-# Publishing @typeship-ax/cli
+# Publishing typeship
 
-How to build, release, and maintain this package. Its users need only [README.md](README.md).
+How to build, release, and maintain this CLI. Its users need only [README.md](README.md).
 
 ## Build and test
 
-Requires Node.js 20+. From this directory:
+Requires Go 1.21 or later. From this directory:
 
 ```sh
-npm install
-npm run build
-npm test
+go build -o typeship .
+./typeship --help
+go vet ./...
+go test ./...
 ```
 
-## Name and version
+The API client is included in this package. Build and release the CLI on its own.
 
-`package.json` names this package `@typeship-ax/cli` at version `0.25.0`. Raise `version` for every release.
+## Publish the module
 
-## Publish
+`go.mod` declares `github.com/typeship-ax/cli`. Set it to the repository path you publish from, then push a `v<major>.<minor>.<patch>` tag. Users install a release with `go install github.com/typeship-ax/cli@<version>`.
+
+## Release archives
+
+`.goreleaser.yml` builds and packages every supported platform from one
+checkout with reproducible flags (`-trimpath`, a pinned module timestamp,
+CGO off): the same commit produces the same bytes.
+
+With Typeship publishing on, the release workflow builds these archives and
+attaches them with `checksums.txt` to the GitHub Release. To build them
+yourself, from this directory:
 
 ```sh
-npm publish --access public
+goreleaser build --snapshot --clean   # local matrix build into dist/
+goreleaser release --clean            # tag-driven archives + checksums
 ```
 
-`prepublishOnly` builds the package first.
+Other GOOS/GOARCH combinations (freebsd, 386, armv7, riscv64, ...) are not
+built by this configuration; they build with the same flags, without
+support guarantees:
+
+```sh
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o typeship.exe .
+```
 
 ## Customizing this package
 

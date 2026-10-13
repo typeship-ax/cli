@@ -19,15 +19,15 @@ petstore Spec is a runnable sample.
 ## Before writing code
 - `api.md` is the command and flag reference; `api.json` is the machine-readable contract: every operation's inputs, outputs, errors, `safety` (`read`, `write`, or `destructive`), and an example. Look up exact names there instead of guessing.
 - `README.md` covers installation and setup.
-- Zero runtime dependencies; the program runs on Node.js 20+ and platform `fetch`.
+- `typeship` is a single native binary with no runtime dependencies.
 
 ## Authentication
 - Bearer token: set the `TYPESHIP_TOKEN` environment variable.
 
 ## Using the CLI
-- `typeship <resource> <command>` calls an API operation; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` gives a concise contract and example (add `--schema` for full schemas or `--json` for the machine contract).
-- Path parameters are positional; other inputs are flags. JSON goes to stdout and exit codes are 0/1/2. Errors are one JSON envelope on stderr: `{status, issues: [{code, message}], next_steps, detail}`; branch on `issues[].code`. Every operation classified as destructive requires `--force` (or `--yes`).
-- `typeship agent-guide --format json` explains the conventions; `typeship help --json` indexes the commands and `typeship help <resource> <command> --json` gives one command's flags; `typeship doctor` checks the setup. Read `typeship init --help` before setup: it can store credentials and update agent instructions. Choose the scope the task requires.
+- `typeship <resource> <command>` calls an API operation; `typeship docs search <term> --json` finds operations and guides as structured data; `typeship docs <resource> <command>` returns JSON operation metadata. Read `api.json` for complete input and output schemas.
+- Path parameters are positional; other inputs are flags. JSON goes to stdout and exit codes are 0/1/2. Errors are one JSON envelope on stderr: `{status, issues: [{code, message}], next_steps, retryable, detail}`; branch on `issues[].code`, follow `next_steps`, and retry only when `retryable` is true. Every operation classified as destructive requires `--force` (or `--yes`).
+- `typeship agent-guide --format json` explains the conventions; `typeship help --json` is the command surface as data; `typeship doctor` checks the setup. Read `typeship init --help` before setup: it can store credentials and update agent instructions. Choose the scope the task requires.
 
 ## Safety
 - Read credentials from the environment or a secret store. Never hard-code them, print them, or put them in URLs or command arguments.

@@ -3,7 +3,7 @@
   "title": "Typeship",
   "api_version": "1.0.0",
   "spec_format": "openapi",
-  "language": "TypeScript",
+  "language": "Go",
   "surface": "cli",
   "operation_surface": {
     "version": 1,
@@ -177,10 +177,262 @@
         "revoke"
       ]
     ],
-    "clients": [
-      "TypeshipClient"
+    "clients": [],
+    "goPackage": "main",
+    "goCommands": [
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "create",
+        "method": "Create"
+      },
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "update",
+        "method": "Update"
+      },
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "delete",
+        "method": "Delete"
+      },
+      {
+        "resource": "projects",
+        "field": "Projects",
+        "command": "generate",
+        "method": "Generate"
+      },
+      {
+        "resource": "specs",
+        "field": "Specs",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "specs",
+        "field": "Specs",
+        "command": "update",
+        "method": "Update"
+      },
+      {
+        "resource": "specs",
+        "field": "Specs",
+        "command": "refresh",
+        "method": "Refresh"
+      },
+      {
+        "resource": "spec-revisions",
+        "field": "SpecRevisions",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "spec-revisions",
+        "field": "SpecRevisions",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "spec-revisions",
+        "field": "SpecRevisions",
+        "command": "list-files",
+        "method": "ListFiles"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "create",
+        "method": "Create"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "update",
+        "method": "Update"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "delete",
+        "method": "Delete"
+      },
+      {
+        "resource": "targets",
+        "field": "Targets",
+        "command": "adopt",
+        "method": "Adopt"
+      },
+      {
+        "resource": "deliveries",
+        "field": "Deliveries",
+        "command": "create",
+        "method": "Create"
+      },
+      {
+        "resource": "deliveries",
+        "field": "Deliveries",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "deliveries",
+        "field": "Deliveries",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "deliveries",
+        "field": "Deliveries",
+        "command": "update",
+        "method": "Update"
+      },
+      {
+        "resource": "deliveries",
+        "field": "Deliveries",
+        "command": "delete",
+        "method": "Delete"
+      },
+      {
+        "resource": "generations",
+        "field": "Generations",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "generations",
+        "field": "Generations",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "generations",
+        "field": "Generations",
+        "command": "list-files",
+        "method": "ListFiles"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "update",
+        "method": "Update"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "list-files",
+        "method": "ListFiles"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "resolve",
+        "method": "Resolve"
+      },
+      {
+        "resource": "drafts",
+        "field": "Drafts",
+        "command": "recover",
+        "method": "Recover"
+      },
+      {
+        "resource": "releases",
+        "field": "Releases",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "releases",
+        "field": "Releases",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "releases",
+        "field": "Releases",
+        "command": "retry",
+        "method": "Retry"
+      },
+      {
+        "resource": "files",
+        "field": "Files",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "packages",
+        "field": "Packages",
+        "command": "generate",
+        "method": "Generate"
+      },
+      {
+        "resource": "packages",
+        "field": "Packages",
+        "command": "download",
+        "method": "Download"
+      },
+      {
+        "resource": "organization",
+        "field": "Organization",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "api-keys",
+        "field": "APIKeys",
+        "command": "list",
+        "method": "List"
+      },
+      {
+        "resource": "api-keys",
+        "field": "APIKeys",
+        "command": "get",
+        "method": "Get"
+      },
+      {
+        "resource": "api-keys",
+        "field": "APIKeys",
+        "command": "revoke",
+        "method": "Revoke"
+      }
     ],
-    "goCommands": [],
     "operations": [
       {
         "command": [
@@ -954,7 +1206,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship projects create --name 'Parcel API' --spec '{\"source\":{\"type\":\"url\",\"url\":{\"url\":\"https://api.parcel.example/openapi.json\"}}}' --targets '[{\"name\":\"Parcel CLI\",\"type\":\"cli\",\"deliveries\":[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}]}]'",
+      "example_command": "typeship projects create --name 'Parcel API' --spec '{\"source\":{\"type\":\"url\",\"url\":{\"url\":\"https://api.parcel.example/openapi.json\"}}}' --targets '[{\"name\":\"Parcel CLI\",\"type\":\"cli\",\"deliveries\":[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"module_path\":\"github.com/parcel-example/parcel-client\",\"publish_on_merge\":false}}]}]'",
       "method": "POST",
       "path": "/projects",
       "summary": "Create a Project",
@@ -1294,13 +1546,12 @@
                 "type": {
                   "enum": [
                     "cli",
-                    "go_cli",
                     "mcp",
                     "typescript_sdk",
                     "python_sdk",
                     "go_sdk"
                   ],
-                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+                  "description": "Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target.",
                   "type": "string"
                 },
                 "status": {
@@ -1467,7 +1718,7 @@
                     "repository": {
                       "provider": "github",
                       "identifier": "parcel-example/parcel-client",
-                      "package_name": "parcel-client",
+                      "module_path": "github.com/parcel-example/parcel-client",
                       "publish_on_merge": false
                     }
                   }
@@ -1682,10 +1933,6 @@
                           "null"
                         ]
                       },
-                      "update_notice": {
-                        "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
-                        "type": "boolean"
-                      },
                       "changelog_url": {
                         "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
                         "type": [
@@ -1701,14 +1948,14 @@
                         ]
                       },
                       "mcp_url": {
-                        "description": "Hosted MCP endpoint installed by the generated CLI instead of launching the package's local stdio server.",
+                        "description": "Fallback MCP endpoint used by the generated CLI when the Project has no Typeship-hosted MCP endpoint. A hosted endpoint takes precedence over this URL.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "skills_repo": {
-                        "description": "GitHub owner/name of the skills package the generated CLI offers to install during init.",
+                        "description": "Repository in owner/name format that the generated CLI's init command offers for skill installation.",
                         "type": [
                           "string",
                           "null"
@@ -2038,7 +2285,7 @@
                 "repository": {
                   "provider": "github",
                   "identifier": "parcel-example/parcel-client",
-                  "package_name": "parcel-client",
+                  "module_path": "github.com/parcel-example/parcel-client",
                   "publish_on_merge": false
                 }
               }
@@ -2241,10 +2488,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -2709,10 +2959,6 @@
                           "null"
                         ]
                       },
-                      "update_notice": {
-                        "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
-                        "type": "boolean"
-                      },
                       "changelog_url": {
                         "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
                         "type": [
@@ -2728,14 +2974,14 @@
                         ]
                       },
                       "mcp_url": {
-                        "description": "Hosted MCP endpoint installed by the generated CLI instead of launching the package's local stdio server.",
+                        "description": "Fallback MCP endpoint used by the generated CLI when the Project has no Typeship-hosted MCP endpoint. A hosted endpoint takes precedence over this URL.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "skills_repo": {
-                        "description": "GitHub owner/name of the skills package the generated CLI offers to install during init.",
+                        "description": "Repository in owner/name format that the generated CLI's init command offers for skill installation.",
                         "type": [
                           "string",
                           "null"
@@ -3293,13 +3539,12 @@
                 "type": {
                   "enum": [
                     "cli",
-                    "go_cli",
                     "mcp",
                     "typescript_sdk",
                     "python_sdk",
                     "go_sdk"
                   ],
-                  "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+                  "description": "Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target.",
                   "type": "string"
                 },
                 "name": {
@@ -3795,7 +4040,7 @@
       "method": "PATCH",
       "path": "/specs/{spec_id}",
       "summary": "Update a Spec",
-      "description": "Resolves the source files before saving the update and records a new Spec Revision when the source changes.\nOmitted fields remain unchanged; supplied objects and arrays replace the whole field.\nIf the Spec or its Project configuration changes during validation, returns 409 resource_changed without saving the rejected update. Retrieve the current Spec and Project, reconcile your changes,\nand submit a new request with a new Idempotency-Key if using one.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
+      "description": "Resolves the source files before saving the update and records a new Spec Revision when the source changes.\nOmitted fields remain unchanged; supplied objects and arrays replace the whole field.\nWith Project auto_generate enabled, saving changed patches queues a Generation for each active Target. A queued or running Target reuses that Generation. An unchanged patch list does not queue generation.\nThe response is the saved Spec, not a generation result. List Generations with project_id to observe automatic runs. With auto_generate disabled, call projects generate after saving patches.\nPatch-only changes keep the existing source revision. A `502 follow_up_failed` means the patches were saved but generation could not be queued. This failure is not retryable: the same Idempotency-Key replays the failure for 24 hours, and re-saving unchanged patches does not queue generation. Retrieve the Spec and call projects generate with a new Idempotency-Key.\nIf the Spec or its Project configuration changes during validation, returns 409 resource_changed without saving the rejected update. Retrieve the current Spec and Project, reconcile your changes,\nand submit a new request with a new Idempotency-Key if using one.\n\nSee [conditional writes](https://typeship.dev/docs/typeship-api#conditional-writes) for ETag and If-Match.",
       "safety": "write",
       "auth": "required",
       "security": [
@@ -5134,10 +5379,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -5669,10 +5917,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -5753,7 +6004,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{\"cli\":{\"command_name\":\"parcel\"}}' --deliveries '[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}]'",
+      "example_command": "typeship targets create --project-id prj_4f8k2m7x9q1v6b3n --name 'Parcel CLI' --type cli --config '{\"cli\":{\"command_name\":\"parcel\"}}' --deliveries '[{\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"module_path\":\"github.com/parcel-example/parcel-client\",\"publish_on_merge\":false}}]'",
       "method": "POST",
       "path": "/targets",
       "summary": "Create a Target",
@@ -5793,13 +6044,12 @@
           "type": {
             "enum": [
               "cli",
-              "go_cli",
               "mcp",
               "typescript_sdk",
               "python_sdk",
               "go_sdk"
             ],
-            "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+            "description": "Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target.",
             "type": "string",
             "example": "cli"
           },
@@ -6006,10 +6256,6 @@
                           "null"
                         ]
                       },
-                      "update_notice": {
-                        "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
-                        "type": "boolean"
-                      },
                       "changelog_url": {
                         "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
                         "type": [
@@ -6025,14 +6271,14 @@
                         ]
                       },
                       "mcp_url": {
-                        "description": "Hosted MCP endpoint installed by the generated CLI instead of launching the package's local stdio server.",
+                        "description": "Fallback MCP endpoint used by the generated CLI when the Project has no Typeship-hosted MCP endpoint. A hosted endpoint takes precedence over this URL.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "skills_repo": {
-                        "description": "GitHub owner/name of the skills package the generated CLI offers to install during init.",
+                        "description": "Repository in owner/name format that the generated CLI's init command offers for skill installation.",
                         "type": [
                           "string",
                           "null"
@@ -6040,6 +6286,10 @@
                       },
                       "relay": {
                         "description": "Enable webhook relay sessions for this CLI Target. Requires Pro. Turning it off prevents new sessions.",
+                        "type": "boolean"
+                      },
+                      "unit_tests": {
+                        "description": "Also generate unit tests for the helper code a CLI shares, such as raw API path checks, saved credentials, and MCP client configuration. Applies to cli Targets. Off by default; tests for the generated commands are always included.",
                         "type": "boolean"
                       }
                     },
@@ -6262,7 +6512,7 @@
                           ]
                         },
                         "module_path": {
-                          "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
+                          "description": "Go module identity for the Go SDK or CLI Target where applicable.",
                           "type": [
                             "string",
                             "null"
@@ -6311,7 +6561,7 @@
                 "repository": {
                   "provider": "github",
                   "identifier": "parcel-example/parcel-client",
-                  "package_name": "parcel-client",
+                  "module_path": "github.com/parcel-example/parcel-client",
                   "publish_on_merge": false
                 }
               }
@@ -6360,40 +6610,13 @@
           "type": {
             "enum": [
               "cli",
-              "go_cli",
               "mcp",
               "typescript_sdk",
               "python_sdk",
               "go_sdk"
             ],
-            "description": "Generator implementation selected by a Target.",
+            "description": "Package type selected by a Target.",
             "type": "string"
-          },
-          "dependency": {
-            "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
-            "anyOf": [
-              {
-                "description": "One Target generated from a sibling Target.",
-                "properties": {
-                  "type": {
-                    "const": "go_sdk_module",
-                    "type": "string"
-                  },
-                  "target_id": {
-                    "description": "Stable identifier for one configured generated product.",
-                    "examples": [
-                      "tgt_5m8q2v7k1p9d4h6c"
-                    ],
-                    "pattern": "^tgt_[a-z0-9]{16}$",
-                    "type": "string"
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "status": {
             "enum": [
@@ -6586,7 +6809,7 @@
             "repository": {
               "provider": "github",
               "identifier": "parcel-example/parcel-client",
-              "package_name": "parcel-client",
+              "module_path": "github.com/parcel-example/parcel-client",
               "publish_on_merge": false
             }
           }
@@ -6669,7 +6892,7 @@
           "items": {
             "type": "array",
             "items": {
-              "description": "All Targets follow reviewed SemVer.",
+              "description": "All Targets follow reviewed SemVer. Before 1.0.0, breaking changes require a minor version; the policy is fixed rather than configurable.",
               "properties": {
                 "id": {
                   "description": "Stable identifier for one configured generated product.",
@@ -6705,40 +6928,13 @@
                 "type": {
                   "enum": [
                     "cli",
-                    "go_cli",
                     "mcp",
                     "typescript_sdk",
                     "python_sdk",
                     "go_sdk"
                   ],
-                  "description": "Generator implementation selected by a Target.",
+                  "description": "Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target.",
                   "type": "string"
-                },
-                "dependency": {
-                  "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
-                  "anyOf": [
-                    {
-                      "description": "One Target generated from a sibling Target.",
-                      "properties": {
-                        "type": {
-                          "const": "go_sdk_module",
-                          "type": "string"
-                        },
-                        "target_id": {
-                          "description": "Stable identifier for one configured generated product.",
-                          "examples": [
-                            "tgt_5m8q2v7k1p9d4h6c"
-                          ],
-                          "pattern": "^tgt_[a-z0-9]{16}$",
-                          "type": "string"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
                 },
                 "status": {
                   "enum": [
@@ -6755,7 +6951,7 @@
                   "type": "string"
                 },
                 "version_current": {
-                  "description": "Read-only version of the Target's latest release, or null before its first release.",
+                  "description": "Read-only version of the Target's latest release, or null before its first release. Publishing status is separate; inspect the release for its results.",
                   "type": [
                     "string",
                     "null"
@@ -6770,7 +6966,7 @@
                   "type": "string"
                 },
                 "checks": {
-                  "description": "Required checks run against the code in the Draft.",
+                  "description": "Required checks run against the code in the Draft. Generated checks and customer commands share one reproducible workflow; repository_required names existing repository checks. Supplying checks replaces all settings. Omitted generated restores build, package, and public_entrypoint; omitted repository_required and customer restore empty lists. An empty object restores these defaults. An empty array clears the corresponding list.",
                   "properties": {
                     "generated": {
                       "default": [
@@ -6810,57 +7006,57 @@
                   "type": "object"
                 },
                 "config": {
-                  "description": "Target-specific overrides merged over Project.config.",
+                  "description": "Target-specific overrides merged over Project.config. GraphQL settings are Spec-owned and never appear here.",
                   "anyOf": [
                     {
-                      "description": "Target-specific generation and delivery overrides.",
+                      "description": "Target-specific generation and delivery overrides. Authentication may only select a Project-owned OAuth application. OAuth server metadata, applications, and identity policy remain Project-owned. Self-hosted MCP access may be overridden for a Target-specific deployment.",
                       "properties": {
                         "globals": {
-                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-ap…",
+                          "description": "Wire names of query/header parameters that become settable once on the generated client and auto-apply to every operation that accepts them; per-call values win. Names that match nothing are reported as generation warnings.",
                           "maxItems": 20,
                           "type": "array"
                         },
                         "include": {
-                          "description": "Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one path se…",
+                          "description": "Generate only matching operations: tag names, or path globs such as `/zones/**` (`*` is one path segment, `**` any number), optionally after an HTTP method (`DELETE /zones/*`). Applied before the Spec size limit, with components nothing references any more removed, so a one-shot run can generate part of a Spec up to 64 MB. Selectors that match nothing are reported as generation warnings.",
                           "maxItems": 100,
                           "type": "array"
                         },
                         "exclude": {
-                          "description": "Leave out matching operations (tag names or path globs, as for `include`).",
+                          "description": "Leave out matching operations (tag names or path globs, as for `include`). Wins over `include`.",
                           "maxItems": 100,
                           "type": "array"
                         },
                         "retries": {
-                          "description": "Retry behavior.",
+                          "description": "Retry behavior. Top-level fields adjust every operation; operations maps operationId or \"METHOD /path\" keys to per-operation overrides.",
                           "type": "object"
                         },
                         "pagination": {
-                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\".",
+                          "description": "Per-operation pagination control, keyed by operationId or \"METHOD /path\". Unmatched keys are reported as generation warnings.",
                           "type": "object"
                         },
                         "auth": {
-                          "description": "Selects a Project OAuth application for one Target.",
+                          "description": "Selects a Project OAuth application for one Target. OAuth server metadata, applications, and identity policy remain Project-owned.",
                           "type": "object"
                         },
                         "cli": {
-                          "description": "How the generated CLI behaves.",
+                          "description": "How the generated CLI behaves. Part of Config.",
                           "type": "object"
                         },
                         "mcp": {
-                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave.",
+                          "description": "How generated MCP servers and the Typeship-hosted endpoint behave. Part of Config.",
                           "type": "object"
                         },
                         "readme": {
-                          "description": "Generated README behavior.",
+                          "description": "Generated README behavior. Part of Config.",
                           "type": "object"
                         },
                         "package": {
-                          "description": "Published-package metadata the API spec does not own.",
+                          "description": "Published-package metadata the API spec does not own. Repository is derived from each destination.",
                           "type": "object"
                         },
                         "docs_url": {
                           "format": "uri",
-                          "description": "The API's documentation site.",
+                          "description": "The API's documentation site. Read through its llms.txt by the generated CLI's docs command, the MCP server's docs tools, and the package's AGENTS.md. Defaults to the Spec's externalDocs URL.",
                           "type": [
                             "string",
                             "null"
@@ -6926,10 +7122,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to ge…",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -7016,40 +7215,13 @@
           "type": {
             "enum": [
               "cli",
-              "go_cli",
               "mcp",
               "typescript_sdk",
               "python_sdk",
               "go_sdk"
             ],
-            "description": "Generator implementation selected by a Target.",
+            "description": "Package type selected by a Target.",
             "type": "string"
-          },
-          "dependency": {
-            "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
-            "anyOf": [
-              {
-                "description": "One Target generated from a sibling Target.",
-                "properties": {
-                  "type": {
-                    "const": "go_sdk_module",
-                    "type": "string"
-                  },
-                  "target_id": {
-                    "description": "Stable identifier for one configured generated product.",
-                    "examples": [
-                      "tgt_5m8q2v7k1p9d4h6c"
-                    ],
-                    "pattern": "^tgt_[a-z0-9]{16}$",
-                    "type": "string"
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "status": {
             "enum": [
@@ -7525,10 +7697,6 @@
                           "null"
                         ]
                       },
-                      "update_notice": {
-                        "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
-                        "type": "boolean"
-                      },
                       "changelog_url": {
                         "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
                         "type": [
@@ -7544,14 +7712,14 @@
                         ]
                       },
                       "mcp_url": {
-                        "description": "Hosted MCP endpoint installed by the generated CLI instead of launching the package's local stdio server.",
+                        "description": "Fallback MCP endpoint used by the generated CLI when the Project has no Typeship-hosted MCP endpoint. A hosted endpoint takes precedence over this URL.",
                         "type": [
                           "string",
                           "null"
                         ]
                       },
                       "skills_repo": {
-                        "description": "GitHub owner/name of the skills package the generated CLI offers to install during init.",
+                        "description": "Repository in owner/name format that the generated CLI's init command offers for skill installation.",
                         "type": [
                           "string",
                           "null"
@@ -7559,6 +7727,10 @@
                       },
                       "relay": {
                         "description": "Enable webhook relay sessions for this CLI Target. Requires Pro. Turning it off prevents new sessions.",
+                        "type": "boolean"
+                      },
+                      "unit_tests": {
+                        "description": "Also generate unit tests for the helper code a CLI shares, such as raw API path checks, saved credentials, and MCP client configuration. Applies to cli Targets. Off by default; tests for the generated commands are always included.",
                         "type": "boolean"
                       }
                     },
@@ -7776,40 +7948,13 @@
           "type": {
             "enum": [
               "cli",
-              "go_cli",
               "mcp",
               "typescript_sdk",
               "python_sdk",
               "go_sdk"
             ],
-            "description": "Generator implementation selected by a Target.",
+            "description": "Package type selected by a Target.",
             "type": "string"
-          },
-          "dependency": {
-            "description": "Present only on a go_cli Target, naming the sibling Go SDK Target the CLI is generated against.",
-            "anyOf": [
-              {
-                "description": "One Target generated from a sibling Target.",
-                "properties": {
-                  "type": {
-                    "const": "go_sdk_module",
-                    "type": "string"
-                  },
-                  "target_id": {
-                    "description": "Stable identifier for one configured generated product.",
-                    "examples": [
-                      "tgt_5m8q2v7k1p9d4h6c"
-                    ],
-                    "pattern": "^tgt_[a-z0-9]{16}$",
-                    "type": "string"
-                  }
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "status": {
             "enum": [
@@ -8526,7 +8671,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship deliveries create --data '{\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":false}}'",
+      "example_command": "typeship deliveries create --data '{\"target_id\":\"tgt_5m8q2v7k1p9d4h6c\",\"type\":\"repository\",\"repository\":{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"module_path\":\"github.com/parcel-example/parcel-client\",\"publish_on_merge\":false}}'",
       "method": "POST",
       "path": "/deliveries",
       "summary": "Create a Delivery",
@@ -8596,7 +8741,7 @@
                         ]
                       },
                       "module_path": {
-                        "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
+                        "description": "Go module identity for the Go SDK or CLI Target where applicable.",
                         "type": [
                           "string",
                           "null"
@@ -8653,7 +8798,7 @@
               "repository": {
                 "provider": "github",
                 "identifier": "parcel-example/parcel-client",
-                "package_name": "parcel-client",
+                "module_path": "github.com/parcel-example/parcel-client",
                 "publish_on_merge": false
               }
             }
@@ -8841,7 +8986,7 @@
           "repository": {
             "provider": "github",
             "identifier": "parcel-example/parcel-client",
-            "package_name": "parcel-client",
+            "module_path": "github.com/parcel-example/parcel-client",
             "publish_on_merge": false
           }
         }
@@ -9103,10 +9248,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -9363,7 +9511,7 @@
           "required": false
         }
       ],
-      "example_command": "typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"package_name\":\"parcel-client\",\"publish_on_merge\":true}'",
+      "example_command": "typeship deliveries update dlv_4q8m2v7k1p9d5h6c --repository '{\"provider\":\"github\",\"identifier\":\"parcel-example/parcel-client\",\"module_path\":\"github.com/parcel-example/parcel-client\",\"publish_on_merge\":true}'",
       "method": "PATCH",
       "path": "/deliveries/{delivery_id}",
       "summary": "Update a Delivery",
@@ -9423,7 +9571,7 @@
                 ]
               },
               "module_path": {
-                "description": "Go module identity for the Go SDK or Go CLI Target where applicable.",
+                "description": "Go module identity for the Go SDK or CLI Target where applicable.",
                 "type": [
                   "string",
                   "null"
@@ -9444,7 +9592,7 @@
             "example": {
               "provider": "github",
               "identifier": "parcel-example/parcel-client",
-              "package_name": "parcel-client",
+              "module_path": "github.com/parcel-example/parcel-client",
               "publish_on_merge": true
             }
           }
@@ -9630,7 +9778,7 @@
         "repository": {
           "provider": "github",
           "identifier": "parcel-example/parcel-client",
-          "package_name": "parcel-client",
+          "module_path": "github.com/parcel-example/parcel-client",
           "publish_on_merge": true
         }
       }
@@ -9845,13 +9993,12 @@
           "type": {
             "enum": [
               "cli",
-              "go_cli",
               "mcp",
               "typescript_sdk",
               "python_sdk",
               "go_sdk"
             ],
-            "description": "Generator implementation selected by a Target.",
+            "description": "Package type selected by a Target.",
             "type": "string"
           },
           "name": {
@@ -10014,17 +10161,6 @@
                     "draft_title_invalid",
                     "history_recovery_required",
                     "checks_unavailable",
-                    "dependency_missing",
-                    "dependency_not_found",
-                    "dependency_self",
-                    "dependency_cycle",
-                    "dependency_cross_project",
-                    "dependency_cross_lineage",
-                    "dependency_wrong_generator",
-                    "dependency_disabled",
-                    "dependency_module_path_missing",
-                    "dependency_unreleased",
-                    "dependency_revision_mismatch",
                     "regeneration_failed",
                     "follow_up_failed",
                     "api_error"
@@ -10297,13 +10433,12 @@
                 "type": {
                   "enum": [
                     "cli",
-                    "go_cli",
                     "mcp",
                     "typescript_sdk",
                     "python_sdk",
                     "go_sdk"
                   ],
-                  "description": "Generator implementation selected by a Target.",
+                  "description": "Package type selected by a Target.",
                   "type": "string"
                 },
                 "name": {
@@ -10463,17 +10598,6 @@
                           "draft_title_invalid",
                           "history_recovery_required",
                           "checks_unavailable",
-                          "dependency_missing",
-                          "dependency_not_found",
-                          "dependency_self",
-                          "dependency_cycle",
-                          "dependency_cross_project",
-                          "dependency_cross_lineage",
-                          "dependency_wrong_generator",
-                          "dependency_disabled",
-                          "dependency_module_path_missing",
-                          "dependency_unreleased",
-                          "dependency_revision_mismatch",
                           "regeneration_failed",
                           "follow_up_failed",
                           "api_error"
@@ -10563,10 +10687,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to ge…",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -10721,10 +10848,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -11069,10 +11199,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to ge…",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -11941,10 +12074,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -13125,10 +13261,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },
@@ -14093,13 +14232,6 @@
           "required": false
         },
         {
-          "name": "go_sdk",
-          "flag": "--go-sdk",
-          "in": "body",
-          "type": "object",
-          "required": false
-        },
-        {
           "name": "config",
           "flag": "--config",
           "in": "body",
@@ -14188,13 +14320,12 @@
               "type": {
                 "enum": [
                   "cli",
-                  "go_cli",
                   "mcp",
                   "typescript_sdk",
                   "python_sdk",
                   "go_sdk"
                 ],
-                "description": "Generator implementation selected by a Target. This is configuration, not identity; several Targets may use the same generator. cli is the TypeScript CLI; go_cli is the native Go CLI, a distinct product that imports one exact paired Go SDK module rather than a client of its own.",
+                "description": "Package type selected by a Target. Several Targets may use the same type. The CLI is a self-contained command-line package and requires no SDK Target.",
                 "type": "string"
               }
             },
@@ -14212,37 +14343,8 @@
             "type": "string"
           },
           "module_path": {
-            "description": "Go module path override for the generated artifact's own module. Valid only for the Go SDK and Go CLI Targets. Projects derive this from the Go destination repository by default.",
+            "description": "Go module path override for the generated artifact's own module. Valid only for the Go SDK and CLI Targets. Projects derive this from the Go destination repository by default.",
             "type": "string"
-          },
-          "go_sdk": {
-            "description": "The exact paired Go SDK a go_cli generation is built on. Required when target.type is go_cli and rejected otherwise. The descriptor is closed and immutable, because a CLI that pins a range or a branch pins nothing.",
-            "properties": {
-              "module_path": {
-                "description": "Go module path of the SDK the CLI imports, for example github.com/acme/payments-go. Must be a valid Go module path.",
-                "type": "string"
-              },
-              "version": {
-                "description": "Exact SDK module version the CLI requires: v-prefixed SemVer such as v1.2.3, or an immutable Go pseudo-version naming a commit such as v0.0.0-20240824120000-abcdef123456. Ranges, branches, and \"latest\" are rejected.",
-                "type": "string"
-              },
-              "spec_digest": {
-                "description": "SHA-256 hex digest of the Spec the SDK was generated from. Must match the resolved Spec, or the request fails with spec_invalid.",
-                "pattern": "^[a-f0-9]{64}$",
-                "type": "string"
-              },
-              "package_name": {
-                "description": "Go package identifier of the SDK, when the module path's last element does not imply it. Optional.",
-                "type": "string"
-              }
-            },
-            "required": [
-              "module_path",
-              "version",
-              "spec_digest"
-            ],
-            "additionalProperties": false,
-            "type": "object"
           },
           "config": {
             "description": "Everything Typeship needs beyond the Spec, in one object: generation customization (globals, retries, pagination, readme) and how the generated tooling behaves (cli, mcp, package, docs_url). Plain configuration. Typeship never requires vendor extensions inside the Spec itself. One-shot generation also accepts GraphQL settings here; stored projects keep those settings on their Spec.",
@@ -14769,10 +14871,6 @@
                       "null"
                     ]
                   },
-                  "update_notice": {
-                    "description": "Opt in to a once-a-day registry check that prints an upgrade hint. Off by default; generated code phones nobody unless this is enabled.",
-                    "type": "boolean"
-                  },
                   "changelog_url": {
                     "description": "Public HTTP(S) URL read by the optional changelog command in generated CLIs. Supports UTF-8 Markdown, plain text, and static HTML; embedded credentials are not allowed. Omit or clear to disable, then regenerate.",
                     "type": [
@@ -14788,14 +14886,14 @@
                     ]
                   },
                   "mcp_url": {
-                    "description": "Hosted MCP endpoint installed by the generated CLI instead of launching the package's local stdio server.",
+                    "description": "Fallback MCP endpoint used by the generated CLI when the Project has no Typeship-hosted MCP endpoint. A hosted endpoint takes precedence over this URL.",
                     "type": [
                       "string",
                       "null"
                     ]
                   },
                   "skills_repo": {
-                    "description": "GitHub owner/name of the skills package the generated CLI offers to install during init.",
+                    "description": "Repository in owner/name format that the generated CLI's init command offers for skill installation.",
                     "type": [
                       "string",
                       "null"
@@ -15407,10 +15505,13 @@
             "description": "Arguments that fetch the next page; pass them to this tool",
             "additionalProperties": true
           },
-          "truncated": {
-            "type": "object",
-            "description": "Present when the page was cut to fit the result size cap: how many items were omitted and how to get them",
-            "additionalProperties": true
+          "nextCommand": {
+            "type": "string",
+            "description": "Command to fetch the next page when CLI flags can express the continuation"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Request ID for the first page, when available"
           }
         }
       },

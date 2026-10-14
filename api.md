@@ -7,7 +7,7 @@ Path arguments are positional; flags use the names shown below. Arrays accept re
 
 API commands write JSON to stdout. Exit codes: `0` success, `1` request failure, `2` invalid usage. In agent mode, errors are JSON on stderr with `status`, `issues`, and `next_steps`; branch on `issues[].code`. Destructive operations require `--force` without an interactive terminal.
 
-A paginated command prints its first page's envelope as pretty JSON; `--all` writes one JSON object per line for every item across pages. `--fields id,name` projects response fields (per item on collection envelopes), SSE commands emit one JSON event per line, and `--out <dir>` extracts file bundles. `--base-url <url>` overrides the endpoint. See [`README.md`](./README.md) for local setup and authentication.
+A paginated command prints `{items, hasMore, nextPage?, nextCommand?, request_id?}` as pretty JSON. `nextPage` contains continuation arguments; `nextCommand` appears when CLI flags can express them; `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`, and `detail.partial_output` reports whether `--all` already wrote items to stdout. `--all` writes one JSON object per line for every item across pages. `--fields id,name` projects each item, SSE commands emit one JSON event per line, and `--out <dir>` extracts file bundles. `--base-url <url>` overrides the endpoint. See [`README.md`](./README.md) for local setup and authentication.
 
 For complete input and output schemas, use [`api.json`](./api.json), the machine-readable companion to this reference.
 
@@ -62,7 +62,7 @@ Safety: **read** · Authentication: **required**
 typeship projects list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs projects list --json`.
 
@@ -206,6 +206,9 @@ Safety: **write** · Authentication: **required**
 
 Resolves the source files before saving the update and records a new Spec Revision when the source changes.
 Omitted fields remain unchanged; supplied objects and arrays replace the whole field.
+With Project auto_generate enabled, saving changed patches queues a Generation for each active Target. A queued or running Target reuses that Generation. An unchanged patch list does not queue generation.
+The response is the saved Spec, not a generation result. List Generations with project_id to observe automatic runs. With auto_generate disabled, call projects generate after saving patches.
+Patch-only changes keep the existing source revision. A `502 follow_up_failed` means the patches were saved but generation could not be queued. This failure is not retryable: the same Idempotency-Key replays the failure for 24 hours, and re-saving unchanged patches does not queue generation. Retrieve the Spec and call projects generate with a new Idempotency-Key.
 If the Spec or its Project configuration changes during validation, returns 409 resource_changed without saving the rejected update. Retrieve the current Spec and Project, reconcile your changes,
 and submit a new request with a new Idempotency-Key if using one.
 
@@ -276,7 +279,7 @@ Lists Spec Revisions, newest first. Source content is not included; list a revis
 typeship spec-revisions list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs spec-revisions list --json`.
 
@@ -324,7 +327,7 @@ Lists the captured source files and the resolved document Typeship generated fro
 typeship spec-revisions list-files srev_6m1q8v4k2p9d7h3c
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs spec-revisions list-files --json`.
 
@@ -380,7 +383,7 @@ Safety: **read** · Authentication: **required**
 typeship targets list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs targets list --json`.
 
@@ -541,7 +544,7 @@ Safety: **read** · Authentication: **required**
 typeship deliveries list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs deliveries list --json`.
 
@@ -669,7 +672,7 @@ Safety: **read** · Authentication: **required**
 typeship generations list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs generations list --json`.
 
@@ -693,7 +696,7 @@ Lists the generated package's files, ordered by path. Read content with getFile.
 typeship generations list-files gen_7h2p5d9c3m8w1k6q
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs generations list-files --json`.
 
@@ -720,7 +723,7 @@ Lists open and merged Drafts, newest first. Each Target has one open Draft; each
 typeship drafts list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs drafts list --json`.
 
@@ -801,7 +804,7 @@ Returns `409 resource_changed` while Typeship is carrying the Draft's latest com
 typeship drafts list-files drf_3q7m1v8k2p5d9h4c
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs drafts list-files --json`.
 
@@ -879,7 +882,7 @@ Safety: **read** · Authentication: **required**
 typeship releases list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs releases list --json`.
 
@@ -1060,7 +1063,7 @@ Lists key metadata and the last four characters of each key. Full keys are not r
 typeship api-keys list
 ```
 
-Output: the first page's envelope as pretty JSON — its items plus the cursor and metadata. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
+Output: JSON for the first page with `items` and `hasMore`; when another page exists, `nextPage` contains continuation arguments and `nextCommand` contains a command when CLI flags can express it. `request_id` appears when available. A repeated cursor returns `PAGINATION_ERROR`; for `--all`, `detail.partial_output` reports whether stdout already contains items. Use `--all` to stream every item from every page as NDJSON; `--fields` projects each item.
 
 Read the full command contract with `typeship docs api-keys list --json`.
 

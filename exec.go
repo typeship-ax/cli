@@ -11,6 +11,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -34,6 +35,7 @@ type cliIterator interface {
 	ValueAny() any
 	Err() error
 	FirstPage() (map[string]any, error)
+	NextPageParams() map[string]any
 }
 
 type cliIterAdapter[T any] struct{ it *sdk.Iter[T] }
@@ -53,17 +55,38 @@ func (it *cliIterAdapter[T]) Err() error {
 	return it.it.Err()
 }
 
-// FirstPage returns the first page as a string-keyed envelope, or its error.
+// FirstPage returns the normalized first-page result, or its error.
 func (it *cliIterAdapter[T]) FirstPage() (map[string]any, error) {
-	page, pageErr := it.it.FirstPage()
+	rawPage, pageErr := it.it.FirstPage()
 	if pageErr != nil {
 		return nil, pageErr
 	}
-	envelope := map[string]any{}
-	for key, raw := range page {
-		envelope[key] = raw
+	decoder := json.NewDecoder(bytes.NewReader(it.it.FirstPageItems()))
+	decoder.UseNumber()
+	var items []any
+	if err := decoder.Decode(&items); err != nil {
+		return nil, err
 	}
-	return envelope, nil
+	if items == nil {
+		items = []any{}
+	}
+	page := map[string]any{"items": items, "hasMore": it.it.HasMore()}
+	if next := it.it.NextPageParams(); next != nil {
+		page["nextPage"] = next
+	}
+	requestID := it.it.FirstPageRequestID()
+	if requestID == "" {
+		_ = json.Unmarshal(rawPage["request_id"], &requestID)
+	}
+	if requestID != "" {
+		page["request_id"] = requestID
+	}
+	return page, nil
+}
+
+// NextPageParams returns the first page's continuation arguments, when present.
+func (it *cliIterAdapter[T]) NextPageParams() map[string]any {
+	return it.it.NextPageParams()
 }
 
 // renderCLIStream returns an error because this CLI has no stream support.

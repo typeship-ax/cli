@@ -43,6 +43,66 @@ const whoamiResource = ""
 const whoamiCommand = ""
 const whoamiEnabled = false
 
+func pushFieldsToQuery(op opDef, values map[string]opFlagValue) {
+	fields := values["__fields"].scalar
+	if fields == "" {
+		return
+	}
+	expand := []string{}
+	seen := map[string]bool{}
+	for _, field := range strings.Split(fields, ",") {
+		path := strings.Split(strings.TrimSpace(field), ".")
+		if len(path) > 1 && path[0] != "" && !seen[path[0]] {
+			seen[path[0]] = true
+			expand = append(expand, path[0])
+		}
+	}
+	for _, param := range op.Params {
+		if param.Kind != "query" {
+			continue
+		}
+		switch param.Name {
+		case "fields":
+			if param.Type == "array" {
+				values[param.Flag] = opFlagValue{list: splitList(fields), isList: true}
+			} else {
+				values[param.Flag] = opFlagValue{scalar: fields}
+			}
+		case "expand":
+			if len(expand) == 0 {
+				continue
+			}
+			merged := make([]string, 0, len(expand))
+			mergedSeen := map[string]bool{}
+			addExpand := func(value string) {
+				value = strings.TrimSpace(value)
+				if value != "" && !mergedSeen[value] {
+					mergedSeen[value] = true
+					merged = append(merged, value)
+				}
+			}
+			explicit := values[param.Flag]
+			if explicit.isList {
+				for _, value := range explicit.list {
+					addExpand(value)
+				}
+			} else {
+				for _, value := range splitList(explicit.scalar) {
+					addExpand(value)
+				}
+			}
+			for _, value := range expand {
+				addExpand(value)
+			}
+			if param.Type == "array" {
+				values[param.Flag] = opFlagValue{list: merged, isList: true}
+			} else {
+				values[param.Flag] = opFlagValue{scalar: strings.Join(merged, ",")}
+			}
+		}
+	}
+}
+
 type cliOutputMode int
 
 const (
@@ -277,6 +337,10 @@ func failureCode(err error) string {
 			return "INVALID_REQUEST"
 		}
 	}
+	var pagination *sdk.PaginationError
+	if errors.As(err, &pagination) {
+		return "PAGINATION_ERROR"
+	}
 	var transport *sdk.TransportError
 	if errors.As(err, &transport) {
 		return "NETWORK_ERROR"
@@ -350,6 +414,26 @@ func writeRequestFailure(args []string, stdout, stderr io.Writer, err error) int
 	}
 	message, next, retryable := failureGuidance(err, code)
 	return writeFailureEnvelope(args, stdout, stderr, code, message, errorDetail(err, args), next, &retryable, 1)
+}
+
+func writeIterationFailure(args []string, stdout, stderr io.Writer, err error, partial bool) int {
+	code := failureCode(err)
+	if code == "AUTH_INVALID" && !credentialPresent(args) {
+		code = "NO_AUTH"
+	}
+	message, next, retryable := failureGuidance(err, code)
+	detail := errorDetail(err, args)
+	if partial {
+		if fields, ok := detail.(map[string]any); ok {
+			fields["partial_output"] = true
+		} else if detail == nil {
+			detail = map[string]any{"partial_output": true}
+		} else {
+			detail = map[string]any{"error": detail, "partial_output": true}
+		}
+		message += "; partial output was written to stdout"
+	}
+	return writeFailureEnvelope(args, stdout, stderr, code, message, detail, next, &retryable, 1)
 }
 
 // isRequestFailure reports whether err came from the API or the transport
@@ -524,7 +608,79 @@ func errorDetail(err error, args []string) any {
 		}
 		return redactValue(detail, credentialValues(args))
 	}
+	var pagination *sdk.PaginationError
+	if errors.As(err, &pagination) {
+		return map[string]any{"code": pagination.Code, "status": pagination.Status, "request_id": pagination.RequestID}
+	}
 	return redact(err.Error(), args)
+}
+
+func nextCommandFor(op opDef, positionals []string, next map[string]any) string {
+	if _, isPageURL := next["page_url"]; isPageURL {
+		return ""
+	}
+	parts := []string{bin, op.Resource, op.Command}
+	for _, value := range positionals {
+		parts = append(parts, shellQuote(value))
+	}
+	remaining := make(map[string]any, len(next))
+	for name, value := range next {
+		remaining[name] = value
+	}
+	for _, param := range op.Params {
+		if param.Kind == "path" {
+			continue
+		}
+		value, ok := remaining[param.Name]
+		if !ok {
+			continue
+		}
+		delete(remaining, param.Name)
+		if value == nil {
+			continue
+		}
+		parts = append(parts, "--"+param.Flag, shellQuote(nextFlagValue(value)))
+	}
+	if len(remaining) > 0 {
+		return ""
+	}
+	return strings.Join(parts, " ")
+}
+
+func nextFlagValue(value any) string {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Sprint(value)
+	}
+	decoder := json.NewDecoder(strings.NewReader(string(encoded)))
+	decoder.UseNumber()
+	var normalized any
+	if err := decoder.Decode(&normalized); err != nil {
+		return fmt.Sprint(value)
+	}
+	switch typed := normalized.(type) {
+	case []any:
+		parts := make([]string, len(typed))
+		for i, item := range typed {
+			parts[i] = fmt.Sprint(item)
+		}
+		return strings.Join(parts, ",")
+	case map[string]any:
+		encoded, err := json.Marshal(typed)
+		if err == nil {
+			return string(encoded)
+		}
+	}
+	return fmt.Sprint(normalized)
+}
+
+func shellQuote(value string) string {
+	if value != "" && strings.IndexFunc(value, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("_@%+=:,./-", r))
+	}) == -1 {
+		return value
+	}
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }
 
 const cliFailureDocsURL = "https://typeship.dev/docs"
@@ -1053,6 +1209,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		capture = &dryRunTransport{}
 		opts = append(opts, dryRunClientOption(capture))
 	}
+	pushFieldsToQuery(*op, values)
 	client, err := sdk.New(opts...)
 	if err != nil {
 		return writeFailure(args, stdout, stderr, failureCode(err), "unable to initialize the client", errorDetail(err, args), nil, 1)
@@ -1095,6 +1252,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return writeFailure(args, stdout, stderr, "CALL_FAILED", "pagination response has an unexpected type", nil, nil, 1)
 		}
 		if values["__all"].scalar == "true" {
+			partialOutput := false
 			for iterator.Next() {
 				projected, projectErr := projectJSON(iterator.ValueAny(), values["__fields"].scalar)
 				if projectErr != nil {
@@ -1107,12 +1265,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 				if _, writeErr := fmt.Fprintln(stdout, string(line)); writeErr != nil {
 					return writeFailure(args, stdout, stderr, "CALL_FAILED", "stream failed", writeErr.Error(), nil, 1)
 				}
+				partialOutput = true
 			}
 			if iterator.Err() != nil {
 				if writeNotModified(iterator.Err(), stdout) {
 					return 0
 				}
-				return writeRequestFailure(args, stdout, stderr, iterator.Err())
+				return writeIterationFailure(args, stdout, stderr, iterator.Err(), partialOutput)
 			}
 			return 0
 		}
@@ -1121,12 +1280,21 @@ func run(args []string, stdout, stderr io.Writer) int {
 			return 0
 		}
 		if pageErr != nil {
-			return writeRequestFailure(args, stdout, stderr, pageErr)
+			return writeIterationFailure(args, stdout, stderr, pageErr, false)
+		}
+		if next := iterator.NextPageParams(); next != nil {
+			if command := nextCommandFor(*op, positionals, next); command != "" {
+				envelope["nextCommand"] = command
+			}
 		}
 		result = envelope
 	}
 	if op.BundleField != "" || values["__fields"].scalar != "" {
-		rendered, renderErr := renderValue(result, values["__fields"].scalar, values["__out"].scalar, op.BundleField, op.CollectionField)
+		collectionField := op.CollectionField
+		if op.Paginated {
+			collectionField = "items"
+		}
+		rendered, renderErr := renderValue(result, values["__fields"].scalar, values["__out"].scalar, op.BundleField, collectionField)
 		if renderErr != nil {
 			return writeFailure(args, stdout, stderr, "CALL_FAILED", "could not render response", renderErr.Error(), nil, 1)
 		}

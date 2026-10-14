@@ -7,7 +7,7 @@
 
 
 
-## 0.25.0 (2026-10-13) (11 breaking)
+## 0.25.0 (2026-10-14) (12 breaking)
 
 ### Changed
 - `projects.create()`
@@ -82,6 +82,7 @@
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
 - `specs.update()`
+  - `documentation-changed`: summary or description changed
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 403.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
@@ -91,6 +92,7 @@
   - `error-schema-changed`: error 422.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 429.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 500.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
+  - **breaking** `error-added`: 502: BadGatewayError
 - `specs.refresh()`
   - `error-schema-changed`: error 400.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"
   - `error-schema-changed`: error 401.errors\[\].code enum values removed: "dependency\_cross\_lineage", "dependency\_cross\_project", "dependency\_cycle", "dependency\_disabled", "dependency\_missing", "dependency\_module\_path\_missing", "dependency\_not\_found", "dependency\_revision\_mismatch", "dependency\_self", "dependency\_unreleased", "dependency\_wrong\_generator"

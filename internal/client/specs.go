@@ -51,6 +51,9 @@ func (s *SpecsService) Get(ctx context.Context, specID string, opts ...RequestOp
 //
 // Resolves the source files before saving the update and records a new Spec Revision when the source changes.
 // Omitted fields remain unchanged; supplied objects and arrays replace the whole field.
+// With Project auto_generate enabled, saving changed patches queues a Generation for each active Target. A queued or running Target reuses that Generation. An unchanged patch list does not queue generation.
+// The response is the saved Spec, not a generation result. List Generations with project_id to observe automatic runs. With auto_generate disabled, call projects generate after saving patches.
+// Patch-only changes keep the existing source revision. A `502 follow_up_failed` means the patches were saved but generation could not be queued. This failure is not retryable: the same Idempotency-Key replays the failure for 24 hours, and re-saving unchanged patches does not queue generation. Retrieve the Spec and call projects generate with a new Idempotency-Key.
 // If the Spec or its Project configuration changes during validation, returns 409 resource_changed without saving the rejected update. Retrieve the current Spec and Project, reconcile your changes,
 // and submit a new request with a new Idempotency-Key if using one.
 //

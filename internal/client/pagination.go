@@ -74,21 +74,25 @@ func (it *Iter[T]) paginationError(meta *APIResponse, message string, err error)
 //		return err
 //	}
 type Iter[T any] struct {
-	ctx     context.Context
-	core    *core
-	req     request
-	opts    []RequestOption
-	cfg     pageConfig
-	items   []T
-	index   int
-	current T
-	done    bool
-	page    int
-	offset  int
-	err     error
-	started bool
-	first   map[string]json.RawMessage
-	count   int
+	ctx           context.Context
+	core          *core
+	req           request
+	opts          []RequestOption
+	cfg           pageConfig
+	items         []T
+	index         int
+	current       T
+	done          bool
+	page          int
+	offset        int
+	err           error
+	started       bool
+	first         map[string]json.RawMessage
+	firstItems    json.RawMessage
+	firstResponse APIResponse
+	nextPage      map[string]any
+	seenCursors   map[string]bool
+	count         int
 }
 
 func newIter[T any](ctx context.Context, c *core, req request, opts []RequestOption, cfg pageConfig) *Iter[T] {
@@ -116,9 +120,14 @@ func newIter[T any](ctx context.Context, c *core, req request, opts []RequestOpt
 			req.Query[cfg.LimitParam] = cfg.DefaultLimit
 		}
 	}
-	it := &Iter[T]{ctx: ctx, core: c, req: req, opts: opts, cfg: cfg, page: 1}
+	it := &Iter[T]{ctx: ctx, core: c, req: req, opts: opts, cfg: cfg, page: 1, seenCursors: map[string]bool{}}
 	if cfg.ZeroBasedPages {
 		it.page = 0
+	}
+	if cfg.CursorParam != "" {
+		if cursor, ok := paginationCursorValue(it.pageParams()[cfg.CursorParam]); ok {
+			it.seenCursors[cursor] = true
+		}
 	}
 
 	return it
@@ -150,6 +159,29 @@ func (it *Iter[T]) Value() T { return it.current }
 // Err returns the first error encountered, if any.
 func (it *Iter[T]) Err() error { return it.err }
 
+// FirstPageItems returns the normalized item array from the first page.
+func (it *Iter[T]) FirstPageItems() json.RawMessage {
+	return append(json.RawMessage(nil), it.firstItems...)
+}
+
+// FirstPageRequestID returns the request ID associated with the first page.
+func (it *Iter[T]) FirstPageRequestID() string { return it.firstResponse.RequestID }
+
+// HasMore reports whether the first page has a usable continuation.
+func (it *Iter[T]) HasMore() bool { return it.nextPage != nil }
+
+// NextPageParams returns a copy of the parameters that continue the first page.
+func (it *Iter[T]) NextPageParams() map[string]any {
+	if it.nextPage == nil {
+		return nil
+	}
+	params := make(map[string]any, len(it.nextPage))
+	for key, value := range it.nextPage {
+		params[key] = value
+	}
+	return params
+}
+
 // FirstPage returns the raw first page the iterator uses, before item
 // decoding: its items plus every envelope field the page carried, exactly
 // as the server sent them. It fetches the first page when the walk has not
@@ -170,6 +202,8 @@ func (it *Iter[T]) FirstPage() (map[string]json.RawMessage, error) {
 }
 
 func (it *Iter[T]) fetch() bool {
+	firstPage := !it.started
+	it.nextPage = nil
 	var body json.RawMessage
 	var meta APIResponse
 	opts := append(append([]RequestOption{}, it.opts...), WithAPIResponse(&meta))
@@ -197,9 +231,7 @@ func (it *Iter[T]) fetch() bool {
 			return false
 		}
 	}
-	if it.first == nil {
-		it.first = raw
-	}
+	normalizedItemsRaw := itemsRaw
 	var items []T
 	if string(bytes.TrimSpace(itemsRaw)) == "null" {
 		// A null list is an empty page.
@@ -209,15 +241,25 @@ func (it *Iter[T]) fetch() bool {
 			it.err = err
 			return false
 		}
+		nodes := make([]json.RawMessage, 0, len(entries))
 		for _, entry := range entries {
 			var item T
 			if value, ok := entry[it.cfg.ItemPath]; ok {
+				nodes = append(nodes, value)
 				if err := json.Unmarshal(value, &item); err != nil {
 					it.err = err
 					return false
 				}
+			} else {
+				nodes = append(nodes, json.RawMessage("null"))
 			}
 			items = append(items, item)
+		}
+		var err error
+		normalizedItemsRaw, err = json.Marshal(nodes)
+		if err != nil {
+			it.err = err
+			return false
 		}
 	} else if err := json.Unmarshal(itemsRaw, &items); err != nil {
 		it.err = err
@@ -226,6 +268,11 @@ func (it *Iter[T]) fetch() bool {
 	it.items = items
 	it.index = 0
 	it.count += len(items)
+	if firstPage {
+		it.first = raw
+		it.firstItems = append(json.RawMessage(nil), normalizedItemsRaw...)
+		it.firstResponse = meta
+	}
 
 	if it.cfg.HasMoreField != "" {
 		if moreRaw, ok := lookupPath(raw, it.cfg.HasMoreField); ok {
@@ -264,6 +311,7 @@ func (it *Iter[T]) fetch() bool {
 			return false
 		}
 		it.req.URL = target
+		it.nextPage = map[string]any{"page_url": next}
 		return true
 	}
 	if len(items) == 0 && it.cfg.Style != "cursor" {
@@ -286,16 +334,33 @@ func (it *Iter[T]) fetch() bool {
 			it.done = true
 			return true
 		}
-		if current := it.req.Query[it.cfg.CursorParam]; current != nil && fmt.Sprint(current) == cursor {
-			it.done = true
-			return true
+		if _, repeated := it.seenCursors[cursor]; repeated {
+			it.err = it.paginationError(&meta, "pagination returned a repeated cursor; traversal stopped", nil)
+			return false
 		}
+		it.seenCursors[cursor] = true
 		it.req.Query[it.cfg.CursorParam] = cursor
+		it.nextPage = it.pageParams()
 
 	default:
 		it.done = true
 	}
 	return true
+}
+
+func (it *Iter[T]) pageParams() map[string]any {
+	params := map[string]any{}
+	if generic, ok := jsonShape(it.req.Body); ok {
+		if body, ok := generic.(map[string]any); ok {
+			for key, value := range body {
+				params[key] = value
+			}
+		}
+	}
+	for key, value := range it.req.Query {
+		params[key] = value
+	}
+	return params
 }
 
 // linkNext returns the rel="next" target of an RFC 8288 Link header.
@@ -334,6 +399,15 @@ func paginationCursor(raw json.RawMessage) (string, error) {
 		return number.String(), nil
 	}
 	return "", fmt.Errorf("expected a string or number cursor, got %s", raw)
+}
+
+func paginationCursorValue(value any) (string, bool) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return "", false
+	}
+	cursor, err := paginationCursor(raw)
+	return cursor, err == nil && cursor != ""
 }
 
 // lookupPath resolves a dot path so pagination can read meta.next_cursor.
